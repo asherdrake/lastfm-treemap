@@ -1,0 +1,12 @@
+<p>chart works!</p>
+<div>
+    {{playcount}}
+    {{url}}
+    {{scrobblesFetched}}
+    {{pageNumber}}
+    {{totalPages}}
+</div>
+
+<div *ngFor="let chart of charts" class="chart">
+    <div chartLoader [chart] = "chart"></div>
+</div>
