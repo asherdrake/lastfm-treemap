@@ -26,7 +26,7 @@ export class StatsConverterService {
       this.handleTrack(scrobble, newChartStats)
     }
 
-    return newChartStats
+    return newChartStats;
   }
 
   handleArtist(scrobble: Scrobble, newChartStats: ChartStats): void {
