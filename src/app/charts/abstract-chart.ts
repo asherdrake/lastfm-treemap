@@ -1,6 +1,9 @@
 import { AlignValue, PointOptionsType, XAxisOptions } from 'highcharts';
 import * as Highcharts from 'highcharts';
 import { ChartStats } from '../items';
+import treemap from 'highcharts/modules/treemap';
+
+treemap(Highcharts);
 
 export abstract class AbstractChart {
     options: Highcharts.Options = {};

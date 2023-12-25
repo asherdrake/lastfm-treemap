@@ -107,7 +107,7 @@ export class ScrobbleGetterService {
   }
 
   private getScrobbles(loadingState: LoadingState): Observable<RecentTracks> {
-    this.log('getting Scrobbles...');
+    this.log('getting Scrobbles...Current Page:' + loadingState.page);
     const params = new HttpParams()
       .append('method', 'user.getrecenttracks')
       .append('user', loadingState.username)

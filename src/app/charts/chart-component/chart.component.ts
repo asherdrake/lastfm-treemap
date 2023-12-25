@@ -7,6 +7,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MessageService } from 'src/app/message.service';
 import { AbstractChart } from '../abstract-chart';
 import { TracksAndScrobblesScatterChart } from '../artist-scrobble-scatterchart';
+import { TreemapChart } from '../treemap-chart';
 import { StatsConverterService } from 'src/app/stats-converter.service';
 
 @Component({
@@ -24,6 +25,7 @@ export class ChartComponent implements OnInit{
 
   constructor (private statsConverterService: StatsConverterService, private scrobbleGetterService : ScrobbleGetterService, private storage: ScrobbleStorageService, private messages: MessageService) {
     this.charts = [
+      new TreemapChart(),
       new TracksAndScrobblesScatterChart()
     ]
 

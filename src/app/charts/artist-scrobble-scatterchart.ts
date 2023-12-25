@@ -18,7 +18,7 @@ export class TracksAndScrobblesScatterChart extends AbstractChart {
             },
             yAxis: {
                 title: {
-                    text: "Tracksx"
+                    text: "Tracks"
                 }
             },
             plotOptions: {

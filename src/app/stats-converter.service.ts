@@ -14,9 +14,7 @@ export class StatsConverterService {
   constructor(private storage: ScrobbleStorageService) {
     this.chartStats = this.storage.pageChunk.pipe(
       scan((prevConvertedStats, scrobbles) => this.convertScrobbles(scrobbles, prevConvertedStats), this.emptyStats())
-    );
-
-    this.chartStats.subscribe();
+    ) 
   };
 
   convertScrobbles(scrobbles: Scrobble[], newChartStats: ChartStats): ChartStats {
