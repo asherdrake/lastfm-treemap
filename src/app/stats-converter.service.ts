@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ChartStats, Scrobble } from './items';
+import { ChartStats, Scrobble, Artist } from './items';
 import { Observable, scan} from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService } from './scrobble-storage.service';
@@ -22,6 +22,7 @@ export class StatsConverterService {
       this.handleArtist(scrobble, newChartStats);
       this.handleAlbum(scrobble, newChartStats);
       this.handleTrack(scrobble, newChartStats)
+      //Object.values(newChartStats.artists).sort();
     }
 
     return newChartStats;
