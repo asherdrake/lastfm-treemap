@@ -30,6 +30,7 @@ export class ChartComponent implements OnInit{
     this.statsConverterService.chartStats.pipe(takeUntilDestroyed()).subscribe(stats => this.updateCharts(stats));
 
     this.storage.loadingStatus.pipe(takeUntilDestroyed()).subscribe(status => {
+      this.scrobblesFetched = status[0].length;
       this.pageNumber = status[1];
       this.totalPages = status[2];
     })
