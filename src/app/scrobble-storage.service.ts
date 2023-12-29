@@ -26,7 +26,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   }
 
   readonly updateUser = this.updater((currData: ScrobbleState, user: User) => {
-    this.log('updateUser');
+    //this.log('updateUser');
 
     return {
       ...currData,
@@ -36,7 +36,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   })
 
   readonly updateTotal = this.updater((currData: ScrobbleState, page: {totalPages: number, currPage: number}) => {
-    this.log('updateTotal');
+    //this.log('updateTotal');
 
     return {
       ...currData,
@@ -46,7 +46,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   })
 
   readonly addPage = this.updater((currData: ScrobbleState, newScrobbles: Scrobble[]) => {
-    this.log('addPage');
+    //this.log('addPage');
 
     return {
       ...currData,
@@ -56,7 +56,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   })
 
   readonly finish = this.updater((currData: ScrobbleState, state: string) => {
-    this.log('finish');
+    //this.log('finish');
 
     return {
       ...currData,
@@ -67,7 +67,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   readonly loadingState = this.select(state => state.state);
 
   readonly loadingStatus = this.state$.pipe(
-    tap(() => this.log('loadingStatus')),
+    //tap(() => this.log('loadingStatus')),
     filter(state => state.state === 'GETTINGSCROBBLES'),
     map(state => [state.scrobbles, state.currPage, state.totalPages] as [Scrobble[], number, number])
   );
@@ -77,7 +77,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     map(state => state.scrobbles),
     pairwise(),
     map(([previous, next]) => next.slice(previous.length)),
-    tap((scrobbles) => this.log(scrobbles[0].track))
+    //tap((scrobbles) => this.log(scrobbles[0].track))
   );
 
   private log(message: string) {

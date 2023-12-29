@@ -2,7 +2,7 @@ import { Component, OnInit, } from '@angular/core';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { User, Scrobble, LoadingStats, ChartStats } from 'src/app/items';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
-import { combineLatest, tap, map } from 'rxjs';
+import { combineLatest, tap, map, Observable } from 'rxjs';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { MessageService } from 'src/app/message.service';
 import { AbstractChart } from '../abstract-chart';
@@ -22,14 +22,17 @@ export class ChartComponent implements OnInit{
   pageNumber: number = 0;
   totalPages: number = 0;
   charts: AbstractChart[];
-
   constructor (private statsConverterService: StatsConverterService, private scrobbleGetterService : ScrobbleGetterService, private storage: ScrobbleStorageService, private messages: MessageService) {
     this.charts = [
       new TreemapChart(),
       new TracksAndScrobblesScatterChart()
     ]
-
     this.statsConverterService.chartStats.pipe(takeUntilDestroyed()).subscribe(stats => this.updateCharts(stats));
+
+    this.storage.loadingStatus.pipe(takeUntilDestroyed()).subscribe(status => {
+      this.pageNumber = status[1];
+      this.totalPages = status[2];
+    })
   }
 
   updateTestStats(scrobbles: Scrobble[], currPage: number, totalPages: number) {

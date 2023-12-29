@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { User, Scrobble } from './items';
+import { User, Scrobble, LoadingStats } from './items';
 import { Observable, of} from 'rxjs';
 import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
@@ -45,6 +45,7 @@ interface LoadingState {
 export class ScrobbleGetterService {
   private readonly API_KEY = '2a9fa20cf72cff44d62d98800ec93aaf';
   private readonly URL = 'https://ws.audioscrobbler.com/2.0/';
+
   constructor(private http: HttpClient, private messageService: MessageService) { }
 
   initializeFetching(username: string, storage: ScrobbleStorageService){
@@ -107,7 +108,7 @@ export class ScrobbleGetterService {
   }
 
   private getScrobbles(loadingState: LoadingState): Observable<RecentTracks> {
-    this.log('getting Scrobbles...Current Page:' + loadingState.page);
+    //this.log('getting Scrobbles...Current Page:' + loadingState.page);
     const params = new HttpParams()
       .append('method', 'user.getrecenttracks')
       .append('user', loadingState.username)
@@ -117,8 +118,7 @@ export class ScrobbleGetterService {
       .append('api_key', this.API_KEY);
 
     return this.http.get<{recenttracks: RecentTracks}>(this.URL, {params}).pipe(
-      map(response => response.recenttracks),
-      //tap(recentTracks => this.log(`fetched last.fm user ${loadingState.username}'s tracks, totalPages = ${recentTracks['@attr'].totalPages}, currPage = ${loadingState.page}`))
+      map(response => response.recenttracks)
     );
   }
 

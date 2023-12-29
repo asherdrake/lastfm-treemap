@@ -1,10 +1,7 @@
 <p>chart works!</p>
 <div>
-    {{playcount}}
-    {{url}}
-    {{scrobblesFetched}}
-    {{pageNumber}}
-    {{totalPages}}
+    Loading page
+    {{totalPages - pageNumber}}/{{totalPages}}
 </div>
 
 <div *ngFor="let chart of charts" class="chart">
