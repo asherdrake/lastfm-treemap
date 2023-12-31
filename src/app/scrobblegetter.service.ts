@@ -19,6 +19,9 @@ interface Track {
   name: string;
   artist: {
     '#text': string;
+    '@attr'?: {
+      mbid?: string;
+    }
   };
   album: {
     '#text': string;
@@ -99,7 +102,8 @@ export class ScrobbleGetterService {
     const scrobbles: Scrobble[] = tracks.filter(t => t.date && !(t['@attr']?.nowplaying === 'true')).map(t => ({
       track: t.name,
       album: t.album['#text'],
-      artist: t.artist['#text'],
+      artistName: t.artist['#text'],
+      //artistMBID: t.artist['@attr']?.mbid,
       date: new Date(t.date.uts * 1000)
     })).reverse();
     

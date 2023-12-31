@@ -49,7 +49,7 @@ export class ChartComponent implements OnInit{
   }
 
   ngOnInit(): void {
-    this.scrobbleGetterService.initializeFetching('RashCream', this.storage);
+    this.scrobbleGetterService.initializeFetching('fionahhhhh', this.storage);
   }
   
   private log(message: string) {

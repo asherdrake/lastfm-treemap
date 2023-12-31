@@ -19,16 +19,57 @@ export class StatsConverterService {
 
   convertScrobbles(scrobbles: Scrobble[], newChartStats: ChartStats): ChartStats {
     for (const scrobble of scrobbles) {
-      this.handleArtist(scrobble, newChartStats);
+      /*this.handleArtist(scrobble, newChartStats);
       this.handleAlbum(scrobble, newChartStats);
-      this.handleTrack(scrobble, newChartStats)
+      this.handleTrack(scrobble, newChartStats)*/
       //Object.values(newChartStats.artists).sort();
+      this.handleScrobble(scrobble, newChartStats);
     }
 
     return newChartStats;
   }
 
-  handleArtist(scrobble: Scrobble, newChartStats: ChartStats): void {
+  handleScrobble(scrobble: Scrobble, newChartStats: ChartStats): void {
+    const artistStat = newChartStats.artists[scrobble.artistName];
+    if (!artistStat) {
+      newChartStats.artists[scrobble.artistName] = {
+        tracks: [],
+        albums: {},
+        scrobbles: [scrobble.date.getTime()],
+        name: scrobble.artistName,
+        //mbid: scrobble.artistMBID
+      }
+    } else {
+      const albumStat = artistStat.albums[scrobble.album];
+      if (!albumStat) {
+        newChartStats.artists[scrobble.artistName].albums[scrobble.album] = {
+          artist: scrobble.artistName,
+          tracks: {},
+          scrobbles: [scrobble.date.getTime()],
+          name: scrobble.album
+        }
+      } else {
+        const trackStat = albumStat.tracks[scrobble.track];
+        if (!trackStat) {
+          newChartStats.artists[scrobble.artistName].albums[scrobble.album].tracks[scrobble.track] = {
+            artist: scrobble.artistName,
+            album: scrobble.album,
+            scrobbles: [scrobble.date.getTime()],
+            name: scrobble.track
+          }
+        } else {
+          artistStat.scrobbles.push(scrobble.date.getTime())
+          if (artistStat.tracks.indexOf(scrobble.track) < 0) {
+            artistStat.tracks.push(scrobble.track);
+          }
+          albumStat.scrobbles.push(scrobble.date.getTime());
+          trackStat.scrobbles.push(scrobble.date.getTime());
+        }
+      }
+    }
+  }
+
+  /*handleArtist(scrobble: Scrobble, newChartStats: ChartStats): void {
     const artistStat = newChartStats.artists[scrobble.artist]
     if (!artistStat) {
       newChartStats.artists[scrobble.artist] = {
@@ -68,13 +109,13 @@ export class StatsConverterService {
     } else {
       trackStat.scrobbles.push(scrobble.date.getTime())
     }
-  }
+  }*/
 
   private emptyStats(): ChartStats {
     return {
       artists: {},
-      albums: {},
-      tracks: {}
+      //albums: {},
+      //tracks: {}
     }
   }
 }
