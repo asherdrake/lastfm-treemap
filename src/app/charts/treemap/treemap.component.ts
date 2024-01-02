@@ -1,6 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import * as d3 from 'd3';
 import { RGBColor } from 'd3';
+import { ChartStats } from 'src/app/items';
+import { StatsConverterService } from 'src/app/stats-converter.service';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
+import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
 
 interface TreeNode {
   name: string;
@@ -15,128 +20,169 @@ interface TreeNode {
   styleUrls: ['./treemap.component.css']
 })
 export class TreemapComponent implements OnInit{
-  /*private data = {"children": [
-    {"name":"boss1",
-    "children": [
-      {"name":"mister_a","group":"A","value":28,"colname":"level3"},
-      {"name":"mister_b","group":"A","value":19,"colname":"level3"},
-      {"name":"mister_c","group":"C","value":18,"colname":"level3"},
-      {"name":"mister_d","group":"C","value":19,"colname":"level3"}
-    ], "colname":"level2"},
-    {"name":"boss2",
-    "children": [
-      {"name":"mister_e","group":"C","value":14,"colname":"level3"},
-      {"name":"mister_f","group":"A","value":11,"colname":"level3"},
-      {"name":"mister_g","group":"B","value":15,"colname":"level3"},
-      {"name":"mister_h","group":"B","value":16,"colname":"level3"}
-    ],"colname":"level2"},
-    {"name":"boss3",
-    "children": [
-      {"name":"mister_i","group":"B","value":10,"colname":"level3"},
-      {"name":"mister_j","group":"A","value":13,"colname":"level3"},
-      {"name":"mister_k","group":"A","value":13,"colname":"level3"},
-      {"name":"mister_l","group":"D","value":25,"colname":"level3"},
-      {"name":"mister_m","group":"D","value":16,"colname":"level3"},
-      {"name":"mister_n","group":"D","value":28,"colname":"level3"}
-    ],"colname":"level2"}],"name":"CEO"}
-  private margin = {top: 10, right: 10, bottom: 10, left: 10};
-  private width = 445 - this.margin.left - this.margin.right;
-  private height = 445 - this.margin.top - this.margin.bottom;
+  treemapData: TreeNode = {
+    name: ''
+  };
+  scrobblesFetched: number = 0;
+  pageNumber: number = 0;
+  totalPages: number = 0;
+  currentDepth: number = 0;
+  constructor(private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
+    this.statsConverterService.chartStats.pipe(takeUntilDestroyed()).subscribe(stats => {
+        const treemapData = {
+            name: "ChartStats",
+            children: Object.keys(stats.artists).map(artistKey => {
+                const artist = stats.artists[artistKey];
+                return {
+                    name: artist.name,
+                    children: Object.keys(artist.albums).map(albumKey => {
+                        const album = artist.albums[albumKey];
+                        return {
+                            name: album.name,
+                            children: Object.keys(album.tracks).map(trackKey => {
+                                const track = album.tracks[trackKey];
+                                return {
+                                    name: track.name,
+                                    value: track.scrobbles.length // or another metric for value
+                                };
+                            })
+                        };
+                    })
+                };
+            })
+        };
+    
+        this.treemapData = treemapData;
+    });
 
-  private createSvg(): void {
-    this.svg = d3.select("figure#treemap")
-    .append("svg")
-      .attr("width", this.width + this.margin.left + this.margin.right)
-      .attr("height", this.height + this.margin.top + this.margin.bottom)
-    .append("g")
-      .attr("transform", "translate(" + this.margin + "," + this.margin + ")");
-  }
-
-  private readData() {
-    d3.json("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_dendrogram_full.json", function(data) {
-      const root = d3.hierarchy(data).sum(d => d.value)
-
-      d3.treemap()
-        .size([this.width, this.height])
+    this.storage.loadingStatus.pipe(takeUntilDestroyed()).subscribe(status => {
+      this.scrobblesFetched = status[0].length;
+      this.pageNumber = status[1];
+      this.totalPages = status[2];
+      if ((status[2] - status[1]) == status[2]) {
+        this.drawTreemap();
+      }
     })
   }
 
-  private drawBars(data: any[]): void {
-    // Create the X-axis band scale
-    const x = d3.scaleBand()
-    .range([0, this.width])
-    .domain(data.map(d => d.Framework))
-    .padding(0.2);
-  
-    // Draw the X-axis on the DOM
-    this.svg.append("g")
-    .attr("transform", "translate(0," + this.height + ")")
-    .call(d3.axisBottom(x))
-    .selectAll("text")
-    .attr("transform", "translate(-10,0)rotate(-45)")
-    .style("text-anchor", "end");
-  
-    // Create the Y-axis band scale
-    const y = d3.scaleLinear()
-    .domain([0, 200000])
-    .range([this.height, 0]);
-  
-    // Draw the Y-axis on the DOM
-    this.svg.append("g")
-    .call(d3.axisLeft(y));
-  
-    // Create and fill the bars
-    this.svg.selectAll("bars")
-    .data(data)
-    .enter()
-    .append("rect")
-    .attr("x", (d: any) => x(d.Framework))
-    .attr("y", (d: any) => y(d.Stars))
-    .attr("width", x.bandwidth())
-    .attr("height", (d: any) => this.height - y(d.Stars))
-    .attr("fill", "#d04a35");
-  }
-
   ngOnInit(): void {
-    this.createSvg();
-    this.drawBars(this.data);
-  }*/
-  constructor() { }
-
-  ngOnInit(): void {
-    this.drawTreemap();
+    this.scrobbleGetterService.initializeFetching('RashCream', this.storage);
   }
-
+  
   drawTreemap(): void {
-    // Example data
-    const data: TreeNode = {
-      name: "root",
-      children: [
-        { name: "A", value: 500 },
-        { name: "B", value: 300 },
-        { name: "C", value: 200 },
-      ]
-    };
+    const data: TreeNode = this.treemapData
 
-    const root = d3.hierarchy(data).sum((d: any) => d.value ? d.value : 0);
-    d3.treemap<TreeNode>().size([300, 300])(root);
+    var treemapLayout = d3.treemap<TreeNode>()
+      .size([5000, 5000]);
 
-    const svg = d3.select('app-treemap')
-                  .append('svg')
-                  .attr('width', 300)
-                  .attr('height', 300);
+    var rootNode = d3.hierarchy(data);
 
-    const leaves = root.leaves() as d3.HierarchyRectangularNode<TreeNode>[];
+    rootNode.sum((d: any) => {
+      return d.value;
+    });
 
-    svg.selectAll('rect')
-       .data(leaves)
-       .enter()
-       .append('rect')
-       .attr('x', d => d.x0)
-       .attr('y', d => d.y0)
-       .attr('width', d => d.x1 - d.x0)
-       .attr('height', d => d.y1 - d.y0)
-       .style('stroke', 'black')
-       .style('fill', 'lightblue');
+    treemapLayout(rootNode);
+
+    var nodes = d3.select('svg g')
+      .selectAll('g')
+      .data(rootNode.descendants() as d3.HierarchyRectangularNode<TreeNode>[])
+      .join('g')
+      .attr('transform', d => {
+        return 'translate(' + [d.x0, d.y0] + ')'
+      })
+
+    nodes
+      .append('rect')
+      .attr('width', d => { return d.x1 - d.x0; })
+      .attr('height', d => { return d.y1 - d.y0; })
+      .style('stroke', 'black')
+      .style('fill', 'lightblue')
+
+    nodes
+      .append('text')
+      .attr('dx', 4)
+      .attr('dy', 14)
+      .text(d => { return d.data.name; })
   }
+
+  /*drawTreemap(): void {
+    const width = 100;
+    const height = 100;
+    const data: TreeNode = this.treemapData;
+    const x = d3.scaleLinear().domain([0, width]).range([0, width]);
+    const y = d3.scaleLinear().domain([0, height]).range([0, height]);
+
+    var nodes = d3.hierarchy(data).sum((d: any) => {
+      return d.value;
+    })
+    var treemapLayout = d3.treemap<TreeNode>()
+      .size([1000, 1000]);
+
+    treemapLayout(nodes);
+
+    var chart = d3.select("#chart")
+    var cells = chart
+      .selectAll(".node")
+      .data(nodes.descendants() as d3.HierarchyRectangularNode<TreeNode>[])
+      .enter()
+      .append("div")
+      .attr("class", d => { return "node level-" + d.depth; })
+      .attr("title", d => { return d.data.name ? d.data.name : "null"; });
+
+
+      const zoom = (d: any) => { // http://jsfiddle.net/ramnathv/amszcymq/
+      
+        console.log('clicked: ' + d.data.name + ', depth: ' + d.depth);
+        
+        this.currentDepth = d.depth;
+        parent.datum(d.parent || nodes);
+        
+        x.domain([d.x0, d.x1]);
+        y.domain([d.y0, d.y1]);
+        
+        var t = d3.transition()
+            .duration(800)
+            .ease(d3.easeCubicOut);
+        
+        cells
+          .transition(t)
+          .style("left", function(d) { return x(d.x0) + "%"; })
+          .style("top", function(d) { return y(d.y0) + "%"; })
+          .style("width", function(d) { return x(d.x1) - x(d.x0) + "%"; })
+          .style("height", function(d) { return y(d.y1) - y(d.y0) + "%"; });
+        
+        cells // hide this depth and above
+          .filter(d => { return d.ancestors(); })
+          .classed("hide", function(d) { return d.children ? true : false });
+        
+        cells // show this depth + 1 and below
+          .filter(function(d) { return d.depth > currentDepth })
+          .classed("hide", false);
+        
+      }
+
+    cells
+      .style("left", function(d) { return x(d.x0) + "%"; })
+      .style("top", function(d) { return y(d.y0) + "%"; })
+      .style("width", function(d) { return x(d.x1) - x(d.x0) + "%"; })
+      .style("height", function(d) { return y(d.y1) - y(d.y0) + "%"; })
+      //.style("background-image", function(d) { return d.value ? imgUrl + d.value : ""; })
+      //.style("background-image", function(d) { return d.value ? "url(http://placekitten.com/g/300/300)" : "none"; }) 
+      /*.style("background-color", d => { 
+        while (d.depth > 2) {
+          d = d.parent; 
+        }
+          return color(d.data.name);
+      })
+      .on("click", zoom)
+      .append("p")
+      .attr("class", "label")
+      .text(function(d) { return d.data.name ? d.data.name : "---"; });
+      //.style("font-size", "")
+      //.style("opacity", function(d) { return isOverflowed( d.parent ) ? 1 : 0; });
+
+    var parent = d3.select(".up")
+      .datum(nodes)
+      .on("click", zoom);
+  }*/
 }

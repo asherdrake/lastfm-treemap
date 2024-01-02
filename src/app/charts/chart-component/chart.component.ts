@@ -9,6 +9,7 @@ import { AbstractChart } from '../abstract-chart';
 import { TracksAndScrobblesScatterChart } from '../artist-scrobble-scatterchart';
 import { TreemapChart } from '../treemap-chart';
 import { StatsConverterService } from 'src/app/stats-converter.service';
+import { TreemapComponent } from '../treemap/treemap.component';
 
 @Component({
   selector: 'app-chart',
@@ -22,12 +23,19 @@ export class ChartComponent implements OnInit{
   pageNumber: number = 0;
   totalPages: number = 0;
   charts: AbstractChart[];
+  //treemap: TreemapComponent;
   constructor (private statsConverterService: StatsConverterService, private scrobbleGetterService : ScrobbleGetterService, private storage: ScrobbleStorageService, private messages: MessageService) {
     this.charts = [
       new TreemapChart(),
       new TracksAndScrobblesScatterChart()
     ]
-    this.statsConverterService.chartStats.pipe(takeUntilDestroyed()).subscribe(stats => this.updateCharts(stats));
+
+    //this.treemap = TreemapComponent();
+
+    this.statsConverterService.chartStats.pipe(takeUntilDestroyed()).subscribe(stats => {
+      this.updateCharts(stats);
+      //this.updateTreemap(stats);
+    });
 
     this.storage.loadingStatus.pipe(takeUntilDestroyed()).subscribe(status => {
       this.scrobblesFetched = status[0].length;
@@ -49,7 +57,7 @@ export class ChartComponent implements OnInit{
   }
 
   ngOnInit(): void {
-    this.scrobbleGetterService.initializeFetching('fionahhhhh', this.storage);
+    this.scrobbleGetterService.initializeFetching('RashCream', this.storage);
   }
   
   private log(message: string) {

@@ -21,13 +21,7 @@ export interface LoadingStats {
 export interface ChartStats {
     artists: {
         [key: string]: Artist
-    }/*,
-    albums: {
-        [key: string]: Album
-    },
-    tracks: {
-        [key: string]: Track
-    }*/
+    }
 }
 
 export interface Artist {
@@ -37,7 +31,6 @@ export interface Artist {
     }
     scrobbles: number[], //holds the date values of each scrobble
     name: string
-    //mbid: string
 }
 
 export interface Album {

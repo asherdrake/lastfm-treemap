@@ -19,10 +19,6 @@ export class StatsConverterService {
 
   convertScrobbles(scrobbles: Scrobble[], newChartStats: ChartStats): ChartStats {
     for (const scrobble of scrobbles) {
-      /*this.handleArtist(scrobble, newChartStats);
-      this.handleAlbum(scrobble, newChartStats);
-      this.handleTrack(scrobble, newChartStats)*/
-      //Object.values(newChartStats.artists).sort();
       this.handleScrobble(scrobble, newChartStats);
     }
 
@@ -37,7 +33,6 @@ export class StatsConverterService {
         albums: {},
         scrobbles: [scrobble.date.getTime()],
         name: scrobble.artistName,
-        //mbid: scrobble.artistMBID
       }
     } else {
       const albumStat = artistStat.albums[scrobble.album];
@@ -48,6 +43,10 @@ export class StatsConverterService {
           scrobbles: [scrobble.date.getTime()],
           name: scrobble.album
         }
+        artistStat.scrobbles.push(scrobble.date.getTime())
+        if (artistStat.tracks.indexOf(scrobble.track) < 0) {
+          artistStat.tracks.push(scrobble.track);
+        }
       } else {
         const trackStat = albumStat.tracks[scrobble.track];
         if (!trackStat) {
@@ -57,6 +56,11 @@ export class StatsConverterService {
             scrobbles: [scrobble.date.getTime()],
             name: scrobble.track
           }
+          artistStat.scrobbles.push(scrobble.date.getTime())
+          if (artistStat.tracks.indexOf(scrobble.track) < 0) {
+            artistStat.tracks.push(scrobble.track);
+          }
+          albumStat.scrobbles.push(scrobble.date.getTime());
         } else {
           artistStat.scrobbles.push(scrobble.date.getTime())
           if (artistStat.tracks.indexOf(scrobble.track) < 0) {
@@ -69,53 +73,9 @@ export class StatsConverterService {
     }
   }
 
-  /*handleArtist(scrobble: Scrobble, newChartStats: ChartStats): void {
-    const artistStat = newChartStats.artists[scrobble.artist]
-    if (!artistStat) {
-      newChartStats.artists[scrobble.artist] = {
-        tracks: [scrobble.track],
-        scrobbles: [scrobble.date.getTime()],
-        name: scrobble.artist
-      }
-    } else {
-      artistStat.scrobbles.push(scrobble.date.getTime());
-      if (artistStat.tracks.indexOf(scrobble.track) < 0) {
-        artistStat.tracks.push(scrobble.track);
-      }
-    }
-  }
-
-  handleAlbum(scrobble: Scrobble, newChartStats: ChartStats): void {
-    const albumStat = newChartStats.albums[scrobble.album];
-    if (!albumStat) {
-      newChartStats.albums[scrobble.album] = {
-        artist: scrobble.artist,
-        scrobbles: [scrobble.date.getTime()],
-        name: scrobble.album
-      }
-    } else {
-      albumStat.scrobbles.push(scrobble.date.getTime());
-    }
-  }
-
-  handleTrack(scrobble: Scrobble, newChartStats: ChartStats): void {
-    const trackStat = newChartStats.tracks[scrobble.track];
-    if (!trackStat) {
-      newChartStats.tracks[scrobble.track] = {
-        artist: scrobble.artist,
-        scrobbles: [scrobble.date.getTime()],
-        name: scrobble.track
-      }
-    } else {
-      trackStat.scrobbles.push(scrobble.date.getTime())
-    }
-  }*/
-
   private emptyStats(): ChartStats {
     return {
       artists: {},
-      //albums: {},
-      //tracks: {}
     }
   }
 }
