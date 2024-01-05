@@ -8,6 +8,7 @@ import { MessagesComponent } from './messages/messages.component';
 import { StoreModule } from '@ngrx/store';
 import { ChartLoaderDirectiveDirective } from './chart-loader-directive.directive';
 import { TreemapComponent } from './charts/treemap/treemap.component';
+import { LoadingComponent } from './loading/loading.component';
 
 @NgModule({
   declarations: [
@@ -16,6 +17,7 @@ import { TreemapComponent } from './charts/treemap/treemap.component';
     MessagesComponent,
     ChartLoaderDirectiveDirective,
     TreemapComponent,
+    LoadingComponent,
   ],
   imports: [
     BrowserModule,
