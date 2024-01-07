@@ -32,6 +32,7 @@ export class TreemapComponent implements OnInit {
   y: d3.ScaleLinear<number, number, never> = {} as d3.ScaleLinear<number, number, never>;
   svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any> = {} as d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
   group: d3.Selection<SVGGElement, unknown, HTMLElement, any> = {} as d3.Selection<SVGGElement, unknown, HTMLElement, any>;
+  currentRoot: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   constructor(private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
     this.statsConverterService.chartStats.pipe(takeUntilDestroyed()).subscribe(stats => {
       const treemapData = {
@@ -72,7 +73,12 @@ export class TreemapComponent implements OnInit {
 
     this.tile = this.tile.bind(this);
     this.renderNode = this.renderNode.bind(this);
-    this.position = this.position.bind(this);
+    this.positionSelection = this.positionSelection.bind(this);
+    this.positionTransition = this.positionTransition.bind(this);
+    this.zoomIn = this.zoomIn.bind(this);
+    this.zoomOut = this.zoomOut.bind(this);
+    this.updateTreemap = this.updateTreemap.bind(this);
+    this.updateScales = this.updateScales.bind(this);
   };
 
   ngOnInit(): void {
@@ -92,7 +98,7 @@ export class TreemapComponent implements OnInit {
 
     //creating svg container
     this.svg = d3.select("#treemap-container").append("svg")
-      .attr("viewBox", [0.5, -30.5, this.width, this.height + 30])
+      //.attr("viewBox", [0.5, -30.5, this.width, this.height + 30])
       .attr("width", this.width)
       .attr("height", this.height + 30)
       .attr("style", "max-width: 100%; height: auto;")
@@ -100,7 +106,10 @@ export class TreemapComponent implements OnInit {
 
     //display the root
     this.group = this.svg.append("g")
-      .call(this.renderNode, this.root);
+    //   .call(this.renderNode, this.root);
+
+    this.currentRoot = this.root;
+    this.updateTreemap();
   }
 
   tile(node: d3.HierarchyRectangularNode<TreeNode>, x0: number, y0: number, x1: number, y1: number) {
@@ -121,7 +130,7 @@ export class TreemapComponent implements OnInit {
 
       node.filter((d: any) => d === root ? d.parent : d.children)
         .attr("cursor", "pointer")
-        .on("click", (event, d) => d === root ? this.zoomOut(root) : this.zoomIn(d));
+        .on("click", (event, d) => d === root ? this.zoomOut() : this.zoomIn(d));
 
       node.append("rect")
         .attr("fill", d => d === root ? "#fff" : d.children ? "#ccc" : "#ddd")
@@ -138,10 +147,10 @@ export class TreemapComponent implements OnInit {
         .attr("font-weight", (d, i, nodes) => i === nodes.length - 1 ? "normal" : null)
         .text(d => d);
       
-    group.call(this.position, root);
+    group.call(this.positionSelection, root);
   }
 
-  position(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
+  positionSelection(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
     group.selectAll("g")
         .attr("transform", (d: any) => d === root ? `translate(0,-30)` : `translate(${this.x(d.x0)},${this.y(d.y0)})`)
       .select("rect")
@@ -149,20 +158,66 @@ export class TreemapComponent implements OnInit {
         .attr("height", (d: any) => d === root ? 30 : this.y(d.y1) - this.y(d.y0));
   }
 
-  zoomIn(d: any) {
+  positionTransition(group: d3.Transition<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
+    group.selectAll("g")
+      .transition()
+      .duration(750)
+      .attr("transform", (d: any) => `translate(${this.x(d.x0)},${this.y(d.y0)})`);
+  
+    group.selectAll("rect")
+      .transition()
+      .duration(750)
+      .attr("width", (d: any) => this.x(d.x1) - this.x(d.x0))
+      .attr("height", (d: any) => this.y(d.y1) - this.y(d.y0));
+  }
+
+  zoomIn(node: d3.HierarchyRectangularNode<TreeNode>) {
+    this.currentRoot = node;
+    this.updateScales(node);
+    this.updateTreemap();
+  }
+
+  zoomOut() {
+    console.log("Zoom Out button clicked")
+    if (this.currentRoot.parent) {
+      this.currentRoot = this.currentRoot.parent;
+      this.updateScales(this.currentRoot);
+      this.updateTreemap();
+    }
+  }
+
+  updateScales(node: d3.HierarchyRectangularNode<TreeNode>) {
+    // Set the x and y scales to match the dimensions of the new root node
+    this.x.domain([node.x0, node.x1]);
+    this.y.domain([node.y0, node.y1]);
+  }
+
+  updateTreemap() {
+    this.group.remove();
+    this.group = this.svg.append("g");
+    this.group.call(this.renderNode, this.currentRoot);
+  }
+
+  /*zoomIn(d: any) {
     const group0 = this.group.attr("pointer-events", "none");
     const group1 = this.group = this.svg.append("g").call(this.renderNode, d);
 
     this.x.domain([d.x0, d.x1]);
     this.y.domain([d.y0, d.y1]);
 
-    /*this.svg.transition()
-        .duration(750)
-        //.call(t => group0.transition(t).remove()
-          .call(this.position, d.parent)
-        .call(t => group1.transition(t)
-          .attrTween("opacity", () => d3.interpolate(0, 1))
-          .call(this.position, d));*/
+    this.svg.transition()
+      .duration(750)
+      .call(() => group0.transition().remove()
+        .call(this.positionTransition, d.parent))
+      .call(() => {
+        const transition = group1.transition();
+        transition
+          .attrTween("opacity", () => {
+            const interpolator = d3.interpolate(0, 1);
+            return (t: number) => interpolator(t).toString();
+          })
+          .call(this.positionTransition, d);
+      });
   }
 
   zoomOut(d: any) {
@@ -173,195 +228,5 @@ export class TreemapComponent implements OnInit {
     this.y.domain([d.parent.y0, d.parent.y1]);
 
     return this.svg.node();
-  }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-  /*drawTreemap(): void {
-    const data: TreeNode = this.treemapData
-
-    var rootNode = d3.hierarchy(data).sum((d: any) => d.value);
-
-    var treemapLayout = d3.treemap<TreeNode>()
-      .size([this.width, this.height])
-      .tile(d3.treemapBinary)(rootNode);
-
-    this.renderNode(rootNode, 1);
-  }*/
-
-  /*renderNode(root: TreeNode, depth: number) {
-    //clear existing nodes
-    d3.select('svg g').selectAll('*').remove();
-
-    //creating treemap layout with new data
-    const rootNode = d3.hierarchy(root)
-      .sum((d: any) => d.value);
-      //.sort((a, b) => b.height - a.height || b.value! - a.value!);
-
-    const treemap = d3.treemap<TreeNode>()
-      .size([this.width, this.height])
-      .padding(1)
-      .tile(d3.treemapBinary)(rootNode);
-
-    //binding data to the nodes
-    const nodes = d3.select('svg g')
-      .selectAll('g')
-      .data(rootNode.descendants().filter((d:any) => d.depth === depth) as d3.HierarchyRectangularNode<TreeNode>[])
-      .enter()
-      .append('g')
-      .attr('transform', d => 'translate(' + [d.x0, d.y0] + ')');
-
-    //drawing the rectangles
-    nodes.append('rect')
-      .attr('id', d => "rect-" + d.data.name)
-      .attr('width', d => d.x1 - d.x0)
-      .attr('height', d => d.y1 - d.y0)
-      .style('stroke', 'black')
-      .attr('fill', 'lightblue')
-
-    //adding text labels
-    nodes.append('text')
-      .attr('clip-path', d => "url(#clip-" + d.data.name + ")")
-      .selectAll('tspan')
-      .data(d => d.data.name.split(/(?=[A-Z][^A-Z])/g))
-      .enter()
-      .append('tspan')
-      .attr('x', 4)
-      .attr('y', (d, i, nodes) => 13 + i * 10)
-      .text(d => d);
-
-    //adds event listener for zooming in on click
-    nodes.on('click', d => this.zoomin(d));  
-
-    /*var nodes = d3.select('svg g')
-      .selectAll('g')
-      .data(root.descendants().filter((d: any) => d.depth === depth ) as d3.HierarchyRectangularNode<TreeNode>[])
-      .join('g')
-      .attr('transform', d => {
-        return 'translate(' + [d.x0, d.y0] + ')'
-      })
-      .on("click", (event, d) => this.zoomin(d))
-
-    nodes
-      .append('rect')
-      .attr('width', d => { return d.x1 - d.x0; })
-      .attr('height', d => { return d.y1 - d.y0; })
-      .style('stroke', 'black')
-      .style('fill', 'lightblue')
-
-    nodes
-      .append('text')
-      .attr('dx', 4)
-      .attr('dy', 14)
-      .text(d => { return d.data.name; })
-  }
-
-  /*tile(node: d3.HierarchyRectangularNode<TreeNode>, x0: number, y0: number, x1: number, y1: number) {
-    d3.treemapBinary(node, 0, 0, this.width, this.height);
-    if (node.children) {
-      for (const child of node.children) {
-        child.x0 = x0 + child.x0 / this.width * (x1 - x0);
-        child.x1 = x0 + child.x1 / this.width * (x1 - x0);
-        child.y0 = y0 + child.y0 / this.height * (y1 - y0);
-        child.y1 = y0 + child.y1 / this.height * (y1 - y0);
-      }
-    }
-  }
-
-  zoomin(d: d3.HierarchyRectangularNode<TreeNode>) {
-    // Define the transition
-    const transition = d3.transition()
-      .duration(750)
-      .tween("scale", () => {
-        var xScale = d3.scaleLinear()
-          .domain([d.x0, d.x1])
-          .range([0, this.width]);
-  
-        var yScale = d3.scaleLinear()
-          .domain([d.y0, d.y1])
-          .range([0, this.height]);
-  
-        return () => {
-          d3.select('svg g')
-            .selectAll('g')
-            .transition(transition)
-            .attr('transform', child => {
-              return 'translate(' + xScale(child.x0) + ',' + yScale(child.y0) + ')';
-            })
-            .select('rect')
-            .attr('width', child => xScale(child.x1) - xScale(child.x0))
-            .attr('height', child => yScale(child.y1) - yScale(child.y0));
-        };
-      });
-  
-    // Render children of the clicked node
-    this.renderNode(d, d.depth + 1);
   }*/
 }
