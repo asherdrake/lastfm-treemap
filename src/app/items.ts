@@ -8,7 +8,6 @@ export interface Scrobble {
     track: string;
     album: string;
     artistName: string;
-    //artistMBID: string;
     date: Date;
 }
 
@@ -40,6 +39,7 @@ export interface Album {
     },
     scrobbles: number[],
     name: string
+    image_url?: string
 }
 
 export interface Track {

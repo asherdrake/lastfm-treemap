@@ -22,6 +22,5 @@ export class LoadingComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.scrobbleGetterService.initializeFetching('RashCream', this.storage);
   }
 }

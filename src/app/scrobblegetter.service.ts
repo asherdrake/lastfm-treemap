@@ -34,12 +34,36 @@ interface Track {
   }
 }
 
+interface TopAlbums {
+  album: Album[]
+  '@attr': {
+    page: string;
+    perPage: string;
+    totalPages: string;
+  }
+}
+
+interface Album {
+  name: string
+  image: Image[]
+}
+
+interface Image {
+  size: string;
+  '#text': string;
+}
+
 interface LoadingState {
   storage: ScrobbleStorageService;
   username: string;
-  totalPages?: number;
-  pageSize?: number;
-  page?: number
+
+  totalTrackPages?: number;
+  trackPageSize?: number;
+  trackPage?: number;
+
+  totalAlbumPages?: number;
+  albumPageSize?: number;
+  albumPage?: number;
 }
 
 @Injectable({
@@ -55,31 +79,31 @@ export class ScrobbleGetterService {
     this.getUser(username).subscribe({
       next: user => {
         storage.updateUser(user);
-        this.calcPages({storage, username: user.name, pageSize: 200})
+        this.calcTrackPages({storage, username: user.name, trackPageSize: 200})
       },
       error: (e) => storage.finish(e.status === 404 ? 'USERNOTFOUND' : 'LOADFAILED')
     });
   }
 
-  private calcPages(loadingState: LoadingState) {
-    loadingState.page = 1;
+  private calcTrackPages(loadingState: LoadingState) {
+    loadingState.trackPage = 1;
     this.getScrobbles(loadingState).subscribe({
       next: recenttracks => {
         const pageTotal = parseInt(recenttracks['@attr'].totalPages);
 
         if (pageTotal > 0) {
-          loadingState.storage.updateTotal({
-            totalPages: pageTotal,
-            currPage: pageTotal
+          loadingState.storage.updateTrackTotal({
+            totalTrackPages: pageTotal,
+            currTrackPage: pageTotal
           });
 
-          this.iteratePages({...loadingState, page: pageTotal, totalPages: pageTotal});
+          this.iterateTrackPages({...loadingState, trackPage: pageTotal, totalTrackPages: pageTotal});
         }
       }
     })
   }
 
-  private iteratePages(loadingState: LoadingState): void {
+  private iterateTrackPages(loadingState: LoadingState): void {
     loadingState.storage.loadingState.pipe(
       takeWhile(state => state === 'GETTINGSCROBBLES'),
       take(1),
@@ -88,11 +112,14 @@ export class ScrobbleGetterService {
       next: recenttracks => {
         this.storeAsScrobbles(loadingState, recenttracks.track);
 
-        if (loadingState.page! > 0) {
-          const numPagesHandled = loadingState.totalPages! - loadingState.page!;
-          this.iteratePages(loadingState);
+        if (loadingState.trackPage! > 0) {
+          const numPagesHandled = loadingState.totalTrackPages! - loadingState.trackPage!;
+          console.log("loadingState.trackPage: " + loadingState.trackPage)
+          this.iterateTrackPages(loadingState);
         } else {
-          loadingState.storage.finish('FINISHED');
+          loadingState.storage.finish('FINISHEDTRACKS');
+          console.log("iterateTrackPages finished, moving on to albums")
+          this.calcAlbumPages(loadingState);
         }
       }
     })
@@ -103,12 +130,62 @@ export class ScrobbleGetterService {
       track: t.name,
       album: t.album['#text'],
       artistName: t.artist['#text'],
-      //artistMBID: t.artist['@attr']?.mbid,
       date: new Date(t.date.uts * 1000)
     })).reverse();
     
-    loadingState.page!--;
-    loadingState.storage.addPage(scrobbles);
+    loadingState.trackPage!--;
+    loadingState.storage.addTrackPage(scrobbles);
+  }
+
+  private calcAlbumPages(loadingState: LoadingState) {
+    loadingState.albumPage = 1;
+    this.getAlbums(loadingState).subscribe({
+      next: topalbums => {
+        const pageTotal = parseInt(topalbums['@attr'].totalPages);
+
+        if (pageTotal > 0) {
+          loadingState.storage.updateAlbumTotal({
+            totalAlbumPages: pageTotal,
+            currAlbumPage: pageTotal
+          });
+
+          this.iterateAlbumPages({...loadingState, albumPage: pageTotal, totalAlbumPages: pageTotal});
+        }
+      }
+    })
+  }
+  
+  private iterateAlbumPages(loadingState: LoadingState): void {
+    loadingState.storage.loadingState.pipe(
+      takeWhile(state => state === 'GETTINGALBUMCOVERS'),
+      take(1),
+      switchMap(() => this.getAlbums(loadingState))
+    ).subscribe({
+      next: topalbums => {
+        this.storeAlbumArt(loadingState, topalbums.album);
+
+        if (loadingState.albumPage! > 0) {
+          //const numPagesHandled = loadingState.totalTrackPages! - loadingState.trackPage!;
+          this.iterateAlbumPages(loadingState);
+        } else {
+          loadingState.storage.finish('FINISHEDALL');
+        }
+      }
+    })
+  }
+
+  private storeAlbumArt(loadingState: LoadingState, album: Album[]): void {
+    const albums: { [key: string]: string } = album.reduce((map, album) => {
+      map[album.name] = album.image[3]['#text'];
+      return map;
+    }, {} as { [key: string]: string });
+    
+    // for (const key in albums) {
+    //   console.log(key + ": " + albums[key]);
+    // }
+
+    loadingState.albumPage!--;
+    loadingState.storage.addAlbumPage(albums);
   }
 
   private getScrobbles(loadingState: LoadingState): Observable<RecentTracks> {
@@ -116,13 +193,27 @@ export class ScrobbleGetterService {
     const params = new HttpParams()
       .append('method', 'user.getrecenttracks')
       .append('user', loadingState.username)
-      .append('page', String(loadingState.page))
+      .append('page', String(loadingState.trackPage))
       .append('format', 'json')
       .append('limit', 200)
       .append('api_key', this.API_KEY);
 
     return this.http.get<{recenttracks: RecentTracks}>(this.URL, {params}).pipe(
       map(response => response.recenttracks)
+    );
+  }
+
+  private getAlbums(loadingState: LoadingState): Observable<TopAlbums> {
+    const params = new HttpParams()
+      .append('method', 'user.gettopalbums')
+      .append('user', loadingState.username)
+      .append('page', String(loadingState.albumPage))
+      .append('format', 'json')
+      .append('limit', 200)
+      .append('api_key', this.API_KEY);
+
+    return this.http.get<{topalbums: TopAlbums}>(this.URL, {params}).pipe(
+      map(response => response.topalbums)
     );
   }
 
