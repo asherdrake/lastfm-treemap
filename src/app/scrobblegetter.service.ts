@@ -1,10 +1,11 @@
 import { Injectable } from '@angular/core';
 import { User, Scrobble, LoadingStats } from './items';
-import { Observable, of} from 'rxjs';
+import { Observable, of, throwError} from 'rxjs';
 import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
 import { MessageService } from './message.service';
 import { ScrobbleStorageService } from './scrobble-storage.service';
+//import * as DOMParser from 'dom-parser';
 
 interface RecentTracks {
   track: Track[]
@@ -29,23 +30,10 @@ interface Track {
   date: {
     uts: number;
   };
+  image: Image[];
   '@attr'?: {
     nowplaying?: 'true' | 'false'
   }
-}
-
-interface TopAlbums {
-  album: Album[]
-  '@attr': {
-    page: string;
-    perPage: string;
-    totalPages: string;
-  }
-}
-
-interface Album {
-  name: string
-  image: Image[]
 }
 
 interface Image {
@@ -60,10 +48,6 @@ interface LoadingState {
   totalTrackPages?: number;
   trackPageSize?: number;
   trackPage?: number;
-
-  totalAlbumPages?: number;
-  albumPageSize?: number;
-  albumPage?: number;
 }
 
 @Injectable({
@@ -118,8 +102,7 @@ export class ScrobbleGetterService {
           this.iterateTrackPages(loadingState);
         } else {
           loadingState.storage.finish('FINISHEDTRACKS');
-          console.log("iterateTrackPages finished, moving on to albums")
-          this.calcAlbumPages(loadingState);
+          console.log("iterateTrackPages finished, getting artist images...");
         }
       }
     })
@@ -130,62 +113,12 @@ export class ScrobbleGetterService {
       track: t.name,
       album: t.album['#text'],
       artistName: t.artist['#text'],
+      artistImage: t.image[3]['#text'],
       date: new Date(t.date.uts * 1000)
     })).reverse();
     
     loadingState.trackPage!--;
     loadingState.storage.addTrackPage(scrobbles);
-  }
-
-  private calcAlbumPages(loadingState: LoadingState) {
-    loadingState.albumPage = 1;
-    this.getAlbums(loadingState).subscribe({
-      next: topalbums => {
-        const pageTotal = parseInt(topalbums['@attr'].totalPages);
-
-        if (pageTotal > 0) {
-          loadingState.storage.updateAlbumTotal({
-            totalAlbumPages: pageTotal,
-            currAlbumPage: pageTotal
-          });
-
-          this.iterateAlbumPages({...loadingState, albumPage: pageTotal, totalAlbumPages: pageTotal});
-        }
-      }
-    })
-  }
-  
-  private iterateAlbumPages(loadingState: LoadingState): void {
-    loadingState.storage.loadingState.pipe(
-      takeWhile(state => state === 'GETTINGALBUMCOVERS'),
-      take(1),
-      switchMap(() => this.getAlbums(loadingState))
-    ).subscribe({
-      next: topalbums => {
-        this.storeAlbumArt(loadingState, topalbums.album);
-
-        if (loadingState.albumPage! > 0) {
-          //const numPagesHandled = loadingState.totalTrackPages! - loadingState.trackPage!;
-          this.iterateAlbumPages(loadingState);
-        } else {
-          loadingState.storage.finish('FINISHEDALL');
-        }
-      }
-    })
-  }
-
-  private storeAlbumArt(loadingState: LoadingState, album: Album[]): void {
-    const albums: { [key: string]: string } = album.reduce((map, album) => {
-      map[album.name] = album.image[3]['#text'];
-      return map;
-    }, {} as { [key: string]: string });
-    
-    // for (const key in albums) {
-    //   console.log(key + ": " + albums[key]);
-    // }
-
-    loadingState.albumPage!--;
-    loadingState.storage.addAlbumPage(albums);
   }
 
   private getScrobbles(loadingState: LoadingState): Observable<RecentTracks> {
@@ -203,20 +136,6 @@ export class ScrobbleGetterService {
     );
   }
 
-  private getAlbums(loadingState: LoadingState): Observable<TopAlbums> {
-    const params = new HttpParams()
-      .append('method', 'user.gettopalbums')
-      .append('user', loadingState.username)
-      .append('page', String(loadingState.albumPage))
-      .append('format', 'json')
-      .append('limit', 200)
-      .append('api_key', this.API_KEY);
-
-    return this.http.get<{topalbums: TopAlbums}>(this.URL, {params}).pipe(
-      map(response => response.topalbums)
-    );
-  }
-
   private getUser(username: string): Observable<User> {
     this.log('getting User...');
     const params = new HttpParams()
@@ -229,6 +148,29 @@ export class ScrobbleGetterService {
       map(u => u.user),
       tap(user => this.log(`fetched last.fm user=${user.name}`))
     );
+  }
+
+  getArtistImage(artistName: string): Observable<string> {
+    const url = `https://last.fm/music/${artistName}/+images`;
+    return this.http.get(url, { responseType: 'text' })
+      .pipe(
+        map(html => `https://lastfm.freetls.fastly.net/i/u/300x300/${this.parseHtmlForImageId(html)}`)
+      );
+  }
+
+  private parseHtmlForImageId(html: string): string {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(html, 'text/html');
+
+    const anchor = doc.querySelector('.image-list-item-wrapper a');
+    const href = anchor ? anchor.getAttribute('href') : null;
+
+    if (href) {
+      const parts = href.split("/");
+      return parts[parts.length - 1];
+    }
+
+    return '';
   }
 
   private handleError<T>(operation = 'operation', result?: T) {

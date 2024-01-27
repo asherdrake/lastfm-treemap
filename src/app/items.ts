@@ -8,6 +8,7 @@ export interface Scrobble {
     track: string;
     album: string;
     artistName: string;
+    artistImage: string;
     date: Date;
 }
 
@@ -29,7 +30,8 @@ export interface Artist {
         [key: string]: Album
     }
     scrobbles: number[], //holds the date values of each scrobble
-    name: string
+    name: string,
+    image_url: string
 }
 
 export interface Album {

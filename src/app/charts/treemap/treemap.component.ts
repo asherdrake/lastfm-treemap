@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import * as d3 from 'd3';
 import { RGBColor } from 'd3';
 import { ChartStats } from 'src/app/items';
-import { take, finalize, combineLatest, filter, map, BehaviorSubject, distinctUntilChanged, Subject } from 'rxjs';
+import { tap, take, finalize, combineLatest, filter, map, BehaviorSubject, distinctUntilChanged, Subject } from 'rxjs';
 import { StatsConverterService } from 'src/app/stats-converter.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
@@ -15,7 +15,6 @@ interface TreeNode {
   image?: string;
 }
 
-
 @Component({
   selector: 'app-treemap',
   templateUrl: './treemap.component.html',
@@ -26,10 +25,8 @@ export class TreemapComponent implements OnInit {
   width: number = 1500;
   height: number = 1500;
   scrobblesFetched: number = 0;
-  trackPageNumber: number = 0;
-  totalTrackPages: number = 0;
-  albumPageNumber: number = 0;
-  totalAlbumPages: number = 0;
+  pageNumber: number = 0;
+  totalPages: number = 0;
   hierarchy: d3.HierarchyNode<TreeNode> = {} as d3.HierarchyNode<TreeNode>;
   root: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   x: d3.ScaleLinear<number, number, never> = {} as d3.ScaleLinear<number, number, never>;
@@ -39,19 +36,20 @@ export class TreemapComponent implements OnInit {
   currentRoot: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   zoom: d3.ZoomBehavior<SVGSVGElement, unknown> = {} as d3.ZoomBehavior<SVGSVGElement, unknown>;
   currentDepth: number = 0;
-  isDataReady: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
-  private destroy$: Subject<void> = new Subject<void>();
-  isChartStatsComplete: BehaviorSubject<boolean> = new BehaviorSubject<boolean>(false);
   constructor(private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
     combineLatest([
       this.statsConverterService.chartStats,
-      this.statsConverterService.chartStatsComplete,
       this.storage.loadingStatus
     ])
     .pipe(
-      filter(([chartStats, chartStatsComplete, loadingStatus]) => chartStatsComplete && loadingStatus[4] - loadingStatus[3] === loadingStatus[4] && loadingStatus[4] !== 0),
+      tap(([_, loadingStatus]) => {
+        this.scrobblesFetched = loadingStatus[0].length;
+        this.pageNumber = loadingStatus[1];
+        this.totalPages = loadingStatus[2];
+      }),
+      filter(([_, loadingStatus]) => loadingStatus[2] - loadingStatus[1] === loadingStatus[2] && loadingStatus[2] !== 0),
       take(1),
-      map(([chartStats, chartStatsComplete, loadingStatus]) => this.transformToTreemapData(chartStats))
+      map(([chartStats, _]) => this.transformToTreemapData(chartStats))
     )
     .subscribe({
       next: (data) => {
@@ -98,7 +96,8 @@ export class TreemapComponent implements OnInit {
                       }),
                       image: album.image_url
                   };
-              })
+              }),
+              image: artist.image_url
           };
       })
     };
@@ -107,12 +106,7 @@ export class TreemapComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.scrobbleGetterService.initializeFetching(/*'hatimasnawi'*/'RashCream', this.storage);
-  }
-
-  ngOnDestroy(): void {
-    this.destroy$.next();
-    this.destroy$.complete();
+    this.scrobbleGetterService.initializeFetching('Jeraff17'/*hatimasnawi'/*'RashCream'*/, this.storage);
   }
 
   initializeTreemap(): void {
@@ -182,7 +176,7 @@ export class TreemapComponent implements OnInit {
           .text((childD: any) => childD);
       })
     
-    if (this.currentDepth == 1) {
+    if (this.currentDepth == 0 || this.currentDepth == 1) {
       node.append("image")
         .attr("width", d => this.x(d.x1) - this.x(d.x0))
         .attr("height", d => {

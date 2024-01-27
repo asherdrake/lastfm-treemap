@@ -11,23 +11,10 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 })
 export class StatsConverterService {
   chartStats: Observable<ChartStats>;
-  totalAlbumPages: number = 0;
-  albumPagesProcessed: number = 0;
-  readonly chartStatsComplete = new BehaviorSubject<boolean>(false);
-  constructor(private storage: ScrobbleStorageService) {
+
+  constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService) {
     this.chartStats = this.storage.trackPageChunk.pipe(
-      scan((prevConvertedStats, scrobbles) => this.convertScrobbles(scrobbles, prevConvertedStats), this.emptyStats()),
-      switchMap((convertedStats) => 
-        this.storage.albumArtStatus.pipe(
-          tap(albumArtStatus => this.totalAlbumPages = albumArtStatus[1]),
-          map((albumArtStatus) => this.mapArtToAlbum(convertedStats, albumArtStatus[0]!)),
-          tap(() => {
-            if (this.totalAlbumPages == this.albumPagesProcessed) {
-              this.chartStatsComplete.next(true);
-            }
-          })
-        )
-      )
+      scan((prevConvertedStats, scrobbles) => this.convertScrobbles(scrobbles, prevConvertedStats), this.emptyStats())
     ); 
   };
 
@@ -39,42 +26,21 @@ export class StatsConverterService {
     return newChartStats;
   }
 
-  mapArtToAlbum(newChartStats: ChartStats, albumArt: { [key: string]: string }): ChartStats {
-    for (const artistKey in newChartStats.artists) {
-      const artist = newChartStats.artists[artistKey];
-
-        // Iterate through each album of the artist
-        for (const albumKey in artist.albums) {
-            const album = artist.albums[albumKey];
-            //console.log()
-            newChartStats.artists[artistKey].albums[albumKey].image_url = albumArt[album.name];
-            // Check if the album's name is a key in albumArt
-            if (albumArt.hasOwnProperty(album.name)) {
-                // Update the image_url of the album
-                album.image_url = albumArt[album.name];
-                newChartStats.artists[artistKey].albums[albumKey].image_url = albumArt[album.name];
-            }
-        }
-    }
-
-    this.albumPagesProcessed++;
-    console.log("Album pages processed: " + this.albumPagesProcessed + ", Total Pages: " + this.totalAlbumPages);
-    for (const key in albumArt) {
-      console.log(key + ": " + albumArt[key]);
-    }
-
-    return newChartStats;
-  }
-
   handleScrobble(scrobble: Scrobble, newChartStats: ChartStats): void {
     const artistStat = newChartStats.artists[scrobble.artistName];
     if (!artistStat) {
-      newChartStats.artists[scrobble.artistName] = {
-        tracks: [],
-        albums: {},
-        scrobbles: [scrobble.date.getTime()],
-        name: scrobble.artistName,
-      }
+      this.scrobbleGetterService.getArtistImage(scrobble.artistName).subscribe({
+        next: (artistImageURL) => {
+          newChartStats.artists[scrobble.artistName] = {
+            tracks: [],
+            albums: {},
+            scrobbles: [scrobble.date.getTime()],
+            name: scrobble.artistName,
+            image_url: artistImageURL
+          }
+        },
+        error: (err) => console.error('Error while fetching artist image:', err)
+      })
     } else {
       const albumStat = artistStat.albums[scrobble.album];
       if (!albumStat) {
@@ -83,6 +49,7 @@ export class StatsConverterService {
           tracks: {},
           scrobbles: [scrobble.date.getTime()],
           name: scrobble.album,
+          image_url: scrobble.artistImage
         }
         artistStat.scrobbles.push(scrobble.date.getTime())
         if (artistStat.tracks.indexOf(scrobble.track) < 0) {

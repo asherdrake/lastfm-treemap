@@ -14,9 +14,6 @@ export interface ScrobbleState {
   totalTrackPages: number;
   currTrackPage: number;
 
-  totalAlbumPages: number;
-  currAlbumPage: number;
-
   state: string;
 }
 
@@ -29,8 +26,6 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       scrobbles: [],
       totalTrackPages: 0,
       currTrackPage: 0,
-      totalAlbumPages: 0,
-      currAlbumPage: 0,
       state: 'GETTINGUSER'
     });
   }
@@ -73,17 +68,6 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly addAlbumPage = this.updater((currData: ScrobbleState, newAlbums: {[key: string]: string}) => {
-    return {
-      ...currData,
-      currAlbumPage: currData.currAlbumPage - 1,
-      albumArt: {
-        ...currData.albumArt,
-        ...newAlbums
-      },
-    }
-  })
-
   readonly finish = this.updater((currData: ScrobbleState, state: string) => {
     //this.log('finish');
 
@@ -98,7 +82,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   readonly loadingStatus = this.state$.pipe(
     //tap(() => this.log('loadingStatus')),
     filter(state => state.state === 'GETTINGSCROBBLES' || state.state == 'GETTINGALBUMCOVERS'),
-    map(state => [state.scrobbles, state.currTrackPage, state.totalTrackPages, state.currAlbumPage, state.totalAlbumPages] as [Scrobble[], number, number, number, number])
+    map(state => [state.scrobbles, state.currTrackPage, state.totalTrackPages] as [Scrobble[], number, number])
   );
 
   readonly trackPageChunk = this.state$.pipe(
@@ -107,11 +91,6 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     pairwise(),
     map(([previous, next]) => next.slice(previous.length)),
     //tap((scrobbles) => this.log(scrobbles[0].track))
-  );
-  
-  readonly albumArtStatus = this.state$.pipe(
-    filter(state => state.state === 'GETTINGALBUMCOVERS' && "albumArt" in state),
-    map(state => [state.albumArt, state.totalAlbumPages] as [{[key: string]: string}, number]),
   );
 
   private log(message: string) {
