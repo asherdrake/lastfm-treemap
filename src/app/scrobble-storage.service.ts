@@ -50,6 +50,17 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
+  readonly updateDateRange = this.updater((currData: ScrobbleState, dateRange: {startDate: number, endDate: number}) => {
+    console.log('updateDateRange');
+
+    return {
+      ...currData,
+      //startDate: dateRange.startDate,
+      //endDate: dateRange.endDate
+      ...dateRange
+    }
+  })
+
   readonly addTrackPage = this.updater((currData: ScrobbleState, newScrobbles: Scrobble[]) => {
     //this.log('addPage');
 
@@ -92,7 +103,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     map(([previous, next]) => next.slice(previous.length)),
     //tap((scrobbles) => this.log(scrobbles[0].track))
   );
-
+  
   private log(message: string) {
     this.messageService.add(`ScrobbleStorage: ${message}`);
   }

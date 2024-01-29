@@ -7,6 +7,7 @@ import { StatsConverterService } from 'src/app/stats-converter.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
+import { FiltersService } from 'src/app/filters.service';
 
 interface TreeNode {
   name: string;
@@ -20,7 +21,7 @@ interface TreeNode {
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })
-export class TreemapComponent implements OnInit {
+export class TreemapComponent/* implements OnInit */{
   treemapData: TreeNode = {} as TreeNode;
   width: number = 1500;
   height: number = 1500;
@@ -36,8 +37,11 @@ export class TreemapComponent implements OnInit {
   currentRoot: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   zoom: d3.ZoomBehavior<SVGSVGElement, unknown> = {} as d3.ZoomBehavior<SVGSVGElement, unknown>;
   currentDepth: number = 0;
-  constructor(private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
-    combineLatest([
+  username: string = '';
+  startDate: string = '';
+  endDate: string = '';
+  constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
+    /*combineLatest([
       this.statsConverterService.chartStats,
       this.storage.loadingStatus
     ])
@@ -50,6 +54,19 @@ export class TreemapComponent implements OnInit {
       filter(([_, loadingStatus]) => loadingStatus[2] - loadingStatus[1] === loadingStatus[2] && loadingStatus[2] !== 0),
       take(1),
       map(([chartStats, _]) => this.transformToTreemapData(chartStats))
+    )
+    */
+    this.storage.loadingStatus.pipe(
+      map(loadingStatus => {
+        this.scrobblesFetched = loadingStatus[0].length;
+        this.pageNumber = loadingStatus[1];
+        this.totalPages = loadingStatus[2];
+      })
+    ).subscribe();
+
+    this.statsConverterService.chartStats
+    .pipe(
+      map(chartStats => this.transformToTreemapData(chartStats))
     )
     .subscribe({
       next: (data) => {
@@ -101,12 +118,45 @@ export class TreemapComponent implements OnInit {
           };
       })
     };
-
     return treemapData
   }
 
-  ngOnInit(): void {
-    this.scrobbleGetterService.initializeFetching('Jeraff17'/*hatimasnawi'/*'RashCream'*/, this.storage);
+  calculateScrobblesForArtist(treemapData: TreeNode, artistName: string) {
+    let totalScrobbles = 0;
+
+    // Find the artist in the treemap data
+    const artistNode = treemapData.children!.find(child => child.name === artistName);
+
+    if (artistNode && artistNode.children) {
+        // Iterate over all albums of the artist
+        artistNode.children.forEach(album => {
+            if (album.children) {
+                // Iterate over all tracks of the album
+                album.children.forEach(track => {
+                    // Sum up the scrobbles
+                    totalScrobbles += track.value!;
+                });
+            }
+        });
+    }
+
+    return totalScrobbles;
+}
+
+  startFetching(): void {
+    this.updateDateRange();
+    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage);
+  }
+
+  applySettings(): void {
+    this.group.remove();
+    this.updateDateRange();
+  }
+
+  updateDateRange(): void {
+    const startDate = Date.parse(this.startDate);
+    const endDate = Date.parse(this.endDate);
+    this.filters.updateDateRange({startDate, endDate});
   }
 
   initializeTreemap(): void {
@@ -121,7 +171,12 @@ export class TreemapComponent implements OnInit {
     this.y = d3.scaleLinear().rangeRound([0, this.height]);
 
     //creating svg container
-    this.svg = d3.select("#treemap-container").append("svg")
+    this.svg = d3.select("#treemap-container").select("svg");
+
+    if (this.svg.empty()) {
+      this.svg = d3.select('#treemap-container').append("svg");
+    }
+    this.svg
       .attr("viewBox", [0.5, -30.5, this.width, this.height + 30])
       .attr("width", this.width)
       .attr("height", this.height + 30)
@@ -161,7 +216,7 @@ export class TreemapComponent implements OnInit {
       .each(function(d) {
         d3.select(this)
           .selectAll("tspan")
-          .data((d: any) => d.data.name.split(" "/*/(?=[A-Z][^A-Z])/g*/))
+          .data((d: any) => (d.data.name + " " + d.value).split(" "/*/(?=[A-Z][^A-Z])/g*/))
           .join("tspan")
           .attr("x", () => {
             const font_size = self.calculateFontSize(d);
@@ -184,7 +239,7 @@ export class TreemapComponent implements OnInit {
           return this.y(d.y1) - this.y(d.y0)
         })
         .attr("href", d => {
-          console.log(d.data.name + ": " + d.data.image);
+          //console.log(d.data.name + ": " + d.data.image);
           return d.data.image!
         })
     }

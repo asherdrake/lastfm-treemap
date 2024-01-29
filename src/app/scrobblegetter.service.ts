@@ -5,6 +5,7 @@ import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
 import { MessageService } from './message.service';
 import { ScrobbleStorageService } from './scrobble-storage.service';
+import { load } from 'cheerio';
 //import * as DOMParser from 'dom-parser';
 
 interface RecentTracks {
@@ -45,6 +46,9 @@ interface LoadingState {
   storage: ScrobbleStorageService;
   username: string;
 
+  startDate?: number;
+  endDate?: number;
+
   totalTrackPages?: number;
   trackPageSize?: number;
   trackPage?: number;
@@ -59,11 +63,16 @@ export class ScrobbleGetterService {
 
   constructor(private http: HttpClient, private messageService: MessageService) { }
 
-  initializeFetching(username: string, storage: ScrobbleStorageService){
+  initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService){
     this.getUser(username).subscribe({
       next: user => {
         storage.updateUser(user);
-        this.calcTrackPages({storage, username: user.name, trackPageSize: 200})
+        console.log("initializing fetching....startDate = " + startDate);
+        if (!(startDate === '')) {
+          this.calcTrackPages({storage, username: user.name, trackPageSize: 200, startDate: Date.parse(startDate), endDate: Date.parse(endDate)})
+        } else {
+          this.calcTrackPages({storage, username: user.name, trackPageSize: 200})
+        }
       },
       error: (e) => storage.finish(e.status === 404 ? 'USERNOTFOUND' : 'LOADFAILED')
     });
@@ -74,13 +83,20 @@ export class ScrobbleGetterService {
     this.getScrobbles(loadingState).subscribe({
       next: recenttracks => {
         const pageTotal = parseInt(recenttracks['@attr'].totalPages);
+        const startDate = loadingState.startDate!;
+        const endDate = loadingState.endDate!;
+
+        if (loadingState.startDate) {
+          console.log("Date range updated with " + startDate + " and " + endDate);
+          loadingState.storage.updateDateRange({startDate, endDate});
+        }
 
         if (pageTotal > 0) {
           loadingState.storage.updateTrackTotal({
             totalTrackPages: pageTotal,
             currTrackPage: pageTotal
           });
-
+          console.log("Getting scrobbles start...");
           this.iterateTrackPages({...loadingState, trackPage: pageTotal, totalTrackPages: pageTotal});
         }
       }
@@ -98,11 +114,12 @@ export class ScrobbleGetterService {
 
         if (loadingState.trackPage! > 0) {
           const numPagesHandled = loadingState.totalTrackPages! - loadingState.trackPage!;
-          console.log("loadingState.trackPage: " + loadingState.trackPage)
+          //console.log("loadingState.trackPage: " + loadingState.trackPage)
+          //loadingState.trackPage!--;
           this.iterateTrackPages(loadingState);
         } else {
-          loadingState.storage.finish('FINISHEDTRACKS');
-          console.log("iterateTrackPages finished, getting artist images...");
+          //console.log("loadingState.trackPage: " + loadingState.trackPage);
+          loadingState.storage.finish('FINISHED');
         }
       }
     })
@@ -113,16 +130,26 @@ export class ScrobbleGetterService {
       track: t.name,
       album: t.album['#text'],
       artistName: t.artist['#text'],
-      artistImage: t.image[3]['#text'],
+      albumImage: t.image[3]['#text'],
       date: new Date(t.date.uts * 1000)
     })).reverse();
     
+    const pasteboardTracks = tracks.filter(t => t.artist['#text'] === "pasteboard");
+    for (const pasteboardTrack of pasteboardTracks) {
+      const unix = new Date(pasteboardTrack.date.uts * 1000);
+      console.log("Track: " + pasteboardTrack.name + ", " + pasteboardTrack.album['#text'] + ", " + unix);
+    }
+
+    const pasteboardScrobbles = scrobbles.filter(s => s.artistName === "pasteboard");
+    for (const pasteboardScrobble of pasteboardScrobbles) {
+      console.log("Scrobble: " + pasteboardScrobble.track + ", " + pasteboardScrobble.album + ", " + pasteboardScrobble.date);
+    }
+
     loadingState.trackPage!--;
     loadingState.storage.addTrackPage(scrobbles);
   }
 
   private getScrobbles(loadingState: LoadingState): Observable<RecentTracks> {
-    //this.log('getting Scrobbles...Current Page:' + loadingState.page);
     const params = new HttpParams()
       .append('method', 'user.getrecenttracks')
       .append('user', loadingState.username)
@@ -130,6 +157,12 @@ export class ScrobbleGetterService {
       .append('format', 'json')
       .append('limit', 200)
       .append('api_key', this.API_KEY);
+
+    if (loadingState.startDate) {
+      //console.log("startdate! = " + loadingState.startDate)
+      params.append('from', loadingState.startDate)
+            .append('to', loadingState.endDate!);
+    }
 
     return this.http.get<{recenttracks: RecentTracks}>(this.URL, {params}).pipe(
       map(response => response.recenttracks)

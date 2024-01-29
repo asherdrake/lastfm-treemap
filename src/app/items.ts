@@ -8,7 +8,7 @@ export interface Scrobble {
     track: string;
     album: string;
     artistName: string;
-    artistImage: string;
+    albumImage: string;
     date: Date;
 }
 
@@ -25,7 +25,7 @@ export interface ChartStats {
 }
 
 export interface Artist {
-    tracks: String[],
+    //tracks: String[],
     albums: {
         [key: string]: Album
     }
@@ -35,7 +35,7 @@ export interface Artist {
 }
 
 export interface Album {
-    artist: string,
+    //artist: string,
     tracks: {
         [key: string]: Track
     },
@@ -45,8 +45,8 @@ export interface Album {
 }
 
 export interface Track {
-    artist: string,
-    album: string,
+    //artist: string,
+    //album: string,
     scrobbles: number[],
     name: string
 }

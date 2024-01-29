@@ -38,12 +38,12 @@ export class TracksAndScrobblesScatterChart extends AbstractChart {
     }
 
     update(stats: ChartStats): void {
-        let chartData = Object.values(stats.artists).map(artist => ({
-            x: artist.scrobbles.length,
-            y: artist.tracks.length,
-            name: artist.name
-        }));
+        // let chartData = Object.values(stats.artists).map(artist => ({
+        //     x: artist.scrobbles.length,
+        //     y: artist.tracks.length,
+        //     name: artist.name
+        // }));
 
-        this.setData(chartData);
+        // this.setData(chartData);
     }
 }

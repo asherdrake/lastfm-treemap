@@ -9,6 +9,7 @@ import { StoreModule } from '@ngrx/store';
 import { ChartLoaderDirectiveDirective } from './chart-loader-directive.directive';
 import { TreemapComponent } from './charts/treemap/treemap.component';
 import { LoadingComponent } from './loading/loading.component';
+import { FormsModule } from '@angular/forms';
 
 @NgModule({
   declarations: [
@@ -23,6 +24,7 @@ import { LoadingComponent } from './loading/loading.component';
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
+    FormsModule,
     StoreModule.forRoot({}, {})
   ],
   providers: [],
