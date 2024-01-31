@@ -1,12 +1,12 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
-import { filter, map, pairwise, tap } from 'rxjs';
+import { distinctUntilChanged, filter, map, pairwise, switchMap, tap } from 'rxjs';
 import { Scrobble, User } from './items';
 import { MessageService } from './message.service';
 
 export interface ScrobbleState {
   scrobbles: Scrobble[];
-  albumArt?: {
+  artistImages?: {
     [key: string]: string
   }
   user?: User;
@@ -29,6 +29,14 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       state: 'GETTINGUSER'
     });
   }
+
+  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: string } }) => {
+    return {
+      ...currData,
+      scrobbles: [...imported.importedScrobbles],
+      artistImages: imported.artistImages
+    }
+  })
 
   readonly updateUser = this.updater((currData: ScrobbleState, user: User) => {
     //this.log('updateUser');
@@ -70,6 +78,13 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       scrobbles: [...currData.scrobbles, ...newScrobbles]
     };
   })
+
+  readonly updateArtistImages = this.updater((currData: ScrobbleState, artistImages: { [key: string]: string }) => {
+    return {
+      ...currData,
+      artistImages: artistImages
+    }
+  })
   
   readonly updateAlbumTotal = this.updater((currData: ScrobbleState, page: {totalAlbumPages: number, currAlbumPage: number}) => {
     return {
@@ -96,13 +111,20 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     map(state => [state.scrobbles, state.currTrackPage, state.totalTrackPages] as [Scrobble[], number, number])
   );
 
-  readonly trackPageChunk = this.state$.pipe(
-    filter(state => state.state === 'GETTINGSCROBBLES'),
-    map(state => state.scrobbles),
-    pairwise(),
-    map(([previous, next]) => next.slice(previous.length)),
-    //tap((scrobbles) => this.log(scrobbles[0].track))
+  readonly scrobbles$ = this.select(state => state.scrobbles);
+
+  readonly trackPageChunk = this.select(state => state.state === 'GETTINGSCROBBLES', {debounce: true})
+    .pipe(
+      filter(canProcess => canProcess),
+      distinctUntilChanged(),
+      switchMap(() => this.scrobbles$),
+      pairwise(),
+      map(([previous, next]) => next.slice(previous.length))
   );
+
+  readonly artistImageStorage = this.state$.pipe(
+    map(state => state.artistImages)
+  )
   
   private log(message: string) {
     this.messageService.add(`ScrobbleStorage: ${message}`);

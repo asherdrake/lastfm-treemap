@@ -8,8 +8,22 @@ export interface Scrobble {
     track: string;
     album: string;
     artistName: string;
-    albumImage: string;
+    albumImage?: string;
     date: Date;
+}
+
+export interface ScrobblesJSON {
+    username: string;
+    scrobbles: {
+        track: string;
+        album: string;
+        artist: string;
+        albumImage: string;
+        date: number;
+    }[]
+    artistImages: {
+        [key: string]: string
+    }
 }
 
 export interface LoadingStats {

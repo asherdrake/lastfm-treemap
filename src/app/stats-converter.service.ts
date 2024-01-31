@@ -1,10 +1,8 @@
 import { Injectable } from '@angular/core';
-import { ChartStats, Scrobble, Artist } from './items';
-import { filter, tap, Observable, scan, switchMap, map, BehaviorSubject, distinctUntilChanged, combineLatest} from 'rxjs';
+import { ChartStats, Scrobble } from './items';
+import { take, tap, filter, Observable, map, combineLatest} from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService } from './scrobble-storage.service';
-import { Chart } from 'highcharts';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FiltersService, FilterState } from './filters.service';
 
 
@@ -20,18 +18,33 @@ export class StatsConverterService {
   startDate: number = 0;
   endDate: number = 0;
   artistImageStorage: ArtistImages = {};
+
   constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private filters: FiltersService) {
     this.storage.trackPageChunk.pipe(
       map(scrobbles => this.storeArtistImage(scrobbles))
-    ).subscribe();
+    ).subscribe({
+      next: () => {
+        console.log("trackPageChunk observable")
+        this.storage.updateArtistImages(this.artistImageStorage);
+      }
+    });
 
+    this.storage.artistImageStorage.subscribe({
+      next: (artistImages) => {
+        this.artistImageStorage = artistImages as ArtistImages
+      }
+    })
+    
     const completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
     
     this.chartStats = combineLatest([
       completed,
       this.filters.state$
     ]).pipe(
-      map(([scrobbles, filters]) => this.convertScrobbles(scrobbles.scrobbles, filters, this.emptyStats()))
+      map(([scrobbles, filters]) => this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })),
+      // tap(() =>{
+      //   this.storage.updateArtistImages(this.artistImageStorage);
+      // })
     )
   };
 
@@ -107,74 +120,5 @@ export class StatsConverterService {
     artist.scrobbles.push(scrobbleTime);
     album.scrobbles.push(scrobbleTime);
     track.scrobbles.push(scrobbleTime);
-  }
-
-  /*handleScrobble(scrobble: Scrobble, newChartStats: ChartStats): void {
-    const artistStat = newChartStats.artists[scrobble.artistName];
-    if (scrobble.artistName === "pasteboard") {
-      console.log("handleScrobble: " + scrobble.track + ", " + scrobble.album + ", " + scrobble.date);
-    }
-    if (!artistStat) {
-        newChartStats.artists[scrobble.artistName] = {
-          tracks: [],
-          albums: {},
-          scrobbles: [scrobble.date.getTime()],
-          name: scrobble.artistName,
-          image_url: this.artistImageStorage[scrobble.artistName]
-        }
-        //newChartStats.artists[scrobble.artistName].albums[scrobble.album] = scrobble.album;
-    } else {
-      const albumStat = artistStat.albums[scrobble.album];
-      if (!albumStat) {
-        newChartStats.artists[scrobble.artistName].albums[scrobble.album] = {
-          artist: scrobble.artistName,
-          tracks: {},
-          scrobbles: [scrobble.date.getTime()],
-          name: scrobble.album,
-          image_url: scrobble.artistImage
-        }
-        artistStat.scrobbles.push(scrobble.date.getTime())
-        if (artistStat.tracks.indexOf(scrobble.track) < 0) {
-          artistStat.tracks.push(scrobble.track);
-          if (scrobble.track === "pasteboard") {
-            console.log("Artist Stat Push: " + scrobble.track + ", " + scrobble.album + ", " + scrobble.date);
-          }
-        }
-      } else {
-        const trackStat = albumStat.tracks[scrobble.track];
-        if (!trackStat) {
-          if (scrobble.track === "pasteboard") {
-            console.log("!Track Stat: " + scrobble.track + ", " + scrobble.album + ", " + scrobble.date);
-          }
-          newChartStats.artists[scrobble.artistName].albums[scrobble.album].tracks[scrobble.track] = {
-            artist: scrobble.artistName,
-            album: scrobble.album,
-            scrobbles: [scrobble.date.getTime()],
-            name: scrobble.track
-          }
-          artistStat.scrobbles.push(scrobble.date.getTime())
-          if (artistStat.tracks.indexOf(scrobble.track) < 0) {
-            artistStat.tracks.push(scrobble.track);
-          }
-          albumStat.scrobbles.push(scrobble.date.getTime());
-        } else {
-          artistStat.scrobbles.push(scrobble.date.getTime())
-          if (artistStat.tracks.indexOf(scrobble.track) < 0) {
-            artistStat.tracks.push(scrobble.track);
-          }
-          albumStat.scrobbles.push(scrobble.date.getTime());
-          trackStat.scrobbles.push(scrobble.date.getTime());
-          if (scrobble.track === "pasteboard") {
-            console.log("Track Stat: " + scrobble.track + ", " + scrobble.album + ", " + scrobble.date);
-          }
-        }
-      }
-    }
-  }*/
-
-  private emptyStats(): ChartStats {
-    return {
-      artists: {},
-    }
   }
 }
