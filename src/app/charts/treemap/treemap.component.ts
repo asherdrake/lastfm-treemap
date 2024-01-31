@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import * as d3 from 'd3';
 import { RGBColor } from 'd3';
-import { ChartStats } from 'src/app/items';
+import { Scrobble, ChartStats, ScrobblesJSON } from 'src/app/items';
 import { tap, take, finalize, combineLatest, filter, map, BehaviorSubject, distinctUntilChanged, Subject } from 'rxjs';
 import { StatsConverterService } from 'src/app/stats-converter.service';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -41,21 +41,6 @@ export class TreemapComponent/* implements OnInit */{
   startDate: string = '';
   endDate: string = '';
   constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
-    /*combineLatest([
-      this.statsConverterService.chartStats,
-      this.storage.loadingStatus
-    ])
-    .pipe(
-      tap(([_, loadingStatus]) => {
-        this.scrobblesFetched = loadingStatus[0].length;
-        this.pageNumber = loadingStatus[1];
-        this.totalPages = loadingStatus[2];
-      }),
-      filter(([_, loadingStatus]) => loadingStatus[2] - loadingStatus[1] === loadingStatus[2] && loadingStatus[2] !== 0),
-      take(1),
-      map(([chartStats, _]) => this.transformToTreemapData(chartStats))
-    )
-    */
     this.storage.loadingStatus.pipe(
       map(loadingStatus => {
         this.scrobblesFetched = loadingStatus[0].length;
@@ -78,7 +63,7 @@ export class TreemapComponent/* implements OnInit */{
     });
 
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
-      .scaleExtent([0.5, 8])
+      .scaleExtent([0, Infinity])
       .on("zoom", (event) => {
         this.group.attr("transform", event.transform);
       })
@@ -121,7 +106,7 @@ export class TreemapComponent/* implements OnInit */{
     return treemapData
   }
 
-  calculateScrobblesForArtist(treemapData: TreeNode, artistName: string) {
+  /*calculateScrobblesForArtist(treemapData: TreeNode, artistName: string) {
     let totalScrobbles = 0;
 
     // Find the artist in the treemap data
@@ -141,11 +126,33 @@ export class TreemapComponent/* implements OnInit */{
     }
 
     return totalScrobbles;
-}
+}*/
 
-  startFetching(): void {
+  startFetching(importedScrobbles: Scrobble[]): void {
     this.updateDateRange();
-    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage);
+    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles);
+  }
+
+  fileInput(event: any): void {
+    console.log("File input");
+    const file = event.target.files[0];
+    const fileReader = new FileReader();
+    fileReader.onloadend = () => {
+      const parsed = JSON.parse((fileReader.result as string)) as ScrobblesJSON;
+      if (parsed) {
+        const scrobbles = parsed.scrobbles.map((scrobble: any) => ({
+          track: scrobble.track,
+          album: scrobble.album,
+          artistName: scrobble.artistName,
+          albumImage: scrobble.albumImage,
+          date: new Date(scrobble.date)
+        }))
+        this.username = parsed.username;
+        this.startFetching(scrobbles);
+      }
+    };
+
+    fileReader.readAsText(file);
   }
 
   applySettings(): void {

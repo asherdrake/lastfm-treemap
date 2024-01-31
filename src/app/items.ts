@@ -12,6 +12,17 @@ export interface Scrobble {
     date: Date;
 }
 
+export interface ScrobblesJSON {
+    username: string;
+    scrobbles: {
+        track: string;
+        album: string;
+        artistName: string;
+        albumImage: string;
+        date: number;
+    }[]
+}
+
 export interface LoadingStats {
     scrobblesFetched: number,
     pageNumber: number,

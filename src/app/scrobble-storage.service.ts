@@ -30,6 +30,13 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     });
   }
 
+  readonly addImport = this.updater((currData: ScrobbleState, importedScrobbles: Scrobble[]) => {
+    return {
+      ...currData,
+      scrobbles: [...importedScrobbles]
+    }
+  })
+
   readonly updateUser = this.updater((currData: ScrobbleState, user: User) => {
     //this.log('updateUser');
 
