@@ -62,14 +62,14 @@ export class ScrobbleGetterService {
 
   constructor(private http: HttpClient, private messageService: MessageService) { }
 
-  initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[]){
+  initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[], artistImages: { [key: string]: string }){
     this.getUser(username).subscribe({
       next: user => {
         storage.updateUser(user);
         console.log("initializing fetching....startDate = " + startDate);
 
         const from = String(this.getStartDate(importedScrobbles));
-        storage.addImport(importedScrobbles);
+        storage.addImport({ importedScrobbles, artistImages });
         this.calcTrackPages({storage, username: user.name, trackPageSize: 200, from})
 
       },
@@ -80,7 +80,7 @@ export class ScrobbleGetterService {
   getStartDate(importedScrobbles: Scrobble[]): number {
     console.log("Getting Start Date..");
     if (importedScrobbles.length) {
-      //console.log("From = " + importedScrobbles[importedScrobbles.length - 1].date.getTime() + 1);
+      console.log("From = " + importedScrobbles[importedScrobbles.length - 1].date.getTime() + 1);
       return importedScrobbles[importedScrobbles.length - 1].date.getTime() / 1000 + 1;
     }
     return 0;
@@ -88,8 +88,10 @@ export class ScrobbleGetterService {
 
   private calcTrackPages(loadingState: LoadingState) {
     loadingState.trackPage = 1;
+    console.log("calcTrackPages");
     this.getScrobbles(loadingState).subscribe({
       next: recenttracks => {
+        console.log("calcTrackPages subscription");
         const pageTotal = parseInt(recenttracks['@attr'].totalPages);
 
         if (pageTotal > 0) {
@@ -99,6 +101,8 @@ export class ScrobbleGetterService {
           });
           console.log("Getting scrobbles start...");
           this.iterateTrackPages({...loadingState, trackPage: pageTotal, totalTrackPages: pageTotal});
+        } else {
+          loadingState.storage.finish('FINISHED');
         }
       }
     })
@@ -115,14 +119,15 @@ export class ScrobbleGetterService {
 
         if (loadingState.trackPage! > 0) {
           const numPagesHandled = loadingState.totalTrackPages! - loadingState.trackPage!;
-          //console.log("loadingState.trackPage: " + loadingState.trackPage)
+          console.log("if loadingState.trackPage: " + loadingState.trackPage)
           //loadingState.trackPage!--;
           this.iterateTrackPages(loadingState);
         } else {
-          //console.log("loadingState.trackPage: " + loadingState.trackPage);
+          console.log("else loadingState.trackPage: " + loadingState.trackPage);
           loadingState.storage.finish('FINISHED');
         }
-      }
+      },
+      error: (err) => console.error('Error while iterating track pages:', err)
     })
   }
 
@@ -149,6 +154,7 @@ export class ScrobbleGetterService {
       .append('limit', 200)
       .append('api_key', this.API_KEY);
 
+    console.log("getScrobbles page: " + String(loadingState.trackPage))  
     return this.http.get<{recenttracks: RecentTracks}>(this.URL, {params}).pipe(
       map(response => response.recenttracks)
     );

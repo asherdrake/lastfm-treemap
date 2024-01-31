@@ -51,7 +51,8 @@ export class TreemapComponent/* implements OnInit */{
 
     this.statsConverterService.chartStats
     .pipe(
-      map(chartStats => this.transformToTreemapData(chartStats))
+      map(chartStats => this.transformToTreemapData(chartStats)),
+      //take(1)
     )
     .subscribe({
       next: (data) => {
@@ -106,31 +107,9 @@ export class TreemapComponent/* implements OnInit */{
     return treemapData
   }
 
-  /*calculateScrobblesForArtist(treemapData: TreeNode, artistName: string) {
-    let totalScrobbles = 0;
-
-    // Find the artist in the treemap data
-    const artistNode = treemapData.children!.find(child => child.name === artistName);
-
-    if (artistNode && artistNode.children) {
-        // Iterate over all albums of the artist
-        artistNode.children.forEach(album => {
-            if (album.children) {
-                // Iterate over all tracks of the album
-                album.children.forEach(track => {
-                    // Sum up the scrobbles
-                    totalScrobbles += track.value!;
-                });
-            }
-        });
-    }
-
-    return totalScrobbles;
-}*/
-
-  startFetching(importedScrobbles: Scrobble[]): void {
+  startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: string }): void {
     this.updateDateRange();
-    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles);
+    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages);
   }
 
   fileInput(event: any): void {
@@ -148,11 +127,33 @@ export class TreemapComponent/* implements OnInit */{
           date: new Date(scrobble.date)
         }))
         this.username = parsed.username;
-        this.startFetching(scrobbles);
+        this.startFetching(scrobbles, parsed.artistImages);
       }
     };
 
     fileReader.readAsText(file);
+  }
+
+  downloadJSON(): void {
+    this.storage.state$.pipe(
+      map(state => ({
+        username: state.user?.name,
+        scrobbles: state.scrobbles,
+        artistImages: state.artistImages
+      })),
+      take(1)
+    ).subscribe(scrobblesData => {
+      const scrobblesJSON = JSON.stringify(scrobblesData, null, 2);
+      const blob = new Blob([scrobblesJSON], { type: 'application/json' });
+      const url = window.URL.createObjectURL(blob);
+
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'treemapdata.json';
+      a.click();
+
+      window.URL.revokeObjectURL(url);
+    })
   }
 
   applySettings(): void {
@@ -161,6 +162,7 @@ export class TreemapComponent/* implements OnInit */{
   }
 
   updateDateRange(): void {
+    console.log("updateDateRange");
     const startDate = Date.parse(this.startDate);
     const endDate = Date.parse(this.endDate);
     this.filters.updateDateRange({startDate, endDate});
