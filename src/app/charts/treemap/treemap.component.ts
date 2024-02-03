@@ -21,13 +21,10 @@ interface TreeNode {
   templateUrl: './treemap.component.html',
   styleUrls: ['./treemap.component.css']
 })
-export class TreemapComponent/* implements OnInit */{
+export class TreemapComponent implements OnInit{
   treemapData: TreeNode = {} as TreeNode;
   width: number = 1500;
   height: number = 1500;
-  scrobblesFetched: number = 0;
-  pageNumber: number = 0;
-  totalPages: number = 0;
   hierarchy: d3.HierarchyNode<TreeNode> = {} as d3.HierarchyNode<TreeNode>;
   root: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   x: d3.ScaleLinear<number, number, never> = {} as d3.ScaleLinear<number, number, never>;
@@ -37,32 +34,8 @@ export class TreemapComponent/* implements OnInit */{
   currentRoot: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   zoom: d3.ZoomBehavior<SVGSVGElement, unknown> = {} as d3.ZoomBehavior<SVGSVGElement, unknown>;
   currentDepth: number = 0;
-  username: string = '';
-  startDate: string = '';
-  endDate: string = '';
+  private readonly MIN_NODE_SIZE = 10;
   constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
-    this.storage.loadingStatus.pipe(
-      map(loadingStatus => {
-        this.scrobblesFetched = loadingStatus[0].length;
-        this.pageNumber = loadingStatus[1];
-        this.totalPages = loadingStatus[2];
-      })
-    ).subscribe();
-
-    this.statsConverterService.chartStats
-    .pipe(
-      map(chartStats => this.transformToTreemapData(chartStats)),
-      //take(1)
-    )
-    .subscribe({
-      next: (data) => {
-        console.log("Observable emitted: " + data);
-        this.treemapData = data;
-        this.initializeTreemap();
-      },
-      error: (err) => console.error('Error while fetching treemap data:', err)
-    });
-
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0, Infinity])
       .on("zoom", (event) => {
@@ -78,6 +51,10 @@ export class TreemapComponent/* implements OnInit */{
     this.updateScales = this.updateScales.bind(this);
     this.calculateFontSize = this.calculateFontSize.bind(this);
   };
+
+  ngOnInit(): void {
+    this.initializeTreemap();
+  }
 
   transformToTreemapData(stats: ChartStats): TreeNode {
     const treemapData = {
@@ -107,70 +84,9 @@ export class TreemapComponent/* implements OnInit */{
     return treemapData
   }
 
-  startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: string }): void {
-    this.updateDateRange();
-    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages);
-  }
-
-  fileInput(event: any): void {
-    console.log("File input");
-    const file = event.target.files[0];
-    const fileReader = new FileReader();
-    fileReader.onloadend = () => {
-      const parsed = JSON.parse((fileReader.result as string)) as ScrobblesJSON;
-      if (parsed) {
-        const scrobbles = parsed.scrobbles.map((scrobble: any) => ({
-          track: scrobble.track,
-          album: scrobble.album,
-          artistName: scrobble.artistName,
-          albumImage: scrobble.albumImage,
-          date: new Date(scrobble.date)
-        }))
-        this.username = parsed.username;
-        this.startFetching(scrobbles, parsed.artistImages);
-      }
-    };
-
-    fileReader.readAsText(file);
-  }
-
-  downloadJSON(): void {
-    this.storage.state$.pipe(
-      map(state => ({
-        username: state.user?.name,
-        scrobbles: state.scrobbles,
-        artistImages: state.artistImages
-      })),
-      take(1)
-    ).subscribe(scrobblesData => {
-      const scrobblesJSON = JSON.stringify(scrobblesData, null, 2);
-      const blob = new Blob([scrobblesJSON], { type: 'application/json' });
-      const url = window.URL.createObjectURL(blob);
-
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'treemapdata.json';
-      a.click();
-
-      window.URL.revokeObjectURL(url);
-    })
-  }
-
-  applySettings(): void {
-    this.group.remove();
-    this.updateDateRange();
-  }
-
-  updateDateRange(): void {
-    console.log("updateDateRange");
-    const startDate = Date.parse(this.startDate);
-    const endDate = Date.parse(this.endDate);
-    this.filters.updateDateRange({startDate, endDate});
-  }
-
   initializeTreemap(): void {
     console.log("Initializing treemap"/* with data:", this.treemapData*/);
-    //computing layout
+
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
     this.root = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);
@@ -200,11 +116,9 @@ export class TreemapComponent/* implements OnInit */{
   }
 
   renderNode(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
-    //console.log("Root: " + root.toString);
-    //console.log("Root children: " + root.children);
     const node = group
       .selectAll("g")
-      .data(root.children!/*.concat(root)*/)
+      .data(root.children!)
       .join("g");
 
     node.filter((d: any) => d === root ? d.parent : d.children)
