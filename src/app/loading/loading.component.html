@@ -1,5 +1,11 @@
 <p>loading works!</p>
 <div>
-    Loading page {{totalPages - pageNumber}}/{{totalPages}} <br>
-    Scrobbles Fetched: {{scrobblesFetched}}
+    Loading track page {{totalPages - pageNumber}}/{{totalPages}} <br>
+    Scrobbles Fetched: {{scrobblesFetched}} <br>
+    Enter Username: <input type="text" id="username" [(ngModel)]="username"/> 
+    <button (click)="startFetching([], {})">Submit</button> <br>
+    Start Date: <input type="text" id="start-date" [(ngModel)]="startDate"/> End Date: <input type="text" id="end-date" [(ngModel)]="endDate"/> 
+    <button (click)="applySettings()">Apply</button><br>
+    <input type="file" class="file-upload" (change)="fileInput($event)"> <br>
+    <button (click)="downloadJSON()">Download JSON</button>
 </div>

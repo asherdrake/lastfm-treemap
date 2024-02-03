@@ -1,4 +1,5 @@
 import { Injectable } from '@angular/core';
+import { Router } from '@angular/router';
 import { ChartStats, Scrobble } from './items';
 import { take, tap, filter, Observable, map, combineLatest} from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
@@ -19,7 +20,7 @@ export class StatsConverterService {
   endDate: number = 0;
   artistImageStorage: ArtistImages = {};
 
-  constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private filters: FiltersService) {
+  constructor(private router: Router, private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private filters: FiltersService) {
     this.storage.trackPageChunk.pipe(
       map(scrobbles => this.storeArtistImage(scrobbles))
     ).subscribe({
@@ -43,7 +44,7 @@ export class StatsConverterService {
     ]).pipe(
       map(([scrobbles, filters]) => this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })),
       // tap(() =>{
-      //   this.storage.updateArtistImages(this.artistImageStorage);
+      //   this.router.navigate(['/treemap']);
       // })
     )
   };
