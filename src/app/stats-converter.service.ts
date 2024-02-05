@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChartStats, Scrobble } from './items';
+import { ChartStats, Scrobble, Artist } from './items';
 import { take, tap, filter, Observable, map, combineLatest} from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService } from './scrobble-storage.service';
@@ -43,18 +43,35 @@ export class StatsConverterService {
       this.filters.state$
     ]).pipe(
       map(([scrobbles, filters]) => this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })),
-      // tap(() =>{
-      //   this.router.navigate(['/treemap']);
-      // })
+      map(([newChartStats, filters]) => {
+        const filteredArtists = Object.keys(newChartStats.artists).reduce((acc, artistName) => {
+          const artist = newChartStats.artists[artistName];
+          const scrobbleCount = artist.scrobbles.length; // Calculate the total scrobble count for the artist
+    
+          console.log(filters.minArtistScrobbles);
+          if (scrobbleCount >= filters.minArtistScrobbles) {
+            // If the artist meets the minimum scrobble count, include them in the output
+            acc[artistName] = artist;
+          }
+    
+          return acc;
+        }, {} as { [key: string]: Artist });
+    
+        // Return a new ChartStats object with the filtered artists
+        return {
+          ...newChartStats,
+          artists: filteredArtists
+        };
+      })
     )
   };
 
-  convertScrobbles(scrobbles: Scrobble[], filters: FilterState, newChartStats: ChartStats): ChartStats {
+  convertScrobbles(scrobbles: Scrobble[], filters: FilterState, newChartStats: ChartStats): [ChartStats, FilterState] {
     console.log("convertScrobbles: " + filters.startDate + " | " + filters.endDate);
     for (const scrobble of this.filterScrobbles(scrobbles, filters)) {
         this.handleScrobble(scrobble, newChartStats);
     }
-    return newChartStats;
+    return [newChartStats, filters];
   }
 
   storeArtistImage(scrobbles: Scrobble[]): void {
@@ -84,12 +101,12 @@ export class StatsConverterService {
   handleScrobble(scrobble: Scrobble, chartStats: ChartStats): void {
     // If the artist doesn't exist in chartStats, initialize it
     if (!chartStats.artists[scrobble.artistName]) {
-        chartStats.artists[scrobble.artistName] = {
-            albums: {},
-            scrobbles: [],
-            name: scrobble.artistName,
-            image_url: this.artistImageStorage[scrobble.artistName]
-        };
+      chartStats.artists[scrobble.artistName] = {
+          albums: {},
+          scrobbles: [],
+          name: scrobble.artistName,
+          image_url: this.artistImageStorage[scrobble.artistName] || '--'
+      };
     }
 
     const artist = chartStats.artists[scrobble.artistName];

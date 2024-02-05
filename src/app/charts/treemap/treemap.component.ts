@@ -34,7 +34,8 @@ export class TreemapComponent implements OnInit{
   currentRoot: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   zoom: d3.ZoomBehavior<SVGSVGElement, unknown> = {} as d3.ZoomBehavior<SVGSVGElement, unknown>;
   currentDepth: number = 0;
-  private readonly MIN_NODE_SIZE = 10;
+  currentTransform: [number, number, number] = [this.width / 2, this.height / 2, this.height];
+  target: [number, number, number] = [this.width / 2, this.height / 2, this.height / 4];
   constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0, Infinity])
@@ -44,7 +45,7 @@ export class TreemapComponent implements OnInit{
 
     this.renderNode = this.renderNode.bind(this);
     this.positionSelection = this.positionSelection.bind(this);
-    this.positionTransition = this.positionTransition.bind(this);
+    //this.positionTransition = this.positionTransition.bind(this);
     this.zoomIn = this.zoomIn.bind(this);
     this.zoomOut = this.zoomOut.bind(this);
     this.updateTreemap = this.updateTreemap.bind(this);
@@ -115,6 +116,25 @@ export class TreemapComponent implements OnInit{
     this.updateTreemap();
   }
 
+  transition(target: [number, number, number]): void {
+    const i = d3.interpolateZoom(this.currentTransform, target);
+  
+    let duration = i.duration;
+    if (duration < 250) { // If the calculated duration is too short, extend it
+      duration = 250; // Adjust this value as needed
+    }
+
+    this.group.transition()
+  .duration(1000)
+  .attr("transform", "translate(100,100) scale(2)")
+  .on("end", () => console.log("Transition complete"));
+  }
+  
+  transform(x: number, y: number, r: number): string {
+    // This should return a string in the format of "translate(x, y) scale(z)"
+    return `translate(${this.width / 2 - x}, ${this.height / 2 - y}) scale(${this.height / r})`;
+  }
+
   renderNode(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
     const node = group
       .selectAll("g")
@@ -133,41 +153,78 @@ export class TreemapComponent implements OnInit{
 
     const self = this;
 
-    node.append("text")
+    node.append("text") //Titles
       .attr("font-weight", d => d === root ? "bold" : null)
       .attr("font-size", d => `${self.calculateFontSize(d)}px`)
+      .attr("fill-opacity", 0.7) 
+      .text(d => d.data.name)
       .each(function(d) {
-        d3.select(this)
-          .selectAll("tspan")
-          .data((d: any) => (d.data.name + " " + d.value).split(" "/*/(?=[A-Z][^A-Z])/g*/))
-          .join("tspan")
-          .attr("x", () => {
-            const font_size = self.calculateFontSize(d);
-            return font_size * 0.3
-          })
-          .attr("y", (childD, i) => {
-            const font_size = self.calculateFontSize(d);
-            return (font_size * 1.2) + i * (font_size * 1.2)
-          })
-          .attr("fill-opacity", (childD, i, nodes) => i === nodes.length - 1 ? 0.7 : null)
-          .attr("font-weight", (childD, i, nodes) => i === nodes.length - 1 ? "normal" : null)
-          .text((childD: any) => childD);
-      })
-    
-    if (this.currentDepth == 0 || this.currentDepth == 1) {
-      node.append("image")
-        .attr("width", d => this.x(d.x1) - this.x(d.x0))
-        .attr("height", d => {
-         // console.log(d.data.image);
-          return this.y(d.y1) - this.y(d.y0)
+        const currText = d3.select(this)
+        const textLength = currText.node()?.getBBox();
+        
+        currText.attr("x", (d: any) => {
+          const [width, height] = self.imageCalculations(d);
+          return (width / 2) - textLength!.width / 2
         })
+        .attr("y", (d: any) => {
+          const [width, height] = self.imageCalculations(d);
+          return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2 - textLength!.height / 2
+        })
+      })
+
+    node.append("text") //Scrobble Count
+      .attr("font-weight", d => d === root ? "bold" : null)
+      .attr("font-size", d => `${self.calculateFontSize(d)}px`)
+      .attr("fill-opacity", 0.7) 
+      .text((d: any) => d.value)
+      .each(function(d) {
+        const currText = d3.select(this)
+        const textLength = currText.node()?.getBBox();
+        
+        currText.attr("x", (d: any) => {
+          const [width, height] = self.imageCalculations(d);
+          return (width / 2) - textLength!.width / 2
+        })
+        .attr("y", (d: any) => {
+          const [width, height] = self.imageCalculations(d);
+          return (height / 2) + (width < height ? width * 0.6 : height * 0.6) / 2 + textLength!.height
+        })
+      })
+      
+    if (this.currentDepth == 0 || this.currentDepth == 1) {
+      const marginRatio = 0.1;
+      node.append("image")
+        .attr('width', d => {
+          const [width, height] = self.imageCalculations(d);
+          return width < height ? width * 0.6 : height * 0.6
+        })
+        .attr('height', d => {
+          const [width, height] = self.imageCalculations(d);
+          return width < height ? width * 0.6 : height * 0.6
+        })
+        .attr('x', d => {
+          const [width, height] = self.imageCalculations(d);
+          return (width / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
+        })
+        .attr('y', d => {
+          const [width, height] = self.imageCalculations(d);
+          return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
+        })
+        .attr("preserveAspectRatio", 'xMidYMid meet')
         .attr("href", d => {
-          //console.log(d.data.name + ": " + d.data.image);
           return d.data.image!
         })
-    }
+      }
     
     group.call(this.positionSelection, root);
+  }
+
+  imageCalculations(d: d3.HierarchyRectangularNode<TreeNode>): [number, number] {
+    const width = this.x(d.x1) - this.x(d.x0);
+    const height = this.y(d.y1) - this.y(d.y0);
+    // const aspectRatio = width / height;
+    // const sideLength = width < height ? width : height;
+    return [width, height];
   }
 
   calculateFontSize(d: d3.HierarchyRectangularNode<TreeNode>): number {
@@ -184,18 +241,18 @@ export class TreemapComponent implements OnInit{
         .attr("height", (d: any) => d === root ? 30 : this.y(d.y1) - this.y(d.y0));
   }
 
-  positionTransition(group: d3.Transition<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
-    group.selectAll("g")
-      .transition()
-      .duration(750)
-      .attr("transform", (d: any) => `translate(${this.x(d.x0)},${this.y(d.y0)})`);
+  // positionTransition(group: d3.Transition<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
+  //   group.selectAll("g")
+  //     .transition()
+  //     .duration(750)
+  //     .attr("transform", (d: any) => `translate(${this.x(d.x0)},${this.y(d.y0)})`);
   
-    group.selectAll("rect")
-      .transition()
-      .duration(750)
-      .attr("width", (d: any) => this.x(d.x1) - this.x(d.x0))
-      .attr("height", (d: any) => this.y(d.y1) - this.y(d.y0));
-  }
+  //   group.selectAll("rect")
+  //     .transition()
+  //     .duration(750)
+  //     .attr("width", (d: any) => this.x(d.x1) - this.x(d.x0))
+  //     .attr("height", (d: any) => this.y(d.y1) - this.y(d.y0));
+  // }
 
   zoomIn(node: d3.HierarchyRectangularNode<TreeNode>) {
     this.currentDepth++;

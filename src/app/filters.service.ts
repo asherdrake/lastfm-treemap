@@ -4,6 +4,8 @@ import { ComponentStore } from '@ngrx/component-store'
 export interface FilterState {
   startDate: number,
   endDate: number,
+
+  minArtistScrobbles: number
 }
 
 @Injectable({
@@ -14,13 +16,15 @@ export class FiltersService extends ComponentStore<FilterState> {
   constructor() { 
     super({
       startDate: 0,
-      endDate: Date.now()
+      endDate: Date.now(),
+      minArtistScrobbles: 0
     });
   }
 
-  readonly updateDateRange = this.updater((currData: FilterState, dateRange: {startDate: number, endDate: number}) => {
+  readonly updateSettings = this.updater((currData: FilterState, settings: {startDate: number, endDate: number, minArtistScrobbles: number}) => {
     return {
-      ...dateRange
+      ...currData,
+      ...settings
     }
   });
 }

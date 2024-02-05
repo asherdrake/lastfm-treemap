@@ -17,6 +17,7 @@ export class LoadingComponent implements OnInit {
   startDate: string = '';
   endDate: string = '';
   username: string = '';
+  minArtistScrobbles: number = 0;
   constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private filters: FiltersService) {
     this.storage.loadingStatus.pipe(
       map(loadingStatus => {
@@ -50,19 +51,15 @@ export class LoadingComponent implements OnInit {
   }
 
   applySettings(): void {
-    //this.group.remove();
-    this.updateDateRange();
-  }
-
-  updateDateRange(): void {
-    console.log("updateDateRange");
     const startDate = Date.parse(this.startDate);
     const endDate = Date.parse(this.endDate);
-    this.filters.updateDateRange({startDate, endDate});
+    const minArtistScrobbles = this.minArtistScrobbles
+    console.log(minArtistScrobbles);
+    this.filters.updateSettings({startDate, endDate, minArtistScrobbles});
   }
   
   startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: string }): void {
-    this.updateDateRange();
+    this.applySettings();
     this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages);
   }
 

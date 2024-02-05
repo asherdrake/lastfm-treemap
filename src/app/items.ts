@@ -45,7 +45,7 @@ export interface Artist {
     }
     scrobbles: number[], //holds the date values of each scrobble
     name: string,
-    image_url: string
+    image_url?: string
 }
 
 export interface Album {
