@@ -1,10 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import * as d3 from 'd3';
-import { RGBColor } from 'd3';
 import { Scrobble, ChartStats, ScrobblesJSON } from 'src/app/items';
-import { tap, take, finalize, combineLatest, filter, map, BehaviorSubject, distinctUntilChanged, Subject } from 'rxjs';
 import { StatsConverterService } from 'src/app/stats-converter.service';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
 import { FiltersService } from 'src/app/filters.service';

@@ -5,10 +5,10 @@ import { take, tap, filter, Observable, map, combineLatest} from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
-
+import ColorThief from 'color-thief-ts';
 
 interface ArtistImages {
-  [key: string]: string
+  [key: string]: [string, number[]]
 }
 
 @Injectable({
@@ -77,16 +77,42 @@ export class StatsConverterService {
   storeArtistImage(scrobbles: Scrobble[]): void {
     for (const scrobble of scrobbles) {
       if (!this.artistImageStorage[scrobble.artistName]) {
-        this.artistImageStorage[scrobble.artistName] = ' ';
+        this.artistImageStorage[scrobble.artistName] = [' ', []];
         //console.log(scrobble.artistName + ": (imageurl)");
         this.scrobbleGetterService.getArtistImage(scrobble.artistName).subscribe({
           next: (artistImageURL) => {
-            this.artistImageStorage[scrobble.artistName] = artistImageURL;
+            this.getDominantColor(artistImageURL)
+              .then(color => {
+                this.artistImageStorage[scrobble.artistName] = [artistImageURL, color]
+              })
+              .catch(error => {
+                console.error("Error getting dominant color:", error);
+                this.artistImageStorage[scrobble.artistName] = [artistImageURL, []]
+              })
           },
           error: (err) => console.error('Error while fetching artist image:', err)
         })
       }
     }
+  }
+
+  getDominantColor(imageSrc: string): Promise<number[]> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = imageSrc;
+
+      img.onload = () => {
+        try {
+          const colorThief = new ColorThief();
+          const color = colorThief.getColor(img);
+          resolve(color);
+        } catch (error) {
+          reject(error)
+        }
+      }
+
+      img.onerror = (error) => reject(error)
+    });
   }
 
   filterScrobbles(scrobbles: Scrobble[], filters: FilterState): Scrobble[] {
@@ -105,7 +131,7 @@ export class StatsConverterService {
           albums: {},
           scrobbles: [],
           name: scrobble.artistName,
-          image_url: this.artistImageStorage[scrobble.artistName] || '--'
+          image_url: this.artistImageStorage[scrobble.artistName][0] || '--'
       };
     }
 
