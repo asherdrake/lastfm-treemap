@@ -83,8 +83,8 @@ export class StatsConverterService {
           next: (artistImageURL) => {
             this.getDominantColor(artistImageURL)
               .then(color => {
-                const imageColor = this.rgbToHex(color);
-                this.artistImageStorage[scrobble.artistName] = [artistImageURL, imageColor]
+                //const imageColor = this.rgbToHex(color);
+                this.artistImageStorage[scrobble.artistName] = [artistImageURL, color.toString()]
               })
               .catch(error => {
                 console.error("Error getting dominant color:", error);
@@ -107,6 +107,7 @@ export class StatsConverterService {
         try {
           const colorThief = new ColorThief();
           const color = colorThief.getColor(img);
+          //console.log(color)
           resolve(color);
         } catch (error) {
           reject(error)
@@ -132,6 +133,7 @@ export class StatsConverterService {
     const [r, g, b] = rgb;
   
     // Convert each component to hex and concatenate them
+    //console.log("r: " + r + "g: " + g + "b: " + b + ", #" + toHex(r) + toHex(g) + toHex(b));
     return '#' + toHex(r) + toHex(g) + toHex(b);
   }
 

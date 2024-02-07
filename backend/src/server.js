@@ -1,6 +1,6 @@
 const express = require('express');
 //const fetch = require('node-fetch');
-const { getArtistImage } = require('./imageFetcher.js');
+const { getImageURL } = require('./imageFetcher.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -13,7 +13,7 @@ app.use((req, res, next) => {
 
 app.get('/api/artist-image/:artistName', async (req, res) => {
     const { artistName } = req.params;
-    getArtistImage(artistName)
+    getImageURL(artistName)
         .then(imageUrl => {
             res.json({ imageUrl });
         })

@@ -1,7 +1,8 @@
 const axios = require('axios');
 const cheerio = require('cheerio');
 
-function getImageURL(artistName) {
+
+module.exports.getImageURL = async function(artistName) {
     const url = `https://last.fm/music/${artistName}/+images`;
 
     return axios.get(url, { responseType: 'text' })
