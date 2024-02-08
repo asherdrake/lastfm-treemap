@@ -81,7 +81,7 @@ export class StatsConverterService {
   }
 
   convertScrobbles(scrobbles: Scrobble[], filters: FilterState, newChartStats: ChartStats): [ChartStats, FilterState] {
-    console.log("convertScrobbles: " + filters.startDate + " | " + filters.endDate);
+    //console.log("convertScrobbles: " + filters.startDate + " | " + filters.endDate);
     for (const scrobble of this.filterScrobbles(scrobbles, filters)) {
       this.handleScrobble(scrobble, newChartStats);
     }
@@ -99,7 +99,7 @@ export class StatsConverterService {
             console.log("artistImageStorage: " + Object.keys(this.artistImageStorage).length);
             console.log("newChartStats: " + Object.keys(newChartStats.artists).length);
           }),
-          filter(() => Object.keys(newChartStats.artists).length === Object.keys(this.artistImageStorage).length),
+          filter(() => Object.keys(newChartStats.artists).length <= Object.keys(this.artistImageStorage).length),
           take(1)
         ).subscribe(() => {
           // Once condition is met, complete the checkSubscription and let the source observable proceed
@@ -170,10 +170,13 @@ export class StatsConverterService {
   }
 
   filterScrobbles(scrobbles: Scrobble[], filters: FilterState): Scrobble[] {
+    console.log("Start: " + new Date(filters.startDate).toDateString() + " " + new Date(filters.startDate).toTimeString()
+            +  "End: " + new Date(filters.endDate).toDateString() + new Date(filters.endDate).toTimeString());
     return scrobbles.filter(scrobble => {
       if (filters.startDate > scrobble.date.getTime() || filters.endDate < scrobble.date.getTime()) {
         return false;
       }
+      console.log(scrobble.artistName + " date: " + scrobble.date.toDateString());
       return true;
     })
   }
@@ -187,6 +190,7 @@ export class StatsConverterService {
         color: this.artistImageStorage[artist][1] || ''
       }
       console.log("retried missing artist: " +artist + this.artistImageStorage[artist][0]);
+      this.missingArtists.delete(artist);
     }
     return [newChartStats, filters];
   }
