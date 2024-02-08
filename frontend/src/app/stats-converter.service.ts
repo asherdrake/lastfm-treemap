@@ -1,9 +1,9 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { ChartStats, Scrobble, Artist } from './items';
-import { take, tap, filter, Observable, map, combineLatest} from 'rxjs';
+import { interval, of, defer, concatMap, Subject, switchMap, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
-import { ScrobbleStorageService } from './scrobble-storage.service';
+import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
 import ColorThief from 'color-thief-ts';
 
@@ -15,20 +15,24 @@ interface ArtistImages {
   providedIn: 'root'
 })
 export class StatsConverterService {
-  chartStats: Observable<ChartStats>;
+  //chartStats: Observable<ChartStats>;
   startDate: number = 0;
   endDate: number = 0;
   artistImageStorage: ArtistImages = {};
+  missingArtists = new Set<string>();
+  currentlyRetrieving = new Set<string>();
+  imageProcessing;
+  private timerDuration: number = 10000;
+  private resetTimer = new Subject<void>();
+  imageProcessingComplete = new Subject<void>();
+  completed: Observable<ScrobbleState>;
 
   constructor(private router: Router, private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private filters: FiltersService) {
-    this.storage.trackPageChunk.pipe(
-      map(scrobbles => this.storeArtistImage(scrobbles))
-    ).subscribe({
-      next: () => {
-        console.log("trackPageChunk observable")
-        this.storage.updateArtistImages(this.artistImageStorage);
-      }
-    });
+    this.imageProcessing = this.storage.trackPageChunk.pipe(
+      map(scrobbles => this.storeArtistImage(scrobbles)),
+      // takeUntil(timerResetObservable),
+      // tap(() => console.log("Image Processing Complete."))
+    ).subscribe();
 
     this.storage.artistImageStorage.subscribe({
       next: (artistImages) => {
@@ -36,13 +40,23 @@ export class StatsConverterService {
       }
     })
     
-    const completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
-    
-    this.chartStats = combineLatest([
-      completed,
+    this.completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
+  };
+
+  getChartStatsObservable(): Observable<ChartStats> {
+    return combineLatest([
+      this.completed,
       this.filters.state$
     ]).pipe(
       map(([scrobbles, filters]) => this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })),
+      concatMap(([newChartStats, filters]) => {
+        return this.pauseUntilConditionMet(newChartStats)(of(newChartStats)).pipe(
+          map(() => {
+            return [newChartStats, filters]
+          })
+        );
+      }),
+      map(([newChartStats, filters]) => this.addArtistImagesRetry(newChartStats as ChartStats, filters as FilterState)),
       map(([newChartStats, filters]) => {
         const filteredArtists = Object.keys(newChartStats.artists).reduce((acc, artistName) => {
           const artist = newChartStats.artists[artistName];
@@ -64,21 +78,52 @@ export class StatsConverterService {
         };
       })
     )
-  };
+  }
 
   convertScrobbles(scrobbles: Scrobble[], filters: FilterState, newChartStats: ChartStats): [ChartStats, FilterState] {
     console.log("convertScrobbles: " + filters.startDate + " | " + filters.endDate);
     for (const scrobble of this.filterScrobbles(scrobbles, filters)) {
-        this.handleScrobble(scrobble, newChartStats);
+      this.handleScrobble(scrobble, newChartStats);
     }
+    console.log("convertScrobbles finished");
     return [newChartStats, filters];
+  }
+
+  pauseUntilConditionMet(newChartStats: ChartStats) {
+    return (source: Observable<any>) => {
+      return new Observable<any>(subscriber => {
+        const checkSubscription = interval(1000).pipe(
+          tap(() => {
+            // Log for debugging
+            console.log('Checking condition...');
+            console.log("artistImageStorage: " + Object.keys(this.artistImageStorage).length);
+            console.log("newChartStats: " + Object.keys(newChartStats.artists).length);
+          }),
+          filter(() => Object.keys(newChartStats.artists).length === Object.keys(this.artistImageStorage).length),
+          take(1)
+        ).subscribe(() => {
+          // Once condition is met, complete the checkSubscription and let the source observable proceed
+          source.subscribe({
+            next: (value) => subscriber.next(value),
+            error: (err) => subscriber.error(err),
+            complete: () => subscriber.complete(),
+          });
+        });
+  
+        // Return the teardown logic
+        return () => {
+          checkSubscription.unsubscribe();
+        };
+      });
+    };
   }
 
   storeArtistImage(scrobbles: Scrobble[]): void {
     for (const scrobble of scrobbles) {
-      if (!this.artistImageStorage[scrobble.artistName]) {
-        this.artistImageStorage[scrobble.artistName] = [' ', ''];
+      if (!this.currentlyRetrieving.has(scrobble.artistName) && !this.artistImageStorage[scrobble.artistName]) {
+        //this.artistImageStorage[scrobble.artistName] = ['', ''];
         //console.log(scrobble.artistName + ": (imageurl)");
+        this.currentlyRetrieving.add(scrobble.artistName);
         this.scrobbleGetterService.getArtistImage(scrobble.artistName).subscribe({
           next: (artistImageURL) => {
             this.getDominantColor(artistImageURL)
@@ -89,7 +134,10 @@ export class StatsConverterService {
               .catch(error => {
                 console.error("Error getting dominant color:", error);
                 this.artistImageStorage[scrobble.artistName] = [artistImageURL, ""]
-              })
+              });
+
+            this.currentlyRetrieving.delete(scrobble.artistName);
+            this.resetTimer.next();
           },
           error: (err) => console.error('Error while fetching artist image:', err)
         })
@@ -121,22 +169,6 @@ export class StatsConverterService {
     });
   }
 
-  rgbToHex(rgb: number[]): string {
-    // Function to convert a single RGB value to a two-digit hex string
-    const toHex = (c: number) => {
-      // Convert the value to hex and ensure it has at least two digits
-      const hex = c.toString(16);
-      return hex.length === 1 ? '0' + hex : hex;
-    };
-  
-    // Destructure the RGB array into its components
-    const [r, g, b] = rgb;
-  
-    // Convert each component to hex and concatenate them
-    //console.log("r: " + r + "g: " + g + "b: " + b + ", #" + toHex(r) + toHex(g) + toHex(b));
-    return '#' + toHex(r) + toHex(g) + toHex(b);
-  }
-
   filterScrobbles(scrobbles: Scrobble[], filters: FilterState): Scrobble[] {
     return scrobbles.filter(scrobble => {
       if (filters.startDate > scrobble.date.getTime() || filters.endDate < scrobble.date.getTime()) {
@@ -146,16 +178,42 @@ export class StatsConverterService {
     })
   }
 
+  addArtistImagesRetry(newChartStats: ChartStats, filters: FilterState): [ChartStats, FilterState] {
+    console.log("addArtistImagesRetry, " + this.missingArtists.size);
+    for (const artist of this.missingArtists) {
+      newChartStats.artists[artist] = {
+        ...newChartStats.artists[artist],
+        image_url: this.artistImageStorage[artist][0] || '',
+        color: this.artistImageStorage[artist][1] || ''
+      }
+      console.log("retried missing artist: " +artist + this.artistImageStorage[artist][0]);
+    }
+    return [newChartStats, filters];
+  }
+
   handleScrobble(scrobble: Scrobble, chartStats: ChartStats): void {
+    //console.log("handling " + scrobble.artistName)
     // If the artist doesn't exist in chartStats, initialize it
     if (!chartStats.artists[scrobble.artistName]) {
-      chartStats.artists[scrobble.artistName] = {
+      if (!this.artistImageStorage[scrobble.artistName]) {
+        console.log("adding missing Artist to set: " + scrobble.artistName);
+        this.missingArtists.add(scrobble.artistName);
+        chartStats.artists[scrobble.artistName] = {
           albums: {},
           scrobbles: [],
           name: scrobble.artistName,
-          image_url: this.artistImageStorage[scrobble.artistName][0] || '--',
-          color: this.artistImageStorage[scrobble.artistName][1] || ''
-      };
+          image_url: '',
+          color: ''
+        };
+      } else {
+        chartStats.artists[scrobble.artistName] = {
+              albums: {},
+              scrobbles: [],
+              name: scrobble.artistName,
+              image_url: this.artistImageStorage[scrobble.artistName][0] || '',
+              color: this.artistImageStorage[scrobble.artistName][1] || ''
+        };
+      }
     }
 
     const artist = chartStats.artists[scrobble.artistName];

@@ -113,7 +113,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
 
   readonly scrobbles$ = this.select(state => state.scrobbles);
 
-  readonly trackPageChunk = this.select(state => state.state === 'GETTINGSCROBBLES', {debounce: true})
+  readonly trackPageChunk = this.select(state => state.state === 'GETTINGSCROBBLES', {debounce: false})
     .pipe(
       filter(canProcess => canProcess),
       distinctUntilChanged(),

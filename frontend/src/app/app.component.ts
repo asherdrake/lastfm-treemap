@@ -2,6 +2,8 @@ import { ViewContainerRef, ViewChild, Component, OnInit, ComponentFactoryResolve
 import { StatsConverterService } from './stats-converter.service';
 import { TreemapComponent } from './charts/treemap/treemap.component';
 import { ChartStats } from './items';
+import { ScrobbleStorageService } from './scrobble-storage.service';
+import { concat, filter, switchMap } from 'rxjs';
 
 @Component({
   selector: 'app-root',
@@ -11,11 +13,19 @@ import { ChartStats } from './items';
 export class AppComponent implements OnInit{
   @ViewChild('treemapPlaceholder', { read: ViewContainerRef }) treemapContainer!: ViewContainerRef;
 
-  constructor(private statsConverterService: StatsConverterService) {}
+  constructor(private statsConverterService: StatsConverterService, private storage: ScrobbleStorageService) {}
 
   ngOnInit(): void {
-    this.statsConverterService.chartStats.subscribe((chartStats) => {
-      this.loadTreemapComponent(chartStats);
+    // concat(this.statsConverterService.imageProcessing, this.statsConverterService.getChartStatsObservable())
+    // .subscribe({
+    //   next: (chartStats) => {
+    //     this.loadTreemapComponent(chartStats!);
+    //   }
+    // })
+    this.statsConverterService.getChartStatsObservable().subscribe({
+      next: (chartStats) => {
+        this.loadTreemapComponent(chartStats!);
+      }
     })
   }
 
