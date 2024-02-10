@@ -21,8 +21,8 @@ interface TreeNode {
 })
 export class TreemapComponent implements OnInit{
   treemapData: TreeNode = {} as TreeNode;
-  width: number = 1500;
-  height: number = 1500;
+  width: number = 3000;
+  height: number = 3000;
   hierarchy: d3.HierarchyNode<TreeNode> = {} as d3.HierarchyNode<TreeNode>;
   root: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   x: d3.ScaleLinear<number, number, never> = {} as d3.ScaleLinear<number, number, never>;
@@ -64,6 +64,7 @@ export class TreemapComponent implements OnInit{
               name: artist.name,
               children: Object.keys(artist.albums).map(albumKey => {
                   const album = artist.albums[albumKey];
+                  console.log("Album: " + album.name + ", Color: " + album.color)
                   return {
                       name: album.name,
                       children: Object.keys(album.tracks).map(trackKey => {
@@ -73,7 +74,8 @@ export class TreemapComponent implements OnInit{
                               value: track.scrobbles.length // or another metric for value
                           };
                       }),
-                      image: album.image_url
+                      image: album.image_url,
+                      color: album.color
                   };
               }),
               image: artist.image_url,
@@ -147,7 +149,13 @@ export class TreemapComponent implements OnInit{
     node.append("rect")
       .attr('width', d => { return d.x1 - d.x0 })
       .attr('height', d => { return d.y1 - d.y0 })
-      .attr("fill", d => d.data.color || "#ccc"/*d === root ? "#fff" : d.children ? "#ccc" : "#ddd"*/)
+      .attr("fill", d => {
+        if (d.data.color) {
+          return d.data.color
+        }
+        console.log(d.data.name)
+        return "#ccc";
+      })
       .attr("stroke", "#fff");
 
     const self = this;
@@ -169,6 +177,17 @@ export class TreemapComponent implements OnInit{
           const [width, height] = self.imageCalculations(d);
           return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2 - textLength!.height / 2
         })
+
+        if (self.currentDepth == 0 || self.currentDepth == 1) {
+          currText.attr("fill", (d: any) => {
+            const color = d.data.color
+            const [r, g, b] = self.hexToRgb(color);
+            if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
+              return "#000000"
+            }
+            return "#ffffff"
+          })
+        }
       })
 
     node.append("text") //Scrobble Count
@@ -188,6 +207,17 @@ export class TreemapComponent implements OnInit{
           const [width, height] = self.imageCalculations(d);
           return (height / 2) + (width < height ? width * 0.6 : height * 0.6) / 2 + textLength!.height
         })
+
+        if (self.currentDepth == 0 || self.currentDepth == 1) {
+          currText.attr("fill", (d: any) => {
+            const color = d.data.color
+            const [r, g, b] = self.hexToRgb(color);
+            if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
+              return "#000000"
+            }
+            return "#ffffff"
+          })
+        }
       })
       
     if (this.currentDepth == 0 || this.currentDepth == 1) {
@@ -218,6 +248,22 @@ export class TreemapComponent implements OnInit{
     group.call(this.positionSelection, root);
   }
 
+  hexToRgb(hex: string): [number, number, number] {
+    // Remove the hash at the start if it's there
+    if (!hex) {
+      hex = "#cccccc" 
+    }
+
+    hex = hex.replace(/^#/, '');
+  
+    // Parse the r, g, b values
+    let r = parseInt(hex.substring(0, 2), 16);
+    let g = parseInt(hex.substring(2, 4), 16);
+    let b = parseInt(hex.substring(4, 6), 16);
+  
+    return [r, g, b];
+  }
+
   imageCalculations(d: d3.HierarchyRectangularNode<TreeNode>): [number, number] {
     const width = this.x(d.x1) - this.x(d.x0);
     const height = this.y(d.y1) - this.y(d.y0);
@@ -239,19 +285,6 @@ export class TreemapComponent implements OnInit{
         .attr("width", (d: any) => d === root ? this.width : this.x(d.x1) - this.x(d.x0))
         .attr("height", (d: any) => d === root ? 30 : this.y(d.y1) - this.y(d.y0));
   }
-
-  // positionTransition(group: d3.Transition<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
-  //   group.selectAll("g")
-  //     .transition()
-  //     .duration(750)
-  //     .attr("transform", (d: any) => `translate(${this.x(d.x0)},${this.y(d.y0)})`);
-  
-  //   group.selectAll("rect")
-  //     .transition()
-  //     .duration(750)
-  //     .attr("width", (d: any) => this.x(d.x1) - this.x(d.x0))
-  //     .attr("height", (d: any) => this.y(d.y1) - this.y(d.y0));
-  // }
 
   zoomIn(node: d3.HierarchyRectangularNode<TreeNode>) {
     this.currentDepth++;

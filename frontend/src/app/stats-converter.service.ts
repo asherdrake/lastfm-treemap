@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { ChartStats, Scrobble, Artist } from './items';
-import { interval, of, defer, concatMap, Subject, switchMap, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
+import { from, mergeMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
@@ -44,11 +44,15 @@ export class StatsConverterService {
   };
 
   getChartStatsObservable(): Observable<ChartStats> {
+    let filterState: FilterState;
     return combineLatest([
       this.completed,
       this.filters.state$
     ]).pipe(
-      map(([scrobbles, filters]) => this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })),
+      map(([scrobbles, filters]) => {
+        filterState = filters;
+        return this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })
+      }),
       concatMap(([newChartStats, filters]) => {
         return this.pauseUntilConditionMet(newChartStats)(of(newChartStats)).pipe(
           map(() => {
@@ -57,13 +61,22 @@ export class StatsConverterService {
         );
       }),
       map(([newChartStats, filters]) => this.addArtistImagesRetry(newChartStats as ChartStats, filters as FilterState)),
-      map(([newChartStats, filters]) => {
+      //map(([newChartStats, filters]) => this.addAlbumColors(newChartStats, filters)),
+      mergeMap(([newChartStats, filters]) => 
+        this.addAlbumColors(newChartStats).pipe(
+          map(updatedChartStats => {
+            return updatedChartStats;
+          })
+        )
+      ),
+      map((newChartStats) => {
+        console.log("pipe", Object.values(newChartStats.artists).map(artist => Object.values(artist.albums)));
         const filteredArtists = Object.keys(newChartStats.artists).reduce((acc, artistName) => {
           const artist = newChartStats.artists[artistName];
           const scrobbleCount = artist.scrobbles.length; // Calculate the total scrobble count for the artist
     
-          console.log(filters.minArtistScrobbles);
-          if (scrobbleCount >= filters.minArtistScrobbles) {
+          console.log(filterState.minArtistScrobbles);
+          if (scrobbleCount >= filterState.minArtistScrobbles) {
             // If the artist meets the minimum scrobble count, include them in the output
             acc[artistName] = artist;
           }
@@ -155,7 +168,7 @@ export class StatsConverterService {
         try {
           const colorThief = new ColorThief();
           const color = colorThief.getColor(img);
-          //console.log(color)
+          //console.log("Image loaded successfully: " + imageSrc)
           resolve(color);
         } catch (error) {
           reject(error)
@@ -163,20 +176,20 @@ export class StatsConverterService {
       }
 
       img.onerror = (error) => {
-        console.error("Error loading image:", error);
+        console.error("Error loading image: " + imageSrc, error);
         reject(error)
       }
     });
   }
 
   filterScrobbles(scrobbles: Scrobble[], filters: FilterState): Scrobble[] {
-    console.log("Start: " + new Date(filters.startDate).toDateString() + " " + new Date(filters.startDate).toTimeString()
-            +  "End: " + new Date(filters.endDate).toDateString() + new Date(filters.endDate).toTimeString());
+    //console.log("Start: " + new Date(filters.startDate).toDateString() + " " + new Date(filters.startDate).toTimeString()
+    //        +  "End: " + new Date(filters.endDate).toDateString() + new Date(filters.endDate).toTimeString());
     return scrobbles.filter(scrobble => {
       if (filters.startDate > scrobble.date.getTime() || filters.endDate < scrobble.date.getTime()) {
         return false;
       }
-      console.log(scrobble.artistName + " date: " + scrobble.date.toDateString());
+      //console.log(scrobble.artistName + " date: " + scrobble.date.toDateString());
       return true;
     })
   }
@@ -193,6 +206,38 @@ export class StatsConverterService {
       this.missingArtists.delete(artist);
     }
     return [newChartStats, filters];
+  }
+
+  addAlbumColors(newChartStats: ChartStats): Observable<ChartStats> {
+    // Collect an array of observables for color updates
+    const colorUpdates$: any = [];
+  
+    // Iterate over artists and albums to update colors
+    Object.values(newChartStats.artists).forEach(artist => {
+      Object.values(artist.albums).forEach(album => {
+        if (album.image_url) {
+          // Convert the Promise returned by getDominantColor to an Observable
+          const colorUpdate$ = from(this.getDominantColor(album.image_url)).pipe(
+            map(color => {
+              // Update the album's color with the result
+              album.color = color.toString();
+              return album; // This line is not strictly necessary but helps with understanding the flow
+            }),
+            catchError(error => {
+              console.error("Error getting dominant color for album: " + album.name, error);
+              return of(null); // Continue the observable chain even if there's an error
+            })
+          );
+  
+          colorUpdates$.push(colorUpdate$);
+        }
+      });
+    });
+  
+    // Wait for all color updates to complete
+    return forkJoin(colorUpdates$).pipe(
+      map(() => newChartStats) // Return the updated ChartStats once all updates are done
+    );
   }
 
   handleScrobble(scrobble: Scrobble, chartStats: ChartStats): void {

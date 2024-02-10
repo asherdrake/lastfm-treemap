@@ -49,7 +49,7 @@ export interface Artist {
     color?: string
 }
 
-export interface Album {
+export interface Album {    
     //artist: string,
     tracks: {
         [key: string]: Track
@@ -57,6 +57,7 @@ export interface Album {
     scrobbles: number[],
     name: string
     image_url?: string
+    color?: string
 }
 
 export interface Track {
