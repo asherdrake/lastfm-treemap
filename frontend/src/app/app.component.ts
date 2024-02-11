@@ -16,12 +16,6 @@ export class AppComponent implements OnInit{
   constructor(private statsConverterService: StatsConverterService, private storage: ScrobbleStorageService) {}
 
   ngOnInit(): void {
-    // concat(this.statsConverterService.imageProcessing, this.statsConverterService.getChartStatsObservable())
-    // .subscribe({
-    //   next: (chartStats) => {
-    //     this.loadTreemapComponent(chartStats!);
-    //   }
-    // })
     this.statsConverterService.getChartStatsObservable().subscribe({
       next: (chartStats) => {
         this.loadTreemapComponent(chartStats!);

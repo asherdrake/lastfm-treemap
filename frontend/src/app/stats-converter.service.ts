@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChartStats, Scrobble, Artist } from './items';
+import { ChartStats, Scrobble, Artist, Album } from './items';
 import { from, mergeMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
@@ -11,6 +11,14 @@ interface ArtistImages {
   [key: string]: [string, string]
 }
 
+interface AlbumImages {
+  artists: {
+    [key: string]: {
+      [key: string]: string
+    }
+  }
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -19,10 +27,11 @@ export class StatsConverterService {
   startDate: number = 0;
   endDate: number = 0;
   artistImageStorage: ArtistImages = {};
+  albumImageStorage: AlbumImages = { artists: {} };
   missingArtists = new Set<string>();
   currentlyRetrieving = new Set<string>();
   imageProcessing;
-  private timerDuration: number = 10000;
+  //private timerDuration: number = 10000;
   private resetTimer = new Subject<void>();
   imageProcessingComplete = new Subject<void>();
   completed: Observable<ScrobbleState>;
@@ -37,6 +46,12 @@ export class StatsConverterService {
     this.storage.artistImageStorage.subscribe({
       next: (artistImages) => {
         this.artistImageStorage = artistImages as ArtistImages
+      }
+    })
+
+    this.storage.albumImageStorage.subscribe({
+      next: (albumImages) => {
+        this.albumImageStorage = albumImages as AlbumImages
       }
     })
     
@@ -65,6 +80,7 @@ export class StatsConverterService {
       mergeMap(([newChartStats, filters]) => 
         this.addAlbumColors(newChartStats).pipe(
           map(updatedChartStats => {
+            //this.storage.updateAlbumImages(this.albumImageStorage);
             return updatedChartStats;
           })
         )
@@ -211,20 +227,31 @@ export class StatsConverterService {
   addAlbumColors(newChartStats: ChartStats): Observable<ChartStats> {
     // Collect an array of observables for color updates
     const colorUpdates$: any = [];
-  
+    
+    console.log("addAlbumColors");
+
     // Iterate over artists and albums to update colors
     Object.values(newChartStats.artists).forEach(artist => {
       Object.values(artist.albums).forEach(album => {
-        if (album.image_url) {
+        if (album.image_url && !this.albumImageStorage.artists[artist.name][album.name]) {
+          console.log("addAlbumColors if")
           // Convert the Promise returned by getDominantColor to an Observable
           const colorUpdate$ = from(this.getDominantColor(album.image_url)).pipe(
             map(color => {
               // Update the album's color with the result
               album.color = color.toString();
+              if (!this.albumImageStorage.artists[artist.name]) {
+                this.albumImageStorage.artists[artist.name] = {}
+              }
+              this.albumImageStorage.artists[artist.name][album.name] = color.toString();
               return album; // This line is not strictly necessary but helps with understanding the flow
             }),
             catchError(error => {
               console.error("Error getting dominant color for album: " + album.name, error);
+              if (!this.albumImageStorage.artists[artist.name]) {
+                this.albumImageStorage.artists[artist.name] = {}
+              }
+              this.albumImageStorage.artists[artist.name][album.name] = "";
               return of(null); // Continue the observable chain even if there's an error
             })
           );
@@ -233,6 +260,10 @@ export class StatsConverterService {
         }
       });
     });
+
+    if (colorUpdates$.length === 0) {
+      colorUpdates$.push(of(''));
+    }
   
     // Wait for all color updates to complete
     return forkJoin(colorUpdates$).pipe(
@@ -256,11 +287,11 @@ export class StatsConverterService {
         };
       } else {
         chartStats.artists[scrobble.artistName] = {
-              albums: {},
-              scrobbles: [],
-              name: scrobble.artistName,
-              image_url: this.artistImageStorage[scrobble.artistName][0] || '',
-              color: this.artistImageStorage[scrobble.artistName][1] || ''
+          albums: {},
+          scrobbles: [],
+          name: scrobble.artistName,
+          image_url: this.artistImageStorage[scrobble.artistName][0] || '',
+          color: this.artistImageStorage[scrobble.artistName][1] || ''
         };
       }
     }
@@ -273,8 +304,17 @@ export class StatsConverterService {
             tracks: {},
             scrobbles: [],
             name: scrobble.album,
-            image_url: scrobble.albumImage // Assuming the album image is the same as the artist image
+            image_url: scrobble.albumImage
         };
+        if (!this.albumImageStorage.artists[scrobble.artistName]) {
+          this.albumImageStorage.artists[scrobble.artistName] = {}
+        }
+        if (this.albumImageStorage.artists[scrobble.artistName][scrobble.album]) {
+          artist.albums[scrobble.album] = {
+            ...artist.albums[scrobble.album],
+            color: this.albumImageStorage.artists[scrobble.artistName][scrobble.album]
+          };
+        }
     }
 
     const album = artist.albums[scrobble.album];

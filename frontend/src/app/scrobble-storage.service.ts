@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { distinctUntilChanged, filter, map, pairwise, switchMap, tap } from 'rxjs';
-import { Scrobble, User } from './items';
+import { AlbumImages, Scrobble, User } from './items';
 import { MessageService } from './message.service';
 
 export interface ScrobbleState {
@@ -9,6 +9,7 @@ export interface ScrobbleState {
   artistImages?: {
     [key: string]: [string, string]
   }
+  albumImages?: AlbumImages
   user?: User;
 
   totalTrackPages: number;
@@ -30,11 +31,12 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     });
   }
 
-  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] } }) => {
+  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages }) => {
     return {
       ...currData,
       scrobbles: [...imported.importedScrobbles],
-      artistImages: imported.artistImages
+      artistImages: imported.artistImages,
+      albumImages: imported.albumImages
     }
   })
 
@@ -85,6 +87,13 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       artistImages: artistImages
     }
   })
+
+  readonly updateAlbumImages = this.updater((currData: ScrobbleState, albumImages: AlbumImages) => {
+    return {
+      ...currData,
+      albumImages: albumImages
+    }
+  })
   
   readonly updateAlbumTotal = this.updater((currData: ScrobbleState, page: {totalAlbumPages: number, currAlbumPage: number}) => {
     return {
@@ -125,6 +134,12 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   readonly artistImageStorage = this.state$.pipe(
     map(state => state.artistImages)
   )
+
+  readonly albumImageStorage = this.state$.pipe(
+    map(state => state.albumImages)
+  )
+
+  readonly artistImageUpdate = this.select(state => state.artistImages);
   
   private log(message: string) {
     this.messageService.add(`ScrobbleStorage: ${message}`);

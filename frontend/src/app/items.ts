@@ -24,7 +24,23 @@ export interface ScrobblesJSON {
     artistImages: {
         [key: string]: [string, string]
     }
+    albumImages: {
+        artists: {
+            [key: string]: {
+              [key: string]: string
+            }
+        }
+    }
 }
+
+export interface AlbumImages {
+    artists: {
+      [key: string]: {
+        [key: string]: string
+      }
+    }
+  }
+  
 
 export interface LoadingStats {
     scrobblesFetched: number,

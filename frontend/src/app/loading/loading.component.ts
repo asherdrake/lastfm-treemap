@@ -3,7 +3,10 @@ import { ScrobbleStorageService } from '../scrobble-storage.service';
 import { map, take } from 'rxjs';
 import { ScrobbleGetterService } from '../scrobblegetter.service';
 import { FiltersService } from '../filters.service';
-import { Scrobble, ScrobblesJSON } from "src/app/items";
+import { Scrobble, ScrobblesJSON, AlbumImages } from "src/app/items";
+import { StatsConverterService } from '../stats-converter.service';
+
+
 
 @Component({
   selector: 'app-loading',
@@ -18,7 +21,7 @@ export class LoadingComponent implements OnInit {
   endDate: string = '';
   username: string = '';
   minArtistScrobbles: number = 0;
-  constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private filters: FiltersService) {
+  constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private statsConverterService: StatsConverterService, private filters: FiltersService) {
     this.storage.loadingStatus.pipe(
       map(loadingStatus => {
         this.scrobblesFetched = loadingStatus[0].length;
@@ -33,7 +36,8 @@ export class LoadingComponent implements OnInit {
       map(state => ({
         username: state.user?.name,
         scrobbles: state.scrobbles,
-        artistImages: state.artistImages
+        artistImages: this.statsConverterService.artistImageStorage,
+        albumImages: this.statsConverterService.albumImageStorage,
       })),
       take(1)
     ).subscribe(scrobblesData => {
@@ -59,9 +63,9 @@ export class LoadingComponent implements OnInit {
     this.filters.updateSettings({startDate, endDate, minArtistScrobbles});
   }
   
-  startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }): void {
+  startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages): void {
     this.applySettings();
-    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages);
+    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages, albumImages);
   }
 
   fileInput(event: any): void {
@@ -79,7 +83,7 @@ export class LoadingComponent implements OnInit {
           date: new Date(scrobble.date)
         }))
         this.username = parsed.username;
-        this.startFetching(scrobbles, parsed.artistImages);
+        this.startFetching(scrobbles, parsed.artistImages, parsed.albumImages);
       }
     };
 
