@@ -52,7 +52,7 @@ export class TreemapComponent implements OnInit{
   };
 
   ngOnInit(): void {
-    this.initializeTreemap();
+    //this.initializeTreemap();
   }
 
   transformToTreemapData(stats: ChartStats): TreeNode {
@@ -123,10 +123,12 @@ export class TreemapComponent implements OnInit{
   initializeTreemap(): void {
     console.log("Initializing treemap"/* with data:", this.treemapData*/);
 
+    d3.select('#treemap-container').select("svg").remove();
+
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
     this.root = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);
-
+    console.log(this.root)
     //creating scales
     this.x = d3.scaleLinear().rangeRound([0, this.width]);
     this.y = d3.scaleLinear().rangeRound([0, this.height]);
@@ -160,9 +162,9 @@ export class TreemapComponent implements OnInit{
     }
 
     this.group.transition()
-  .duration(1000)
-  .attr("transform", "translate(100,100) scale(2)")
-  .on("end", () => console.log("Transition complete"));
+      .duration(1000)
+      .attr("transform", "translate(100,100) scale(2)")
+      .on("end", () => console.log("Transition complete"));
   }
   
   transform(x: number, y: number, r: number): string {
@@ -171,6 +173,9 @@ export class TreemapComponent implements OnInit{
   }
 
   renderNode(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
+    console.log("renderNode: " + root.children)
+
+
     const node = group
       .selectAll("g")
       .data(root.children!)
@@ -347,7 +352,10 @@ export class TreemapComponent implements OnInit{
 
   updateTreemap() {
     this.group.remove();
+    console.log("updateTreemap, after 'remove' ")
     this.group = this.svg.append("g");
+    console.log("updateTreemap, after 'append' ")
     this.group.call(this.renderNode, this.currentRoot);
+    console.log("updateTreemap, after 'call' ")
   }
 }

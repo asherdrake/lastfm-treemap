@@ -8,6 +8,7 @@ import { StoreModule } from '@ngrx/store';
 import { TreemapComponent } from './charts/treemap/treemap.component';
 import { LoadingComponent } from './loading/loading.component';
 import { FormsModule } from '@angular/forms';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 
 @NgModule({
   declarations: [
@@ -21,7 +22,8 @@ import { FormsModule } from '@angular/forms';
     AppRoutingModule,
     HttpClientModule,
     FormsModule,
-    StoreModule.forRoot({}, {})
+    StoreModule.forRoot({}, {}),
+    BrowserAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

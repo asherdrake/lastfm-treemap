@@ -5,7 +5,10 @@ export interface FilterState {
   startDate: number,
   endDate: number,
 
-  minArtistScrobbles: number
+  minArtistScrobbles: number,
+  minAlbumScrobbles: number,
+
+  view: string
 }
 
 @Injectable({
@@ -17,11 +20,13 @@ export class FiltersService extends ComponentStore<FilterState> {
     super({
       startDate: 0,
       endDate: Date.now(),
-      minArtistScrobbles: 0
+      minArtistScrobbles: 0,
+      minAlbumScrobbles: 0,
+      view: "Artists"
     });
   }
 
-  readonly updateSettings = this.updater((currData: FilterState, settings: {startDate: number, endDate: number, minArtistScrobbles: number}) => {
+  readonly updateSettings = this.updater((currData: FilterState, settings: {startDate: number, endDate: number, minArtistScrobbles: number, minAlbumScrobbles: number, view: string}) => {
     return {
       ...currData,
       ...settings

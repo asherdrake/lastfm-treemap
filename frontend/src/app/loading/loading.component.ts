@@ -6,12 +6,10 @@ import { FiltersService } from '../filters.service';
 import { Scrobble, ScrobblesJSON, AlbumImages } from "src/app/items";
 import { StatsConverterService } from '../stats-converter.service';
 
-
-
 @Component({
   selector: 'app-loading',
   templateUrl: './loading.component.html',
-  styleUrls: ['./loading.component.css']
+  styleUrls: ['./loading.component.css'],
 })
 export class LoadingComponent implements OnInit {
   scrobblesFetched: number = 0;
@@ -21,6 +19,9 @@ export class LoadingComponent implements OnInit {
   endDate: string = '';
   username: string = '';
   minArtistScrobbles: number = 0;
+  minAlbumScrobbles: number = 0;
+  public viewOptions: string[] = ["Artists", "Albums"];
+  public selectedView: string = this.viewOptions[0];
   constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private statsConverterService: StatsConverterService, private filters: FiltersService) {
     this.storage.loadingStatus.pipe(
       map(loadingStatus => {
@@ -59,13 +60,23 @@ export class LoadingComponent implements OnInit {
     const startDate = Date.parse(this.startDate) + timezoneOffset;
     const endDate = Date.parse(this.endDate) + timezoneOffset;
     const minArtistScrobbles = this.minArtistScrobbles
-    console.log(minArtistScrobbles);
-    this.filters.updateSettings({startDate, endDate, minArtistScrobbles});
+    const minAlbumScrobbles = this.minAlbumScrobbles
+    const view = this.selectedView
+    //console.log(minArtistScrobbles);
+    this.filters.updateSettings({startDate, endDate, minArtistScrobbles, minAlbumScrobbles, view });
   }
   
   startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages): void {
     this.applySettings();
-    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages, albumImages);
+    this.scrobbleGetterService.initializeFetching(
+      this.username, 
+      this.startDate, 
+      this.endDate, 
+      this.storage, 
+      importedScrobbles, 
+      artistImages, 
+      albumImages
+    );
   }
 
   fileInput(event: any): void {
@@ -90,6 +101,5 @@ export class LoadingComponent implements OnInit {
     fileReader.readAsText(file);
   }
 
-  ngOnInit(): void {
-  }
+  ngOnInit(): void {}
 }

@@ -85,28 +85,46 @@ export class StatsConverterService {
           })
         )
       ),
-      map((newChartStats) => {
-        console.log("pipe", Object.values(newChartStats.artists).map(artist => Object.values(artist.albums)));
-        const filteredArtists = Object.keys(newChartStats.artists).reduce((acc, artistName) => {
-          const artist = newChartStats.artists[artistName];
-          const scrobbleCount = artist.scrobbles.length; // Calculate the total scrobble count for the artist
-    
-          console.log(filterState.minArtistScrobbles);
-          if (scrobbleCount >= filterState.minArtistScrobbles) {
-            // If the artist meets the minimum scrobble count, include them in the output
-            acc[artistName] = artist;
-          }
-    
-          return acc;
-        }, {} as { [key: string]: Artist });
-    
-        // Return a new ChartStats object with the filtered artists
-        return {
-          ...newChartStats,
-          artists: filteredArtists
-        };
-      })
+      map(newChartStats => this.filterArtists(newChartStats, filterState)),
+      //map(chartStats => this.filterAlbums(chartStats, filterState))
     )
+  }
+
+  filterArtists(chartStats: ChartStats, filterState: FilterState): ChartStats {
+    const filteredArtists = Object.keys(chartStats.artists).reduce((acc, artistName) => {
+      const artist = chartStats.artists[artistName];
+      const scrobbleCount = artist.scrobbles.length; // Calculate the total scrobble count for the artist
+
+      console.log(filterState.minArtistScrobbles);
+      if (scrobbleCount >= filterState.minArtistScrobbles) {
+        // If the artist meets the minimum scrobble count, include them in the output
+        acc[artistName] = artist;
+      }
+
+      return acc;
+    }, {} as { [key: string]: Artist });
+
+    return {
+      ...chartStats,
+      artists: filteredArtists
+    };
+  }
+
+  filterAlbums(chartStats: ChartStats, filter: FilterState): ChartStats {
+    for (const artistKey in chartStats.artists) {
+        const artist = chartStats.artists[artistKey];
+        for (const albumKey in artist.albums) {
+            const album = artist.albums[albumKey];
+            const totalScrobbles = album.scrobbles.length; // Assuming this is the correct way to get the scrobble count for an album
+            
+            if (totalScrobbles < filter.minAlbumScrobbles) {
+              console.log("filterAlbums")
+              delete artist.albums[albumKey]; // Remove the album if it doesn't meet the scrobble count criteria
+            }
+        }
+    }
+
+    return chartStats
   }
 
   convertScrobbles(scrobbles: Scrobble[], filters: FilterState, newChartStats: ChartStats): [ChartStats, FilterState] {
