@@ -52,7 +52,7 @@ export class TreemapComponent implements OnInit{
   };
 
   ngOnInit(): void {
-    this.initializeTreemap();
+    //this.initializeTreemap();
   }
 
   transformToTreemapData(stats: ChartStats): TreeNode {
