@@ -5,6 +5,7 @@ import { StatsConverterService } from 'src/app/stats-converter.service';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
 import { FiltersService } from 'src/app/filters.service';
+import { BaseType } from 'd3';
 
 interface TreeNode {
   name: string;
@@ -25,6 +26,7 @@ export class TreemapComponent implements OnInit{
   height: number = 3000;
   hierarchy: d3.HierarchyNode<TreeNode> = {} as d3.HierarchyNode<TreeNode>;
   root: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
+  tooltip: d3.Selection<BaseType, unknown, HTMLElement, any> = {} as d3.Selection<BaseType, unknown, HTMLElement, any>;
   x: d3.ScaleLinear<number, number, never> = {} as d3.ScaleLinear<number, number, never>;
   y: d3.ScaleLinear<number, number, never> = {} as d3.ScaleLinear<number, number, never>;
   svg: d3.Selection<SVGSVGElement, unknown, HTMLElement, any> = {} as d3.Selection<SVGSVGElement, unknown, HTMLElement, any>;
@@ -144,6 +146,15 @@ export class TreemapComponent implements OnInit{
       .style("font", "10px sans-serif")
       .call(this.zoom);
 
+    this.tooltip = d3.select("#tooltip")
+      .style("opacity", 0)
+      .attr("class", "tooltip")
+      .style("background-color", "white")
+      .style("border", "solid")
+      .style("border-width", "2px")
+      .style("border-radius", "5px")
+      .style("padding", "5px")
+
     //display the root
     this.group = this.svg.append("g")
 
@@ -190,70 +201,81 @@ export class TreemapComponent implements OnInit{
         //console.log(d.data.name)
         return "#ccc";
       })
-      .attr("stroke", "#fff");
+      .attr("stroke", "#fff")
 
     const self = this;
 
-    node.append("text") //Titles
-      .attr("font-weight", d => d === root ? "bold" : null)
-      .attr("font-size", d => `${self.calculateFontSize(d)}px`)
-      .attr("fill-opacity", 0.7) 
-      .text(d => d.data.name)
-      .each(function(d) {
-        const currText = d3.select(this)
-        const textLength = currText.node()?.getBBox();
-        
-        currText.attr("x", (d: any) => {
-          const [width, height] = self.imageCalculations(d);
-          return (width / 2) - textLength!.width / 2
-        })
-        .attr("y", (d: any) => {
-          const [width, height] = self.imageCalculations(d);
-          return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2 - textLength!.height / 2
-        })
+    // node.append("text") //Titles
+    //   .attr("font-weight", d => d === root ? "bold" : null)
+    //   .attr("font-size", d => `${self.calculateFontSize(d)}px`)
+    //   .attr("fill-opacity", 0.7) 
+    //   .text(d => d.data.name)
+    //   .each(function(d) {
+    //     const currText = d3.select(this)
+    //     const textLength = currText.node()?.getBBox();
+    //     const rectWidth = self.x(d.x1) - self.y(d.x0);
 
-        if (self.currentDepth == 0 || self.currentDepth == 1) {
-          currText.attr("fill", (d: any) => {
-            const color = d.data.color
-            const [r, g, b] = self.hexToRgb(color);
-            if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
-              return "#000000"
-            }
-            return "#ffffff"
-          })
-        }
-      })
+    //     self.formatTitleText(currText, textLength!)
 
-    node.append("text") //Scrobble Count
-      .attr("font-weight", d => d === root ? "bold" : null)
-      .attr("font-size", d => `${self.calculateFontSize(d)}px`)
-      .attr("fill-opacity", 0.7) 
-      .text((d: any) => d.value)
-      .each(function(d) {
-        const currText = d3.select(this)
-        const textLength = currText.node()?.getBBox();
-        
-        currText.attr("x", (d: any) => {
-          const [width, height] = self.imageCalculations(d);
-          return (width / 2) - textLength!.width / 2
-        })
-        .attr("y", (d: any) => {
-          const [width, height] = self.imageCalculations(d);
-          return (height / 2) + (width < height ? width * 0.6 : height * 0.6) / 2 + textLength!.height
-        })
+    //     if (d3.select(this).node()!.getBBox().width > rectWidth) {
+    //       console.log("while textWidth")
+    //       d3.select(this).attr("font-size", (d: any) => {
+    //         return `${self.calculateFontSize(d) * 0.3}px`
+    //       })
+    //       self.formatTitleText(d3.select(this), currText.node()!.getBBox())
+    //     }
 
-        if (self.currentDepth == 0 || self.currentDepth == 1) {
-          currText.attr("fill", (d: any) => {
-            const color = d.data.color
-            const [r, g, b] = self.hexToRgb(color);
-            if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
-              return "#000000"
-            }
-            return "#ffffff"
-          })
-        }
-      })
-      
+    //     if (self.currentDepth == 0 || self.currentDepth == 1) {
+    //       currText.attr("fill", (d: any) => {
+    //         const color = d.data.color
+    //         const [r, g, b] = self.hexToRgb(color);
+    //         if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
+    //           return "#000000"
+    //         }
+    //         return "#ffffff"
+    //       })
+    //     }
+    //   })
+
+    // node.append("text") //Scrobble Count
+    //   .attr("font-weight", d => d === root ? "bold" : null)
+    //   .attr("font-size", d => `${self.calculateFontSize(d)}px`)
+    //   .attr("fill-opacity", 0.7) 
+    //   .text((d: any) => d.value)
+    //   .each(function(d) {
+    //     const currText = d3.select(this)
+    //     const textLength = currText.node()?.getBBox();
+
+    //     self.formatScrobbleText(currText, textLength!);
+
+    //     if (self.currentDepth == 0 || self.currentDepth == 1) {
+    //       currText.attr("fill", (d: any) => {
+    //         const color = d.data.color
+    //         const [r, g, b] = self.hexToRgb(color);
+    //         if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
+    //           return "#000000"
+    //         }
+    //         return "#ffffff"
+    //       })
+    //     }
+    //   })
+     
+    const tooltip = d3.select("#tooltip");
+
+    node.on("mouseover", (event, d) => {
+        tooltip.style("opacity", 1);
+        tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
+            .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
+            .style("top", (event.pageY) - 600 + "px"); // Position the tooltip below the cursor
+    })
+    .on("mousemove", (event) => {
+        tooltip.style("left", (event.pageX + 10) + "px")
+               .style("top", (event.pageY) - 600 + "px");
+    })
+    .on("mouseout", () => {
+        tooltip.style("opacity", 0); // Hide the tooltip when not hovering
+    });
+
     if (this.currentDepth == 0 || this.currentDepth == 1) {
       const marginRatio = 0.1;
       node.append("image")
@@ -280,6 +302,28 @@ export class TreemapComponent implements OnInit{
       }
     
     group.call(this.positionSelection, root);
+  }
+
+  formatScrobbleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
+    currText.attr("x", (d: any) => {
+      const [width, height] = this.imageCalculations(d);
+      return (width / 2) - textLength!.width / 2
+    })
+    .attr("y", (d: any) => {
+      const [width, height] = this.imageCalculations(d);
+      return (height / 2) + (width < height ? width * 0.6 : height * 0.6) / 2 + textLength!.height
+    })
+  }
+
+  formatTitleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
+    currText.attr("x", (d: any) => {
+      const [width, height] = this.imageCalculations(d);
+      return (width / 2) - textLength!.width / 2
+    })
+    .attr("y", (d: any) => {
+      const [width, height] = this.imageCalculations(d);
+      return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2 - textLength!.height / 2
+    })
   }
 
   hexToRgb(hex: string): [number, number, number] {

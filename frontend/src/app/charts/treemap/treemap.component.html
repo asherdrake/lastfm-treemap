@@ -4,4 +4,6 @@
     <button (click)="transition(this.target)">Smooth Zoom</button> <br>
     Current Depth: {{currentDepth}} <br>
 </div>
-<div id="treemap-container"></div>
+<div id="treemap-container">
+    <div id="tooltip" style="position: absolute; opacity: 0; pointer-events: none; background-color: white; border: 1px solid black; border-radius: 5px; padding: 10px;"></div>
+</div>

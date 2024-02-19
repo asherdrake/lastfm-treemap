@@ -1,4 +1,12 @@
 #treemap-container {
+    position: relative;
     overflow: auto;
     min-width: 1000px;
+}
+
+#tooltip {
+    position: absolute;
+    left: 100px;
+    top: 100px;
+    opacity: 1;
 }
