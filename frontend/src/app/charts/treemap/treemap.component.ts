@@ -36,6 +36,7 @@ export class TreemapComponent implements OnInit{
   currentDepth: number = 0;
   currentTransform: [number, number, number] = [this.width / 2, this.height / 2, this.height];
   target: [number, number, number] = [this.width / 2, this.height / 2, this.height / 4];
+  albumMode: boolean = false;
   constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0, Infinity])
@@ -119,6 +120,9 @@ export class TreemapComponent implements OnInit{
       });
     });
   
+    this.albumMode = true;
+    this.currentDepth++;
+
     return treemapData;
   }
 
@@ -171,9 +175,9 @@ export class TreemapComponent implements OnInit{
     }
 
     this.group.transition()
-  .duration(1000)
-  .attr("transform", "translate(100,100) scale(2)")
-  .on("end", () => console.log("Transition complete"));
+      .duration(1000)
+      .attr("transform", "translate(100,100) scale(2)")
+      .on("end", () => console.log("Transition complete"));
   }
   
   transform(x: number, y: number, r: number): string {
@@ -182,6 +186,8 @@ export class TreemapComponent implements OnInit{
   }
 
   renderNode(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
+    const self = this;
+
     const node = group
       .selectAll("g")
       .data(root.children!)
@@ -191,75 +197,121 @@ export class TreemapComponent implements OnInit{
       .attr("cursor", "pointer")
       .on("click", (event, d) => d === root ? this.zoomOut() : this.zoomIn(d));
 
-    node.append("rect")
+    this.appendRectangles(node)
+    this.addTooltips(node);
+
+    if (this.currentDepth == 0 || this.currentDepth == 1) {
+      //this.appendText(node);
+      this.appendImages(node);
+    } else {
+      this.backgroundImage(node, group, root);
+      this.appendTrackText(node);
+    }
+
+    group.call(this.positionSelection, root);
+  }
+
+  appendRectangles(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+    const rect = node.append("rect")
       .attr('width', d => { return d.x1 - d.x0 })
       .attr('height', d => { return d.y1 - d.y0 })
       .attr("fill", d => {
         if (d.data.color) {
           return d.data.color
         }
-        //console.log(d.data.name)
         return "#ccc";
       })
       .attr("stroke", "#fff")
 
+    if (this.currentDepth == 2) {
+      rect.attr("fill", "rgba(0, 0, 0, 0.4)");
+    }
+  }
+
+  appendText(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const self = this;
 
-    // node.append("text") //Titles
-    //   .attr("font-weight", d => d === root ? "bold" : null)
-    //   .attr("font-size", d => `${self.calculateFontSize(d)}px`)
-    //   .attr("fill-opacity", 0.7) 
-    //   .text(d => d.data.name)
-    //   .each(function(d) {
-    //     const currText = d3.select(this)
-    //     const textLength = currText.node()?.getBBox();
-    //     const rectWidth = self.x(d.x1) - self.y(d.x0);
+    node.append("text") //Titles
+      .attr("font-size", d => `${this.calculateFontSize(d)}px`)
+      .attr("fill-opacity", 0.7) 
+      .text(d => d.data.name)
+      .each(function(d) {
+        const currText = d3.select(this)
+        const textLength = currText.node()?.getBBox();
+        const rectWidth = self.x(d.x1) - self.y(d.x0);
 
-    //     self.formatTitleText(currText, textLength!)
+        self.formatTitleText(currText, textLength!)
 
-    //     if (d3.select(this).node()!.getBBox().width > rectWidth) {
-    //       console.log("while textWidth")
-    //       d3.select(this).attr("font-size", (d: any) => {
-    //         return `${self.calculateFontSize(d) * 0.3}px`
-    //       })
-    //       self.formatTitleText(d3.select(this), currText.node()!.getBBox())
-    //     }
+        if (d3.select(this).node()!.getBBox().width > rectWidth) {
+          console.log("while textWidth")
+          d3.select(this).attr("font-size", (d: any) => {
+            return `${self.calculateFontSize(d) * 0.3}px`
+          })
+          self.formatTitleText(d3.select(this), currText.node()!.getBBox())
+        }
 
-    //     if (self.currentDepth == 0 || self.currentDepth == 1) {
-    //       currText.attr("fill", (d: any) => {
-    //         const color = d.data.color
-    //         const [r, g, b] = self.hexToRgb(color);
-    //         if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
-    //           return "#000000"
-    //         }
-    //         return "#ffffff"
-    //       })
-    //     }
-    //   })
+        if (self.currentDepth == 0 || self.currentDepth == 1) {
+          currText.attr("fill", (d: any) => {
+            const color = d.data.color
+            const [r, g, b] = self.hexToRgb(color);
+            if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
+              return "#000000"
+            }
+            return "#ffffff"
+          })
+        }
+      })
 
-    // node.append("text") //Scrobble Count
-    //   .attr("font-weight", d => d === root ? "bold" : null)
-    //   .attr("font-size", d => `${self.calculateFontSize(d)}px`)
-    //   .attr("fill-opacity", 0.7) 
-    //   .text((d: any) => d.value)
-    //   .each(function(d) {
-    //     const currText = d3.select(this)
-    //     const textLength = currText.node()?.getBBox();
+    node.append("text") //Scrobble Count
+      .attr("font-size", d => `${self.calculateFontSize(d)}px`)
+      .attr("fill-opacity", 0.7) 
+      .text((d: any) => d.value)
+      .each(function(d) {
+        const currText = d3.select(this)
+        const textLength = currText.node()?.getBBox();
 
-    //     self.formatScrobbleText(currText, textLength!);
+        self.formatScrobbleText(currText, textLength!);
 
-    //     if (self.currentDepth == 0 || self.currentDepth == 1) {
-    //       currText.attr("fill", (d: any) => {
-    //         const color = d.data.color
-    //         const [r, g, b] = self.hexToRgb(color);
-    //         if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
-    //           return "#000000"
-    //         }
-    //         return "#ffffff"
-    //       })
-    //     }
-    //   })
-     
+        if (self.currentDepth == 0 || self.currentDepth == 1) {
+          currText.attr("fill", (d: any) => {
+            const color = d.data.color
+            const [r, g, b] = self.hexToRgb(color);
+            if (r * 0.299 + g * 0.587 + b * 0.114 > 186) {
+              return "#000000"
+            }
+            return "#ffffff"
+          })
+        }
+      })
+  }
+
+  appendImages(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+    const self = this;
+    const marginRatio = 0.1;
+    node.append("image")
+      .attr('width', d => {
+        const [width, height] = self.imageCalculations(d);
+        return width < height ? width * 0.6 : height * 0.6
+      })
+      .attr('height', d => {
+        const [width, height] = self.imageCalculations(d);
+        return width < height ? width * 0.6 : height * 0.6
+      })
+      .attr('x', d => {
+        const [width, height] = self.imageCalculations(d);
+        return (width / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
+      })
+      .attr('y', d => {
+        const [width, height] = self.imageCalculations(d);
+        return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
+      })
+      .attr("preserveAspectRatio", 'xMidYMid meet')
+      .attr("href", d => {
+        return d.data.image!
+      })
+  }
+
+  addTooltips(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const tooltip = d3.select("#tooltip");
 
     node.on("mouseover", (event, d) => {
@@ -275,35 +327,41 @@ export class TreemapComponent implements OnInit{
     .on("mouseout", () => {
         tooltip.style("opacity", 0); // Hide the tooltip when not hovering
     });
-
-    if (this.currentDepth == 0 || this.currentDepth == 1) {
-      const marginRatio = 0.1;
-      node.append("image")
-        .attr('width', d => {
-          const [width, height] = self.imageCalculations(d);
-          return width < height ? width * 0.6 : height * 0.6
-        })
-        .attr('height', d => {
-          const [width, height] = self.imageCalculations(d);
-          return width < height ? width * 0.6 : height * 0.6
-        })
-        .attr('x', d => {
-          const [width, height] = self.imageCalculations(d);
-          return (width / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
-        })
-        .attr('y', d => {
-          const [width, height] = self.imageCalculations(d);
-          return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
-        })
-        .attr("preserveAspectRatio", 'xMidYMid meet')
-        .attr("href", d => {
-          return d.data.image!
-        })
-      }
-    
-    group.call(this.positionSelection, root);
   }
 
+  backgroundImage(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>, group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>): void {
+    const backgroundImage = group.selectAll(".album-background")
+      .data([root])
+      .enter()
+      .insert("image", ":first-child")
+      .attr("class", "album-background")
+      .attr("width", this.width)
+      .attr("height", this.height)
+      .attr("xlink:href", d => d.data.image!)
+  }
+
+  appendTrackText(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+    const self = this;
+    node.append("text")
+      .attr("font-size", d => `${self.calculateFontSize(d)}px`)
+      .each(function(d) {
+        d3.select(this)
+          .selectAll("tspan")
+          .data((d: any) => (d.data.name + " " + d.value).split(" "/*/(?=[A-Z][^A-Z])/g*/))
+          .join("tspan")
+          .attr("x", () => {
+            const font_size = self.calculateFontSize(d);
+            return font_size * 0.3
+          })
+          .attr("y", (childD, i) => {
+            const font_size = self.calculateFontSize(d);
+            return (font_size * 1.2) + i * (font_size * 1.2)
+          })
+          .attr("fill", "#ffffff")
+          .text((childD: any) => childD);
+      })
+  }
+  
   formatScrobbleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
     currText.attr("x", (d: any) => {
       const [width, height] = this.imageCalculations(d);
@@ -372,7 +430,9 @@ export class TreemapComponent implements OnInit{
   }
 
   zoomOut() {
-    if (this.currentDepth > 0) {
+    if (this.currentDepth > 0 && !this.albumMode) {
+      this.currentDepth--;
+    } else if (this.albumMode && this.currentDepth > 1) {
       this.currentDepth--;
     }
     console.log("Zoom Out button clicked")
