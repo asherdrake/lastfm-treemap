@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import * as d3 from 'd3';
 import { Scrobble, ChartStats, ScrobblesJSON } from 'src/app/items';
 import { StatsConverterService } from 'src/app/stats-converter.service';
@@ -18,7 +18,8 @@ interface TreeNode {
 @Component({
   selector: 'app-treemap',
   templateUrl: './treemap.component.html',
-  styleUrls: ['./treemap.component.css']
+  styleUrls: ['./treemap.component.css'],
+  encapsulation: ViewEncapsulation.None
 })
 export class TreemapComponent implements OnInit{
   treemapData: TreeNode = {} as TreeNode;
@@ -342,24 +343,40 @@ export class TreemapComponent implements OnInit{
 
   appendTrackText(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const self = this;
-    node.append("text")
-      .attr("font-size", d => `${self.calculateFontSize(d)}px`)
-      .each(function(d) {
-        d3.select(this)
-          .selectAll("tspan")
-          .data((d: any) => (d.data.name + " " + d.value).split(" "/*/(?=[A-Z][^A-Z])/g*/))
-          .join("tspan")
-          .attr("x", () => {
-            const font_size = self.calculateFontSize(d);
-            return font_size * 0.3
-          })
-          .attr("y", (childD, i) => {
-            const font_size = self.calculateFontSize(d);
-            return (font_size * 1.2) + i * (font_size * 1.2)
-          })
-          .attr("fill", "#ffffff")
-          .text((childD: any) => childD);
-      })
+    // node.append("text")
+    //   .attr("font-size", d => `${self.calculateFontSize(d)}px`)
+    //   .each(function(d) {
+    //     d3.select(this)
+    //       .selectAll("tspan")
+    //       .data((d: any) => (d.data.name + " " + d.value).split(" "/*/(?=[A-Z][^A-Z])/g*/))
+    //       .join("tspan")
+    //       .attr("x", () => {
+    //         const font_size = self.calculateFontSize(d);
+    //         return font_size * 0.3
+    //       })
+    //       .attr("y", (childD, i) => {
+    //         const font_size = self.calculateFontSize(d);
+    //         return (font_size * 1.2) + i * (font_size * 1.2)
+    //       })
+    //       .attr("fill", "#ffffff")
+    //       .text((childD: any) => childD);
+    //   })
+    const nodeEnter = node.append('foreignObject')
+      .attr("class", "node-foreign")
+      .attr("width", d => this.x(d.x1) - this.x(d.x0))
+      .attr("height", d => this.y(d.y1) - this.y(d.y0))
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0);
+
+    console.log("appendTrackText")
+
+    const nodeDiv = nodeEnter.append("xhtml:div")
+      .attr("class", "node-text")
+      .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml")
+      .style("width", d => `${this.x(d.x1) - this.x(d.x0)}px`)
+      .style("height", d => `${this.y(d.y1) - this.y(d.y0)}px`)
+      .style("font-size", d => `${this.calculateFontSize(d) * 2}px`)
+      .html(d => `<xhtml:span>${d.data.name}</xhtml:span>`)
   }
   
   formatScrobbleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
@@ -413,6 +430,8 @@ export class TreemapComponent implements OnInit{
     let height = this.y(d.y1) - this.y(d.y0);
     return Math.min((width * 0.1), (height * 0.1))
   }
+
+
 
   positionSelection(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
     group.selectAll("g")
