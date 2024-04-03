@@ -1,0 +1,72 @@
+/* loading.component.css */
+
+/* Base styling for the component container */
+.loading-container {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    max-width: 600px;
+    margin: 20px auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Style adjustments for text to enhance readability */
+.loading-text {
+    color: #333;
+    line-height: 1.5;
+    margin-bottom: 15px;
+}
+
+/* Styling for input fields, focused on visibility and ease of use */
+input[type="text"] {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-sizing: border-box;
+}
+
+/* Consistent styling for buttons to make actions clear */
+button {
+    background-color: #4CAF50; /* A vibrant green for primary actions */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #45a049; /* A slightly darker green for hover state */
+}
+
+/* Styling for secondary actions or information */
+.info-text {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 5px;
+}
+
+/* Customizations for select elements */
+select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+    margin-bottom: 15px;
+    background-color: #f8f8f8;
+}
+
+/* Adjustments for smaller screens */
+@media (max-width: 600px) {
+    .loading-container {
+        padding: 15px;
+    }
+
+    input[type="text"], button, select {
+        padding: 8px;
+    }
+}

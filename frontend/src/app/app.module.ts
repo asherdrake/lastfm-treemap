@@ -5,9 +5,14 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { MessagesComponent } from './messages/messages.component';
 import { StoreModule } from '@ngrx/store';
-import { TreemapComponent } from './charts/treemap/treemap.component';
+import { TreemapComponent } from './treemap/treemap.component';
 import { LoadingComponent } from './loading/loading.component';
 import { FormsModule } from '@angular/forms';
+import { DatasetComponent } from './dataset/dataset.component';
+import { NoopAnimationsModule } from '@angular/platform-browser/animations';
+import { ReactiveFormsModule } from '@angular/forms';
+import { ScrollingModule } from '@angular/cdk/scrolling';
+import { TableVirtualScrollModule } from 'ng-table-virtual-scroll';
 
 @NgModule({
   declarations: [
@@ -15,13 +20,18 @@ import { FormsModule } from '@angular/forms';
     MessagesComponent,
     TreemapComponent,
     LoadingComponent,
+    DatasetComponent,
   ],
   imports: [
     BrowserModule,
+    FormsModule,
+    ScrollingModule,
     AppRoutingModule,
     HttpClientModule,
-    FormsModule,
-    StoreModule.forRoot({}, {})
+    ReactiveFormsModule,
+    TableVirtualScrollModule,
+    StoreModule.forRoot({}, {}),
+    NoopAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]

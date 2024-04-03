@@ -1,0 +1,73 @@
+/* General body styling for a consistent font and padding */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 20px;
+    background-color: #f4f4f4;
+}
+
+/* Styling for the main heading */
+h1 {
+    color: #333;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+/* General button styling */
+button {
+    background-color: #008CBA; /* A pleasant blue */
+    color: white;
+    padding: 10px 15px;
+    margin: 10px 0;
+    border: none;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background-color 0.3s ease;
+}
+
+/* Button hover effect for better user interaction feedback */
+button:hover {
+    background-color: #005f73;
+}
+
+/* Input and Select box styling for consistency */
+input[type="text"], select, .file-upload {
+    width: 100%;
+    padding: 12px 20px;
+    margin: 8px 0;
+    display: inline-block;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box;
+}
+
+/* Navigation bar styling */
+nav {
+    margin-bottom: 20px;
+}
+
+/* Styling for the loading and treemap components to make them distinct */
+app-loading, app-messages, .treemap {
+    padding: 20px;
+    margin-bottom: 20px;
+    border-radius: 5px;
+    background-color: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+/* Enhancements for the loading component specifics */
+.loading-details {
+    font-size: 0.95em;
+    color: #666;
+}
+
+/* Responsive layout adjustments */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    input[type="text"], select, .file-upload {
+        width: 100%;
+    }
+}

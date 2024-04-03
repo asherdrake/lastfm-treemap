@@ -6,8 +6,6 @@ import { FiltersService } from '../filters.service';
 import { Scrobble, ScrobblesJSON, AlbumImages } from "src/app/items";
 import { StatsConverterService } from '../stats-converter.service';
 
-
-
 @Component({
   selector: 'app-loading',
   templateUrl: './loading.component.html',

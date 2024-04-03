@@ -6,6 +6,7 @@ import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
 import { FiltersService } from 'src/app/filters.service';
 import { BaseType } from 'd3';
+import textFit  from 'textfit';
 
 interface TreeNode {
   name: string;
@@ -23,8 +24,8 @@ interface TreeNode {
 })
 export class TreemapComponent implements OnInit{
   treemapData: TreeNode = {} as TreeNode;
-  width: number = 3000;
-  height: number = 3000;
+  width: number = 2000;
+  height: number = 2000;
   hierarchy: d3.HierarchyNode<TreeNode> = {} as d3.HierarchyNode<TreeNode>;
   root: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   tooltip: d3.Selection<BaseType, unknown, HTMLElement, any> = {} as d3.Selection<BaseType, unknown, HTMLElement, any>;
@@ -38,11 +39,16 @@ export class TreemapComponent implements OnInit{
   currentTransform: [number, number, number] = [this.width / 2, this.height / 2, this.height];
   target: [number, number, number] = [this.width / 2, this.height / 2, this.height / 4];
   albumMode: boolean = false;
+  initialScale = 0.2; // This means 50% zoom level (zoomed out)
+  initialX = this.width * 0.1; // Centering on the X axis
+  initialY = this.height * 0.1; // Centering on the Y axis
+
   constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0, Infinity])
       .on("zoom", (event) => {
         this.group.attr("transform", event.transform);
+        this.currentTransform = [event.transform.x, event.transform.y, event.transform.k];
       })
 
     this.renderNode = this.renderNode.bind(this);
@@ -57,6 +63,11 @@ export class TreemapComponent implements OnInit{
 
   ngOnInit(): void {
     //this.initializeTreemap();
+    document.addEventListener('keydown', this.handleKeyDown.bind(this));
+  }
+
+  ngOnDestroy(): void {
+    document.removeEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
   transformToTreemapData(stats: ChartStats): TreeNode {
@@ -163,6 +174,9 @@ export class TreemapComponent implements OnInit{
     //display the root
     this.group = this.svg.append("g")
 
+    this.svg.call(this.zoom)
+     .on("dblclick.zoom", null);
+
     this.currentRoot = this.root;
     this.updateTreemap();
   }
@@ -210,6 +224,8 @@ export class TreemapComponent implements OnInit{
     }
 
     group.call(this.positionSelection, root);
+    // this.group.attr("transform", `translate(${this.initialX},${this.initialY}) scale(${this.initialScale})`);
+    // this.currentTransform = [this.initialX, this.initialY, 1 / this.initialScale];
   }
 
   appendRectangles(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
@@ -222,7 +238,8 @@ export class TreemapComponent implements OnInit{
         }
         return "#ccc";
       })
-      .attr("stroke", "#fff")
+      .attr("stroke", "#000")
+      //.attr("stroke-width", '0')
 
     if (this.currentDepth == 2) {
       rect.attr("fill", "rgba(0, 0, 0, 0.4)");
@@ -319,15 +336,15 @@ export class TreemapComponent implements OnInit{
         tooltip.style("opacity", 1);
         tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
             .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
-            .style("top", (event.pageY) - 600 + "px"); // Position the tooltip below the cursor
+            .style("top", (event.pageY - 1500) + "px"); // Position the tooltip below the cursor
     })
     .on("mousemove", (event) => {
         tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top", (event.pageY) - 600 + "px");
+               .style("top", (event.pageY - 1480) + "px");
     })
     .on("mouseout", () => {
         tooltip.style("opacity", 0); // Hide the tooltip when not hovering
-    });
+    }); 
   }
 
   backgroundImage(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>, group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>): void {
@@ -343,24 +360,6 @@ export class TreemapComponent implements OnInit{
 
   appendTrackText(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const self = this;
-    // node.append("text")
-    //   .attr("font-size", d => `${self.calculateFontSize(d)}px`)
-    //   .each(function(d) {
-    //     d3.select(this)
-    //       .selectAll("tspan")
-    //       .data((d: any) => (d.data.name + " " + d.value).split(" "/*/(?=[A-Z][^A-Z])/g*/))
-    //       .join("tspan")
-    //       .attr("x", () => {
-    //         const font_size = self.calculateFontSize(d);
-    //         return font_size * 0.3
-    //       })
-    //       .attr("y", (childD, i) => {
-    //         const font_size = self.calculateFontSize(d);
-    //         return (font_size * 1.2) + i * (font_size * 1.2)
-    //       })
-    //       .attr("fill", "#ffffff")
-    //       .text((childD: any) => childD);
-    //   })
     const nodeEnter = node.append('foreignObject')
       .attr("class", "node-foreign")
       .attr("width", d => this.x(d.x1) - this.x(d.x0))
@@ -370,13 +369,30 @@ export class TreemapComponent implements OnInit{
 
     console.log("appendTrackText")
 
-    const nodeDiv = nodeEnter.append("xhtml:div")
+    const nodeWrapperDiv = nodeEnter.append("xhtml:div")
+      .attr("class", "node-wrapper")
+      .style("width", d => `${(this.x(d.x1) - this.x(d.x0))}px`)
+      .style("height", d => `${this.y(d.y1) - this.y(d.y0)}px`)
+
+    const textDiv = nodeWrapperDiv.append("xhtml:div")
       .attr("class", "node-text")
       .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml")
-      .style("width", d => `${this.x(d.x1) - this.x(d.x0)}px`)
-      .style("height", d => `${this.y(d.y1) - this.y(d.y0)}px`)
+      .style("width", d => `${(this.x(d.x1) - this.x(d.x0)) * 0.7}px`)
+      .style("height", d => `${(this.y(d.y1) - this.y(d.y0)) * 0.4}px`)
       .style("font-size", d => `${this.calculateFontSize(d) * 2}px`)
       .html(d => `<xhtml:span>${d.data.name}</xhtml:span>`)
+
+    nodeWrapperDiv.each(function(d) {
+      const divElement = (this as HTMLElement).querySelector('div');
+      if (divElement) {
+        textFit(divElement, { 
+          alignVertWithFlexbox: true, 
+          alignHoriz: true, 
+          multiLine: true,
+          maxFontSize: 1000
+        });
+      }
+    });
   }
   
   formatScrobbleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
@@ -428,10 +444,9 @@ export class TreemapComponent implements OnInit{
   calculateFontSize(d: d3.HierarchyRectangularNode<TreeNode>): number {
     let width = this.x(d.x1) - this.x(d.x0);
     let height = this.y(d.y1) - this.y(d.y0);
-    return Math.min((width * 0.1), (height * 0.1))
+    //return Math.min((width * 0.1), (height * 0.1))
+    return Math.min(width * 0.1);
   }
-
-
 
   positionSelection(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
     group.selectAll("g")
@@ -446,6 +461,13 @@ export class TreemapComponent implements OnInit{
     this.currentRoot = node;
     this.updateScales(node);
     this.updateTreemap();
+  }
+
+  handleKeyDown(event: KeyboardEvent): void {
+    // Check if Shift + Z was pressed
+    if (event.shiftKey && event.key === 'Z') {
+      this.zoomOut();
+    }
   }
 
   zoomOut() {
@@ -472,5 +494,7 @@ export class TreemapComponent implements OnInit{
     this.group.remove();
     this.group = this.svg.append("g");
     this.group.call(this.renderNode, this.currentRoot);
+
+    this.group.attr("transform", `translate(${this.currentTransform[0]},${this.currentTransform[1]}) scale(${this.currentTransform[2]})`);
   }
 }
