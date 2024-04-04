@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { ChartStats, Artist, Track, Album } from './items';
+import { ChartStats, Artist, Combination, Album } from './items';
 
 @Injectable({
   providedIn: 'root'
@@ -8,75 +8,69 @@ export class CombineService {
 
   constructor() { }
 
-  public combineArtists(chartStats: ChartStats, artistName1: string, artistName2: string, newName: string): ChartStats {
-    if (!chartStats.artists[artistName1] || !chartStats.artists[artistName2]) {
-      console.error('One or both artists not found');
-      return chartStats;
-    }
-
-    const artist1 = chartStats.artists[artistName1];
-    const artist2 = chartStats.artists[artistName2];
-
-    const newArtist: Artist = {
-      albums: {},
-      scrobbles: this.combineScrobbles(artist1.scrobbles, artist2.scrobbles),
-      name: newName
-    };
-
-    this.combineAlbums(artist1, artist2, newArtist);
-
-    chartStats.artists[newName] = newArtist;
+  public combineArtists(chartStats: ChartStats, combinations: Combination[]): ChartStats {
+    combinations.forEach(combination => {
+      const combinedArtist = this.createCombinedArtist(chartStats, combination);
+      this.assignCombinedArtistToChartStats(chartStats, combinedArtist, combination);
+    });
 
     return chartStats;
   }
 
-  private combineScrobbles(scrobbles1: number[], scrobbles2: number[]): number[] {
-    return scrobbles1.concat(scrobbles2);
+  private createCombinedArtist(chartStats: ChartStats, combination: Combination): Artist {
+    let combinedArtist: Artist = {
+      albums: {},
+      scrobbles: [],
+      name: combination.name,
+      image_url: '',
+      color: '' // Placeholder for default or logic-based color
+    };
+
+    let maxScrobbles = -1;
+    combination.artists.forEach(artistName => {
+      const artist = chartStats.artists[artistName];
+      this.mergeArtistData(artist, combinedArtist, maxScrobbles);
+    });
+
+    return combinedArtist;
   }
 
-  private combineAlbums(artist1: Artist, artist2: Artist, newArtist: Artist): void {
-    const allAlbumNames = new Set([...Object.keys(artist1.albums), ...Object.keys(artist2.albums)]);
-    allAlbumNames.forEach(albumName => {
-      const album1 = artist1.albums[albumName];
-      const album2 = artist2.albums[albumName];
-      const newAlbum: Album = {
-        tracks: {},
-        scrobbles: [],
-        name: albumName
-      };
+  private mergeArtistData(artist: Artist, combinedArtist: Artist, maxScrobbles: number): void {
+    const totalScrobbles = artist.scrobbles.reduce((acc, cur) => acc + cur, 0);
+    if (totalScrobbles > maxScrobbles) {
+      maxScrobbles = totalScrobbles;
+      combinedArtist.image_url = artist.image_url;
+      combinedArtist.color = artist.color;
+    }
 
-      if (album1 && album2) {
-        newAlbum.scrobbles = this.combineScrobbles(album1.scrobbles, album2.scrobbles);
-        this.combineTracks(album1, album2, newAlbum);
-      } else {
-        // If the album is only in one artist, copy it
-        const albumCopy = album1 ? album1 : album2;
-        newAlbum.scrobbles = albumCopy.scrobbles;
-        newAlbum.tracks = { ...albumCopy.tracks };
-      }
-
-      newArtist.albums[albumName] = newAlbum;
+    Object.keys(artist.albums).forEach(albumName => {
+      this.mergeAlbumsAndTracks(artist.albums[albumName], combinedArtist, albumName);
     });
   }
 
-  private combineTracks(album1: Album, album2: Album, newAlbum: Album): void {
-    const allTrackNames = new Set([...Object.keys(album1.tracks), ...Object.keys(album2.tracks)]);
-    allTrackNames.forEach(trackName => {
-      const track1 = album1.tracks[trackName];
-      const track2 = album2.tracks[trackName];
-      const newTrack: Track = {
-        scrobbles: [],
-        name: trackName
-      };
+  private mergeAlbumsAndTracks(album: Album, combinedArtist: Artist, albumName: string): void {
+    if (!combinedArtist.albums[albumName]) {
+      combinedArtist.albums[albumName] = JSON.parse(JSON.stringify(album)); // Deep copy
+    } else {
+      // Combine album scrobbles
+      combinedArtist.albums[albumName].scrobbles = combinedArtist.albums[albumName].scrobbles.concat(album.scrobbles);
+      // Combine tracks
+      Object.keys(album.tracks).forEach(trackName => {
+        if (!combinedArtist.albums[albumName].tracks[trackName]) {
+          combinedArtist.albums[albumName].tracks[trackName] = JSON.parse(JSON.stringify(album.tracks[trackName]));
+        } else {
+          combinedArtist.albums[albumName].tracks[trackName].scrobbles =
+            combinedArtist.albums[albumName].tracks[trackName].scrobbles.concat(album.tracks[trackName].scrobbles);
+        }
+      });
+    }
+  }
 
-      if (track1 && track2) {
-        newTrack.scrobbles = this.combineScrobbles(track1.scrobbles, track2.scrobbles);
-      } else {
-        // If the track is only in one album, copy it
-        newTrack.scrobbles = track1 ? track1.scrobbles : track2 ? track2.scrobbles : [];
-      }
-
-      newAlbum.tracks[trackName] = newTrack;
+  private assignCombinedArtistToChartStats(chartStats: ChartStats, combinedArtist: Artist, combination: Combination): void {
+    chartStats.artists[combination.name] = combinedArtist;
+    // Remove original artists
+    combination.artists.forEach(artistName => {
+      delete chartStats.artists[artistName];
     });
   }
 }

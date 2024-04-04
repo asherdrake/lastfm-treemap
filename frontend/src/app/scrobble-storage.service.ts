@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { distinctUntilChanged, filter, map, pairwise, switchMap, tap } from 'rxjs';
-import { AlbumImages, Scrobble, User } from './items';
+import { AlbumImages, Scrobble, User, Combination } from './items';
 import { MessageService } from './message.service';
 
 export interface ScrobbleState {

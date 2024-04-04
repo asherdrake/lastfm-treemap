@@ -1,11 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChartStats, Scrobble, Artist, Album } from './items';
+import { ChartStats, Scrobble, Artist, Album, Combination } from './items';
 import { from, mergeMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
 import ColorThief from 'color-thief-ts';
+import { chart } from 'highcharts';
+import { CombineService } from './combine.service';
 
 interface ArtistImages {
   [key: string]: [string, string]
@@ -36,7 +38,12 @@ export class StatsConverterService {
   imageProcessingComplete = new Subject<void>();
   completed: Observable<ScrobbleState>;
 
-  constructor(private router: Router, private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private filters: FiltersService) {
+  constructor(
+      private router: Router, 
+      private storage: ScrobbleStorageService, 
+      private scrobbleGetterService: ScrobbleGetterService, 
+      private filters: FiltersService,
+      private combineService: CombineService) {
     this.imageProcessing = this.storage.trackPageChunk.pipe(
       map(scrobbles => this.storeArtistImage(scrobbles)),
       // takeUntil(timerResetObservable),
@@ -60,12 +67,14 @@ export class StatsConverterService {
 
   getChartStatsObservable(): Observable<ChartStats> {
     let filterState: FilterState;
+    //let combinations: Combination[];
     return combineLatest([
       this.completed,
       this.filters.state$
     ]).pipe(
       map(([scrobbles, filters]) => {
         filterState = filters;
+        //combinations = scrobbles.combinations
         return this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })
       }),
       concatMap(([newChartStats, filters]) => {
@@ -85,7 +94,8 @@ export class StatsConverterService {
           })
         )
       ),
-      map(newChartStats => this.filterArtists(newChartStats, filterState)),
+      map(chartStats => this.combineService.combineArtists(chartStats, filterState.combinations)),
+      map(chartStats => this.filterArtists(chartStats, filterState)),
       map(chartStats => this.filterAlbums(chartStats, filterState))
     )
   }

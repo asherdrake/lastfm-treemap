@@ -82,3 +82,8 @@ export interface Track {
     scrobbles: number[],
     name: string
 }
+
+export interface Combination {
+    name: string,
+    artists: string[]
+}

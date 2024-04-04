@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ChartStats } from 'src/app/items';
 import { CombineService } from 'src/app/combine.service';
+import { FiltersService } from 'src/app/filters.service';
 
 interface Artist {
   name: string,
@@ -20,9 +21,10 @@ export class DatasetComponent {
   selectedArtists: Artist[] = [];
   newArtistName: string = '';
 
-  constructor(private combineService: CombineService) {}
+  constructor(private combineService: CombineService, private filters: FiltersService) {}
 
   transformChartStats(chartStats: ChartStats): void {
+    //this.chartStats = chartStats;
     const artists: Artist[] = [];
     
     // Iterate over each artist in the chartStats object
@@ -75,6 +77,11 @@ export class DatasetComponent {
   }
 
   combineSelected(): void {
-    
+    const combo = {
+      name: this.newArtistName,
+      artists: this.selectedArtists.map(a => a.name)
+    }
+
+    this.filters.updateCombos(combo);
   }
 }

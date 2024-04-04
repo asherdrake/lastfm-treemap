@@ -175,7 +175,7 @@ export class TreemapComponent implements OnInit{
     this.group = this.svg.append("g")
 
     this.svg.call(this.zoom)
-     .on("dblclick.zoom", null);
+     //.on("dblclick.zoom", null);
 
     this.currentRoot = this.root;
     this.updateTreemap();
@@ -224,6 +224,7 @@ export class TreemapComponent implements OnInit{
     }
 
     group.call(this.positionSelection, root);
+    console.log("renderNode");
     // this.group.attr("transform", `translate(${this.initialX},${this.initialY}) scale(${this.initialScale})`);
     // this.currentTransform = [this.initialX, this.initialY, 1 / this.initialScale];
   }
@@ -491,10 +492,12 @@ export class TreemapComponent implements OnInit{
   }
 
   updateTreemap() {
-    this.group.remove();
+    console.log(this.group.remove());
+    //d3.select('#treemap-container').select('svg').remove();
+    console.log("updateTreemap remove");
     this.group = this.svg.append("g");
     this.group.call(this.renderNode, this.currentRoot);
-
     this.group.attr("transform", `translate(${this.currentTransform[0]},${this.currentTransform[1]}) scale(${this.currentTransform[2]})`);
+    
   }
 }
