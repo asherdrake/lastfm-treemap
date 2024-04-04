@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { ChartStats } from 'src/app/items';
 import { CombineService } from 'src/app/combine.service';
 import { FiltersService } from 'src/app/filters.service';
+import { ScrobbleStorageService } from '../scrobble-storage.service';
 
 interface Artist {
   name: string,
@@ -21,7 +22,7 @@ export class DatasetComponent {
   selectedArtists: Artist[] = [];
   newArtistName: string = '';
 
-  constructor(private combineService: CombineService, private filters: FiltersService) {}
+  constructor(private combineService: CombineService, private filters: FiltersService, private storage: ScrobbleStorageService) {}
 
   transformChartStats(chartStats: ChartStats): void {
     //this.chartStats = chartStats;
@@ -82,6 +83,10 @@ export class DatasetComponent {
       artists: this.selectedArtists.map(a => a.name)
     }
 
-    this.filters.updateCombos(combo);
+    this.storage.updateCombos(combo);
+
+    this.selectedArtists.forEach(a => a.selected = false);
+    this.selectedArtists = [];
+    this.searchTerm = '';
   }
 }

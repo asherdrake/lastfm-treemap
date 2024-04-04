@@ -31,6 +31,7 @@ export interface ScrobblesJSON {
             }
         }
     }
+    combinations: Combination[]
 }
 
 export interface AlbumImages {

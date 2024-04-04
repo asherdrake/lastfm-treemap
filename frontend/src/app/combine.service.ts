@@ -9,10 +9,12 @@ export class CombineService {
   constructor() { }
 
   public combineArtists(chartStats: ChartStats, combinations: Combination[]): ChartStats {
-    combinations.forEach(combination => {
-      const combinedArtist = this.createCombinedArtist(chartStats, combination);
-      this.assignCombinedArtistToChartStats(chartStats, combinedArtist, combination);
-    });
+    if (combinations) {
+      combinations.forEach(combination => {
+        const combinedArtist = this.createCombinedArtist(chartStats, combination);
+        this.assignCombinedArtistToChartStats(chartStats, combinedArtist, combination);
+      });
+    }
 
     return chartStats;
   }
@@ -29,8 +31,11 @@ export class CombineService {
     let maxScrobbles = -1;
     combination.artists.forEach(artistName => {
       const artist = chartStats.artists[artistName];
-      console.log(artist.name);
-      this.mergeArtistData(artist, combinedArtist, maxScrobbles);
+      console.log("artistName: " + artistName);
+      //console.log("CombineService_createCombinedArtist: " + artist.name);
+      if (artist) {
+        this.mergeArtistData(artist, combinedArtist, maxScrobbles);
+      }
     });
 
     return combinedArtist;

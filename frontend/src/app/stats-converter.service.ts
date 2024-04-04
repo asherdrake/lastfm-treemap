@@ -67,14 +67,14 @@ export class StatsConverterService {
 
   getChartStatsObservable(): Observable<ChartStats> {
     let filterState: FilterState;
-    //let combinations: Combination[];
+    let combinations: Combination[];
     return combineLatest([
       this.completed,
       this.filters.state$
     ]).pipe(
       map(([scrobbles, filters]) => {
         filterState = filters;
-        //combinations = scrobbles.combinations
+        combinations = scrobbles.combinations
         return this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })
       }),
       concatMap(([newChartStats, filters]) => {
@@ -94,7 +94,7 @@ export class StatsConverterService {
           })
         )
       ),
-      map(chartStats => this.combineService.combineArtists(chartStats, filterState.combinations)),
+      map(chartStats => this.combineService.combineArtists(chartStats, combinations)),
       map(chartStats => this.filterArtists(chartStats, filterState)),
       map(chartStats => this.filterAlbums(chartStats, filterState))
     )

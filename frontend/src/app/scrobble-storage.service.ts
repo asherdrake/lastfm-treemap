@@ -12,6 +12,8 @@ export interface ScrobbleState {
   albumImages?: AlbumImages
   user?: User;
 
+  combinations: Combination[];
+
   totalTrackPages: number;
   currTrackPage: number;
 
@@ -27,16 +29,26 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       scrobbles: [],
       totalTrackPages: 0,
       currTrackPage: 0,
+      combinations: [],
       state: 'GETTINGUSER'
     });
   }
 
-  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages }) => {
+  readonly updateCombos = this.updater((currData: ScrobbleState, combo: {name: string, artists: string[] }) => {
+    const updatedCombos = [...currData.combinations, combo];
+    return {
+      ...currData,
+      combinations: updatedCombos
+    }
+  })
+
+  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages, combinations: Combination[] }) => {
     return {
       ...currData,
       scrobbles: [...imported.importedScrobbles],
       artistImages: imported.artistImages,
-      albumImages: imported.albumImages
+      albumImages: imported.albumImages,
+      combinations: imported.combinations ? imported.combinations : []
     }
   })
 

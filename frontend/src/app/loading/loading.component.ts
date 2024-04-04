@@ -3,7 +3,7 @@ import { ScrobbleStorageService } from '../scrobble-storage.service';
 import { map, take } from 'rxjs';
 import { ScrobbleGetterService } from '../scrobblegetter.service';
 import { FiltersService } from '../filters.service';
-import { Scrobble, ScrobblesJSON, AlbumImages } from "src/app/items";
+import { Scrobble, ScrobblesJSON, AlbumImages, Combination } from "src/app/items";
 import { StatsConverterService } from '../stats-converter.service';
 
 @Component({
@@ -39,6 +39,7 @@ export class LoadingComponent implements OnInit {
         scrobbles: state.scrobbles,
         artistImages: this.statsConverterService.artistImageStorage,
         albumImages: this.statsConverterService.albumImageStorage,
+        combinations: state.combinations
       })),
       take(1)
     ).subscribe(scrobblesData => {
@@ -65,9 +66,9 @@ export class LoadingComponent implements OnInit {
     this.filters.updateSettings({startDate, endDate, minArtistScrobbles, minAlbumScrobbles, view });
   }
   
-  startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages): void {
+  startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, combinations: Combination[]): void {
     this.applySettings();
-    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages, albumImages);
+    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages, albumImages, combinations);
   }
 
   fileInput(event: any): void {
@@ -85,7 +86,7 @@ export class LoadingComponent implements OnInit {
           date: new Date(scrobble.date)
         }))
         this.username = parsed.username;
-        this.startFetching(scrobbles, parsed.artistImages, parsed.albumImages);
+        this.startFetching(scrobbles, parsed.artistImages, parsed.albumImages, parsed.combinations);
       }
     };
 
