@@ -29,6 +29,7 @@ export class CombineService {
     let maxScrobbles = -1;
     combination.artists.forEach(artistName => {
       const artist = chartStats.artists[artistName];
+      console.log(artist.name);
       this.mergeArtistData(artist, combinedArtist, maxScrobbles);
     });
 
@@ -67,10 +68,11 @@ export class CombineService {
   }
 
   private assignCombinedArtistToChartStats(chartStats: ChartStats, combinedArtist: Artist, combination: Combination): void {
-    chartStats.artists[combination.name] = combinedArtist;
     // Remove original artists
     combination.artists.forEach(artistName => {
       delete chartStats.artists[artistName];
     });
+
+    chartStats.artists[combination.name] = combinedArtist;
   }
 }

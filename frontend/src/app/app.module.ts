@@ -31,7 +31,7 @@ import { TableVirtualScrollModule } from 'ng-table-virtual-scroll';
     ReactiveFormsModule,
     TableVirtualScrollModule,
     StoreModule.forRoot({}, {}),
-    NoopAnimationsModule
+    //NoopAnimationsModule
   ],
   providers: [],
   bootstrap: [AppComponent]
