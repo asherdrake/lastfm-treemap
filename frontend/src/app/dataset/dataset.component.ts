@@ -3,11 +3,18 @@ import { ChartStats } from 'src/app/items';
 import { CombineService } from 'src/app/combine.service';
 import { FiltersService } from 'src/app/filters.service';
 import { ScrobbleStorageService } from '../scrobble-storage.service';
+import { tap, pipe } from 'rxjs';
 
 interface Artist {
   name: string,
   scrobbles: number,
   selected: boolean
+}
+
+interface Combination {
+  name: string,
+  artists: string[]
+  childrenVisible: boolean
 }
 
 @Component({
@@ -21,8 +28,21 @@ export class DatasetComponent {
   filteredArtists: Artist[] = [];
   selectedArtists: Artist[] = [];
   newArtistName: string = '';
+  combinations: Combination[] = [];
 
-  constructor(private combineService: CombineService, private filters: FiltersService, private storage: ScrobbleStorageService) {}
+  constructor(private combineService: CombineService, private filters: FiltersService, private storage: ScrobbleStorageService) {
+    this.storage.combos.subscribe({
+      next: (c) => {
+        this.combinations = c.map(combo => {
+          return {
+            name: combo.name,
+            artists: combo.artists,
+            childrenVisible: false
+          }
+        });
+      }
+    })
+  }
 
   transformChartStats(chartStats: ChartStats): void {
     //this.chartStats = chartStats;
@@ -78,15 +98,40 @@ export class DatasetComponent {
   }
 
   combineSelected(): void {
-    const combo = {
+    this.combinations.push({
       name: this.newArtistName,
-      artists: this.selectedArtists.map(a => a.name)
-    }
-
-    this.storage.updateCombos(combo);
+      artists: this.selectedArtists.map(a => a.name),
+      childrenVisible: false
+    })
 
     this.selectedArtists.forEach(a => a.selected = false);
     this.selectedArtists = [];
     this.searchTerm = '';
+  }
+
+  submitCombos(): void {
+    const combos = this.combinations.map(c => {
+      return {
+        name: c.name,
+        artists: c.artists
+      }
+    })
+    this.storage.updateCombos(combos);
+  }
+
+  toggleChildren(combo: Combination): void {
+    combo.childrenVisible = !combo.childrenVisible
+  }
+
+  deleteCombo(combo: Combination, event: Event): void {
+    event.stopPropagation();
+
+    this.combinations = this.combinations.filter(c => c !== combo);
+  }
+
+  deleteArtistFromCombo(artist: string, combo: Combination, event: Event): void {
+    event.stopPropagation();
+
+    combo.artists = combo.artists.filter(a => a !== artist);
   }
 }

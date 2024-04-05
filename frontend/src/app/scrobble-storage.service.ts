@@ -34,11 +34,11 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     });
   }
 
-  readonly updateCombos = this.updater((currData: ScrobbleState, combo: {name: string, artists: string[] }) => {
-    const updatedCombos = [...currData.combinations, combo];
+  readonly updateCombos = this.updater((currData: ScrobbleState, combos: {name: string, artists: string[] }[]) => {
+    //const updatedCombos = [...currData.combinations, ...combo];
     return {
       ...currData,
-      combinations: updatedCombos
+      combinations: combos
     }
   })
 
@@ -149,6 +149,10 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
 
   readonly albumImageStorage = this.state$.pipe(
     map(state => state.albumImages)
+  )
+
+  readonly combos = this.state$.pipe(
+    map(state => state.combinations)
   )
 
   readonly artistImageUpdate = this.select(state => state.artistImages);

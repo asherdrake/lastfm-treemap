@@ -15,7 +15,6 @@ export class CombineService {
         this.assignCombinedArtistToChartStats(chartStats, combinedArtist, combination);
       });
     }
-
     return chartStats;
   }
 

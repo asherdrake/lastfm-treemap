@@ -6,7 +6,6 @@ import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
 import ColorThief from 'color-thief-ts';
-import { chart } from 'highcharts';
 import { CombineService } from './combine.service';
 
 interface ArtistImages {

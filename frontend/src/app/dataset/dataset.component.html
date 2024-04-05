@@ -43,7 +43,37 @@
         </tbody>
       </table>
     </cdk-virtual-scroll-viewport>
-    <input type="text" [(ngModel)]="newArtistName">
+    <div class="combinations-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Combinations</th>
+            </tr>
+          </thead>
+          <tbody>
+            <ng-container *ngFor="let combo of combinations">
+                <!-- Combination Row -->
+                <tr (click)="toggleChildren(combo)">
+                  <td>{{ combo.name }}</td>
+                  <td>
+                    <button (click)="deleteCombo(combo, $event)">X</button>
+                  </td>
+                </tr>
+                <!-- Artist Rows (conditionally displayed) -->
+                <ng-container *ngIf="combo.childrenVisible">
+                  <tr *ngFor="let artistName of combo.artists">
+                    <td style="padding-left: 20px;">{{ artistName }}</td>
+                    <td>
+                      <button (click)="deleteArtistFromCombo(artistName, combo, $event)">X</button>
+                    </td>
+                  </tr>
+                </ng-container>
+              </ng-container>
+          </tbody>
+        </table>
+      </div>
+    <input type="text" placeholder="Enter New Artist Name" [(ngModel)]="newArtistName">
     <button (click)="combineSelected()">Combine Selected Artists</button>
+    <button (click)="submitCombos()">Submit Combined Artists</button>
   </div>
   
