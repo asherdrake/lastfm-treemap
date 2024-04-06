@@ -9,7 +9,6 @@ import { drag } from 'd3';
 interface Artist {
   name: string,
   scrobbles: number,
-  selected: boolean
 }
 
 interface Combination {
@@ -25,9 +24,9 @@ interface Combination {
   styleUrls: ['./dataset.component.css']
 })
 export class DatasetComponent {
-  artists: Artist[] = [];
+  artists: string[] = [];
   searchTerm: string = '';
-  filteredArtists: Artist[] = [];
+  filteredArtists: string[] = [];
   newArtistName: string = '';
   combinations: Combination[] = [];
 
@@ -48,7 +47,7 @@ export class DatasetComponent {
 
   transformChartStats(chartStats: ChartStats): void {
     //this.chartStats = chartStats;
-    const artists: Artist[] = [];
+    const artists: string[] = [];
     
     // Iterate over each artist in the chartStats object
     for (const artistKey in chartStats.artists) {
@@ -59,15 +58,16 @@ export class DatasetComponent {
         // Transform into the SimplifiedArtist format
         const simplifiedArtist: Artist = {
             name: artist.name,
-            scrobbles: artist.scrobbles.length,
-            selected: false // Assuming default is false as no criteria is provided
+            scrobbles: artist.scrobbles.length
         };
 
-        artists.push(simplifiedArtist);
+        artists.push(artist.name);
     }
 
-    this.artists = artists;
-    this.filteredArtists = artists;
+    const combinationNames = this.combinations.map(c => c.name);
+    const artistsWithoutCombos = artists.filter(a => !combinationNames.includes(a))
+    this.artists = artistsWithoutCombos;
+    this.filteredArtists = artistsWithoutCombos;
   }
 
   search(): void {
@@ -75,7 +75,7 @@ export class DatasetComponent {
       this.filteredArtists = this.artists;
     } else {
       this.filteredArtists = this.artists.filter(artist => 
-        artist.name.toLowerCase().includes(this.searchTerm.toLowerCase())
+        artist.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
     }
   }
@@ -98,6 +98,7 @@ export class DatasetComponent {
     //event.stopPropagation();
 
     this.combinations = this.combinations.filter(c => c !== combo);
+    this.artists = [...this.artists, ...combo.artists];
   }
 
   deleteArtistFromCombo(artist: string, combo: Combination/*, event: Event*/): void {
@@ -127,7 +128,7 @@ export class DatasetComponent {
     event.preventDefault(); // Necessary to allow the drop
   }
 
-  onDrop(event: DragEvent, targetCombo: Combination): void {
+  onDropOnCombos(event: DragEvent, targetCombo: Combination): void {
     event.preventDefault();
     const dragDataString = event.dataTransfer?.getData('text/plain');
 
@@ -139,9 +140,27 @@ export class DatasetComponent {
 
         const sourceComboIndex = this.combinations.findIndex(c => c.name === sourceComboName);
         this.deleteArtistFromCombo(artistName, this.combinations[sourceComboIndex]);
+      } else {
+        this.artists = this.artists.filter(a => a !== artistName);
+        this.filteredArtists = this.filteredArtists.filter(a => a !== artistName);
       }
       targetCombo.artists = [...targetCombo.artists, artistName];
       //sourceCombo.artists.forEach(a => console.log(a));
+    }
+  }
+
+  onDrop(event: DragEvent): void {
+    event.preventDefault();
+    const dragDataString = event.dataTransfer?.getData('text/plain');
+
+    if (dragDataString) {
+      const dragData = JSON.parse(dragDataString);
+      const artistName = dragData.name;
+      const sourceComboName = dragData.source;
+
+      const sourceComboIndex = this.combinations.findIndex(c => c.name === sourceComboName);
+      this.deleteArtistFromCombo(artistName, this.combinations[sourceComboIndex]);
+      this.artists = [...this.artists, artistName];
     }
   }
 
