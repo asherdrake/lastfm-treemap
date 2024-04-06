@@ -1,9 +1,10 @@
-import { Component } from '@angular/core';
+import { ViewChildren, QueryList, Component, NgZone, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { ChartStats } from 'src/app/items';
 import { CombineService } from 'src/app/combine.service';
 import { FiltersService } from 'src/app/filters.service';
 import { ScrobbleStorageService } from '../scrobble-storage.service';
-import { tap, pipe } from 'rxjs';
+import { drag } from 'd3';
+//import { tap, pipe } from 'rxjs';
 
 interface Artist {
   name: string,
@@ -13,8 +14,9 @@ interface Artist {
 
 interface Combination {
   name: string,
-  artists: string[]
-  childrenVisible: boolean
+  artists: string[],
+  childrenVisible: boolean,
+  isEditing: boolean
 }
 
 @Component({
@@ -26,18 +28,18 @@ export class DatasetComponent {
   artists: Artist[] = [];
   searchTerm: string = '';
   filteredArtists: Artist[] = [];
-  selectedArtists: Artist[] = [];
   newArtistName: string = '';
   combinations: Combination[] = [];
 
-  constructor(private combineService: CombineService, private filters: FiltersService, private storage: ScrobbleStorageService) {
+  constructor(private cdr: ChangeDetectorRef, private combineService: CombineService, private filters: FiltersService, private storage: ScrobbleStorageService) {
     this.storage.combos.subscribe({
       next: (c) => {
         this.combinations = c.map(combo => {
           return {
             name: combo.name,
             artists: combo.artists,
-            childrenVisible: false
+            childrenVisible: false,
+            isEditing: false
           }
         });
       }
@@ -78,37 +80,6 @@ export class DatasetComponent {
     }
   }
 
-  onArtistCheckboxChange(artist: Artist, event: Event): void {
-    const inputElement = event.target as HTMLInputElement;
-
-    if (inputElement.checked) {
-      this.selectedArtists = [...this.selectedArtists, artist];
-      console.log("checkbox changed added");
-    } else {
-      this.selectedArtists = this.selectedArtists.filter(a => a !== artist);
-      console.log("checkbox changed deleted");
-    }
-
-    this.selectedArtists.forEach(artist => console.log(artist.name));
-  }
-
-  onRemoveClick(artist: Artist): void {
-    artist.selected = false;
-    this.selectedArtists = this.selectedArtists.filter(a => a !== artist);
-  }
-
-  combineSelected(): void {
-    this.combinations.push({
-      name: this.newArtistName,
-      artists: this.selectedArtists.map(a => a.name),
-      childrenVisible: false
-    })
-
-    this.selectedArtists.forEach(a => a.selected = false);
-    this.selectedArtists = [];
-    this.searchTerm = '';
-  }
-
   submitCombos(): void {
     const combos = this.combinations.map(c => {
       return {
@@ -123,15 +94,86 @@ export class DatasetComponent {
     combo.childrenVisible = !combo.childrenVisible
   }
 
-  deleteCombo(combo: Combination, event: Event): void {
-    event.stopPropagation();
+  deleteCombo(combo: Combination/*, event: Event*/): void {
+    //event.stopPropagation();
 
     this.combinations = this.combinations.filter(c => c !== combo);
   }
 
-  deleteArtistFromCombo(artist: string, combo: Combination, event: Event): void {
-    event.stopPropagation();
+  deleteArtistFromCombo(artist: string, combo: Combination/*, event: Event*/): void {
+    //event.stopPropagation();
 
     combo.artists = combo.artists.filter(a => a !== artist);
+  }
+
+  onDragStartBtwnCombos(event: DragEvent, artistName: string, sourceCombo: Combination): void {
+    const dragData = {
+      name: artistName,
+      source: sourceCombo.name
+    }
+
+    event.dataTransfer?.setData('text/plain', JSON.stringify(dragData));
+  }
+
+  onDragStart(event: DragEvent, artistName: string): void {
+    const dragData = {
+      name: artistName
+    }
+
+    event.dataTransfer?.setData('text/plain', JSON.stringify(dragData));
+  }
+  
+  onDragOver(event: DragEvent): void {
+    event.preventDefault(); // Necessary to allow the drop
+  }
+
+  onDrop(event: DragEvent, targetCombo: Combination): void {
+    event.preventDefault();
+    const dragDataString = event.dataTransfer?.getData('text/plain');
+
+    if (dragDataString) {
+      const dragData = JSON.parse(dragDataString);
+      const artistName = dragData.name;
+      if (dragData.source) {
+        const sourceComboName = dragData.source;
+
+        const sourceComboIndex = this.combinations.findIndex(c => c.name === sourceComboName);
+        this.deleteArtistFromCombo(artistName, this.combinations[sourceComboIndex]);
+      }
+      targetCombo.artists = [...targetCombo.artists, artistName];
+      //sourceCombo.artists.forEach(a => console.log(a));
+    }
+  }
+
+  @ViewChildren('comboNameInput') comboNameInputElements!: QueryList<ElementRef>;
+  addNewCombo(): void {
+    const newCombo: Combination = {
+      name: '',
+      artists: [],
+      childrenVisible: false,
+      isEditing: true
+    };
+    this.combinations.push(newCombo);
+    this.cdr.detectChanges();
+
+    setTimeout(() => {
+      const inputElements = this.comboNameInputElements.toArray();
+      const lastInput = inputElements[inputElements.length - 1];
+      lastInput.nativeElement.focus();
+    }, 0);
+  }
+
+  editComboName(combo: Combination): void {
+    combo.isEditing = true;
+  }
+
+  updateComboName(event: Event, combo: Combination): void {
+    const inputElement = event.target as HTMLInputElement;
+    combo.name = inputElement.value;
+
+    if (event.type === 'blur' || (event as KeyboardEvent).key === 'Enter') {
+      combo.isEditing = false;
+      this.cdr.detectChanges();
+    }
   }
 }

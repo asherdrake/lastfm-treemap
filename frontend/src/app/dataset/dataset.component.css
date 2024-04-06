@@ -26,6 +26,12 @@
   margin-right: 20px;
 }
 
+.tables-wrapper {
+  display: flex;
+  justify-content: space-between; /* This will add space around your tables */
+  gap: 20px; /* This will add space between your tables */
+}
+
 .radio-buttons input[type="radio"] {
   margin-right: 5px;
 }
@@ -33,6 +39,10 @@
 .scrollable-table {
   max-height: 400px;
   overflow-y: auto;
+}
+
+.combinations-table {
+  width: 40%  
 }
 
 table {
@@ -81,7 +91,7 @@ input[type="checkbox"] {
 
 cdk-virtual-scroll-viewport {
   height: 400px;
-  width: 90%;
+  width: 60%;
   border: 1px solid 333;
 }
   
