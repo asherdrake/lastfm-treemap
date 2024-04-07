@@ -95,7 +95,8 @@ export class StatsConverterService {
       ),
       map(chartStats => this.combineService.combineArtists(chartStats, combinations)),
       map(chartStats => this.filterArtists(chartStats, filterState)),
-      map(chartStats => this.filterAlbums(chartStats, filterState))
+      map(chartStats => this.filterAlbums(chartStats, filterState)),
+      map(chartStats => this.filterTracks(chartStats, filterState))
     )
   }
 
@@ -129,6 +130,24 @@ export class StatsConverterService {
             if (totalScrobbles < filter.minAlbumScrobbles) {
               console.log("filterAlbums")
               delete artist.albums[albumKey]; // Remove the album if it doesn't meet the scrobble count criteria
+            }
+        }
+    }
+
+    return chartStats
+  }
+
+  filterTracks(chartStats: ChartStats, filter: FilterState): ChartStats {
+    for (const artistKey in chartStats.artists) {
+        const artist = chartStats.artists[artistKey];
+        for (const albumKey in artist.albums) {
+            const album = artist.albums[albumKey];
+            for (const trackKey in album.tracks) {
+              const track = album.tracks[trackKey];
+              const totalScrobbles = track.scrobbles.length;
+              if (totalScrobbles < filter.minTrackScrobbles) {
+                delete album.tracks[trackKey];
+              }
             }
         }
     }

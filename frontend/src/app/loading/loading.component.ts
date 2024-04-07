@@ -20,7 +20,8 @@ export class LoadingComponent implements OnInit {
   username: string = '';
   minArtistScrobbles: number = 0;
   minAlbumScrobbles: number = 0;
-  public viewOptions: string[] = ["Artists", "Albums"];
+  minTrackScrobbles: number = 0;
+  public viewOptions: string[] = ["Artists", "Albums", "Tracks"];
   public selectedView: string = this.viewOptions[0];
   constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private statsConverterService: StatsConverterService, private filters: FiltersService) {
     this.storage.loadingStatus.pipe(
@@ -60,10 +61,11 @@ export class LoadingComponent implements OnInit {
     const timezoneOffset = new Date(this.startDate).getTimezoneOffset() * 60000;
     const startDate = Date.parse(this.startDate) + timezoneOffset;
     const endDate = Date.parse(this.endDate) + timezoneOffset;
-    const minArtistScrobbles = this.minArtistScrobbles
-    const minAlbumScrobbles = this.minAlbumScrobbles
-    const view = this.selectedView
-    this.filters.updateSettings({startDate, endDate, minArtistScrobbles, minAlbumScrobbles, view });
+    const minArtistScrobbles = this.minArtistScrobbles;
+    const minAlbumScrobbles = this.minAlbumScrobbles;
+    const minTrackScrobbles = this.minTrackScrobbles;
+    const view = this.selectedView;
+    this.filters.updateSettings({startDate, endDate, minArtistScrobbles, minAlbumScrobbles, minTrackScrobbles, view });
   }
   
   startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, combinations: Combination[]): void {

@@ -25,6 +25,10 @@
         <input type="text" id="minAlbumScrobbles" class="loading-input" [(ngModel)]="minAlbumScrobbles"/>
     </div>
     <div>
+        <label class="loading-text">Minimum Track Scrobbles:</label>
+        <input type="text" id="minAlbumScrobbles" class="loading-input" [(ngModel)]="minTrackScrobbles"/>
+    </div>
+    <div>
         <select class="loading-select" [(ngModel)]="selectedView">
             <option *ngFor="let option of viewOptions" [value]="option">{{option}}</option>
         </select>

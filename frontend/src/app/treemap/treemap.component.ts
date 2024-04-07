@@ -138,6 +138,59 @@ export class TreemapComponent implements OnInit{
     return treemapData;
   }
 
+  transformToTreemapDataTracks(stats: ChartStats): TreeNode {
+    const treemapData = {
+      name: "ChartStats",
+      children: [] as TreeNode[]
+    };
+  
+    // Iterate over each artist
+    Object.keys(stats.artists).forEach(artistKey => {
+      const artist = stats.artists[artistKey];
+      // Then iterate over each album of the artist
+      Object.keys(artist.albums).forEach(albumKey => {
+        const album = artist.albums[albumKey];
+
+        // Then iterate over each tracks of the album
+        Object.keys(album.tracks).forEach(trackKey => {
+          const track = album.tracks[trackKey];
+
+          const trackNode: TreeNode = {
+            name: track.name,
+            children: [],
+            value: track.scrobbles.length,
+            image: album.image_url,
+            color: album.color
+          }
+
+          treemapData.children.push(trackNode);
+        })
+        // Prepare the album TreeNode, including its tracks as children
+        // const albumNode: TreeNode = {
+        //   name: album.name,
+        //   children: Object.keys(album.tracks).map(trackKey => {
+        //     const track = album.tracks[trackKey];
+        //     return {
+        //       name: track.name,
+        //       value: track.scrobbles.length, // Use the length of scrobbles array as value
+        //       // Additional properties like 'image' and 'color' could be included here if needed
+        //     };
+        //   }),
+        //   image: album.image_url, // Album image
+        //   color: album.color // Album color
+        // };
+        // // Add the albumNode to the children of the ChartStats TreeNode
+        // treemapData.children.push(albumNode);
+      });
+    });
+  
+    this.albumMode = true;
+    this.currentDepth++;
+
+    return treemapData;
+  }
+
+
   initializeTreemap(): void {
     console.log("Initializing treemap"/* with data:", this.treemapData*/);
 
@@ -498,6 +551,5 @@ export class TreemapComponent implements OnInit{
     this.group = this.svg.append("g");
     this.group.call(this.renderNode, this.currentRoot);
     this.group.attr("transform", `translate(${this.currentTransform[0]},${this.currentTransform[1]}) scale(${this.currentTransform[2]})`);
-    
   }
 }

@@ -8,8 +8,9 @@ export interface FilterState {
 
   combinations: Combination[],
 
-  minArtistScrobbles: number
+  minArtistScrobbles: number,
   minAlbumScrobbles: number,
+  minTrackScrobbles: number,
 
   view: string
 }
@@ -25,12 +26,13 @@ export class FiltersService extends ComponentStore<FilterState> {
       endDate: Date.now(),
       minArtistScrobbles: 0,
       minAlbumScrobbles: 0,
+      minTrackScrobbles: 0,
       view: "Artists",
       combinations: []
     });
   }
 
-  readonly updateSettings = this.updater((currData: FilterState, settings: {startDate: number, endDate: number, minArtistScrobbles: number, minAlbumScrobbles: number, view: string}) => {
+  readonly updateSettings = this.updater((currData: FilterState, settings: {startDate: number, endDate: number, minArtistScrobbles: number, minAlbumScrobbles: number, minTrackScrobbles: number, view: string}) => {
     return {
       ...currData,
       ...settings

@@ -13,6 +13,21 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { ReactiveFormsModule } from '@angular/forms';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { TableVirtualScrollModule } from 'ng-table-virtual-scroll';
+import { RouterModule, Routes } from '@angular/router';
+
+// const routes: Routes = [
+//   {
+//     path: 'home',
+//     component: AppComponent,
+//     children: [
+//       { path: 'treemap', component: TreemapComponent},
+//       { path: 'loading', component: LoadingComponent},
+//       { path: 'dataset', component: DatasetComponent},
+//     ]
+//   }
+  
+//   //{ path: '', redirectTo: '/parent/', pathMatch: 'full' },
+// ];
 
 @NgModule({
   declarations: [
@@ -31,7 +46,7 @@ import { TableVirtualScrollModule } from 'ng-table-virtual-scroll';
     ReactiveFormsModule,
     TableVirtualScrollModule,
     StoreModule.forRoot({}, {}),
-    //NoopAnimationsModule
+    //RouterModule.forRoot(routes)
   ],
   providers: [],
   bootstrap: [AppComponent]
