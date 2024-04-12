@@ -1,18 +1,16 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store'
-import { Combination } from 'src/app/items';
+import { TreemapViewType } from 'src/app/items';
 
 export interface FilterState {
   startDate: number,
   endDate: number,
 
-  combinations: Combination[],
-
   minArtistScrobbles: number,
   minAlbumScrobbles: number,
   minTrackScrobbles: number,
 
-  view: string
+  view: TreemapViewType
 }
 
 @Injectable({
@@ -27,23 +25,14 @@ export class FiltersService extends ComponentStore<FilterState> {
       minArtistScrobbles: 0,
       minAlbumScrobbles: 0,
       minTrackScrobbles: 0,
-      view: "Artists",
-      combinations: []
+      view: "Artists"
     });
   }
 
-  readonly updateSettings = this.updater((currData: FilterState, settings: {startDate: number, endDate: number, minArtistScrobbles: number, minAlbumScrobbles: number, minTrackScrobbles: number, view: string}) => {
+  readonly updateSettings = this.updater((currData: FilterState, settings: {startDate: number, endDate: number, minArtistScrobbles: number, minAlbumScrobbles: number, minTrackScrobbles: number, view: TreemapViewType}) => {
     return {
       ...currData,
       ...settings
     }
   });
-
-  readonly updateCombos = this.updater((currData: FilterState, combo: {name: string, artists: string[] }) => {
-    const updatedCombos = [...currData.combinations, combo];
-    return {
-      ...currData,
-      combinations: updatedCombos
-    }
-  })
 }

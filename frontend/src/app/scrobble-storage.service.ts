@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { distinctUntilChanged, filter, map, pairwise, switchMap, tap } from 'rxjs';
-import { AlbumImages, Scrobble, User, Combination } from './items';
+import { AlbumImages, Scrobble, User, Combo, Artist, Album } from './items';
 import { MessageService } from './message.service';
 
 export interface ScrobbleState {
@@ -12,7 +12,8 @@ export interface ScrobbleState {
   albumImages?: AlbumImages
   user?: User;
 
-  combinations: Combination[];
+  artistCombinations: Combo[];
+  albumCombinations: Combo[];
 
   totalTrackPages: number;
   currTrackPage: number;
@@ -29,26 +30,36 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       scrobbles: [],
       totalTrackPages: 0,
       currTrackPage: 0,
-      combinations: [],
+      artistCombinations: [],
+      albumCombinations: [],
       state: 'GETTINGUSER'
     });
   }
 
-  readonly updateCombos = this.updater((currData: ScrobbleState, combos: {name: string, artists: string[] }[]) => {
+  readonly updateArtistCombos = this.updater((currData: ScrobbleState, artistCombos: Combo[]) => {
     //const updatedCombos = [...currData.combinations, ...combo];
     return {
       ...currData,
-      combinations: combos
+      artistCombinations: artistCombos
     }
   })
 
-  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages, combinations: Combination[] }) => {
+  readonly updateAlbumCombos = this.updater((currData: ScrobbleState, albumCombos: Combo[]) => {
+    //const updatedCombos = [...currData.combinations, ...combo];
+    return {
+      ...currData,
+      albumCombinations: albumCombos
+    }
+  })
+
+  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages, artistCombinations: Combo[], albumCombinations: Combo[] }) => {
     return {
       ...currData,
       scrobbles: [...imported.importedScrobbles],
       artistImages: imported.artistImages,
       albumImages: imported.albumImages,
-      combinations: imported.combinations ? imported.combinations : []
+      artistCombinations: imported.artistCombinations ? imported.artistCombinations : [],
+      albumCombinations: imported.albumCombinations ? imported.albumCombinations : []
     }
   })
 
@@ -151,8 +162,12 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     map(state => state.albumImages)
   )
 
-  readonly combos = this.state$.pipe(
-    map(state => state.combinations)
+  readonly artistCombos = this.state$.pipe(
+    map(state => state.artistCombinations)
+  )
+
+  readonly albumCombos = this.state$.pipe(
+    map(state => state.albumCombinations)
   )
 
   readonly artistImageUpdate = this.select(state => state.artistImages);

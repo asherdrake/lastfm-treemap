@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { User, Scrobble, AlbumImages, Combination } from './items';
+import { User, Scrobble, AlbumImages, Combo } from './items';
 import { catchError, Observable, of, throwError} from 'rxjs';
 import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
@@ -62,14 +62,14 @@ export class ScrobbleGetterService {
 
   constructor(private http: HttpClient, private messageService: MessageService) { }
 
-  initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, combinations: Combination[]) {
+  initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: Combo[], albumCombinations: Combo[]) {
     this.getUser(username).subscribe({
       next: user => {
         storage.updateUser(user);
         console.log("initializing fetching....startDate = " + startDate);
 
         const from = String(this.getStartDate(importedScrobbles));
-        storage.addImport({ importedScrobbles, artistImages, albumImages, combinations });
+        storage.addImport({ importedScrobbles, artistImages, albumImages, artistCombinations, albumCombinations });
         this.calcTrackPages({ storage, username: user.name, trackPageSize: 200, from })
 
       },

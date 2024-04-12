@@ -1,20 +1,12 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import * as d3 from 'd3';
-import { Scrobble, ChartStats, ScrobblesJSON } from 'src/app/items';
+import { Scrobble, ChartStats, TreeNode, ScrobblesJSON } from 'src/app/items';
 import { StatsConverterService } from 'src/app/stats-converter.service';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
 import { FiltersService } from 'src/app/filters.service';
 import { BaseType } from 'd3';
 import textFit  from 'textfit';
-
-interface TreeNode {
-  name: string;
-  value?: number;
-  children?: TreeNode[];
-  image?: string;
-  color?: string;
-}
 
 @Component({
   selector: 'app-treemap',
@@ -165,22 +157,6 @@ export class TreemapComponent implements OnInit{
 
           treemapData.children.push(trackNode);
         })
-        // Prepare the album TreeNode, including its tracks as children
-        // const albumNode: TreeNode = {
-        //   name: album.name,
-        //   children: Object.keys(album.tracks).map(trackKey => {
-        //     const track = album.tracks[trackKey];
-        //     return {
-        //       name: track.name,
-        //       value: track.scrobbles.length, // Use the length of scrobbles array as value
-        //       // Additional properties like 'image' and 'color' could be included here if needed
-        //     };
-        //   }),
-        //   image: album.image_url, // Album image
-        //   color: album.color // Album color
-        // };
-        // // Add the albumNode to the children of the ChartStats TreeNode
-        // treemapData.children.push(albumNode);
       });
     });
   
@@ -189,7 +165,6 @@ export class TreemapComponent implements OnInit{
 
     return treemapData;
   }
-
 
   initializeTreemap(): void {
     console.log("Initializing treemap"/* with data:", this.treemapData*/);
@@ -394,7 +369,7 @@ export class TreemapComponent implements OnInit{
     })
     .on("mousemove", (event) => {
         tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top", (event.pageY - 1480) + "px");
+               .style("top", (event.pageY - 1580) + "px");
     })
     .on("mouseout", () => {
         tooltip.style("opacity", 0); // Hide the tooltip when not hovering

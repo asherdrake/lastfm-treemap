@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChartStats, Scrobble, Artist, Album, Combination } from './items';
+import { TreeNode, ChartStats, Scrobble, Artist, Album, Combo } from './items';
 import { from, mergeMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
@@ -60,20 +60,24 @@ export class StatsConverterService {
         this.albumImageStorage = albumImages as AlbumImages
       }
     })
+
+    //this.chartStats = this.getChartStatsObservable();
     
     this.completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
   };
 
   getChartStatsObservable(): Observable<ChartStats> {
     let filterState: FilterState;
-    let combinations: Combination[];
+    let artistCombinations: Combo[];
+    let albumCombinations: Combo[];
     return combineLatest([
       this.completed,
       this.filters.state$
     ]).pipe(
       map(([scrobbles, filters]) => {
         filterState = filters;
-        combinations = scrobbles.combinations
+        artistCombinations = scrobbles.artistCombinations
+        albumCombinations = scrobbles.albumCombinations
         return this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })
       }),
       concatMap(([newChartStats, filters]) => {
@@ -93,12 +97,126 @@ export class StatsConverterService {
           })
         )
       ),
-      map(chartStats => this.combineService.combineArtists(chartStats, combinations)),
+      map(chartStats => this.combineService.combineArtists(chartStats, artistCombinations)),
+      //map(chartStats => this.combineService.combineAlbums(chartStats, albumCombinations)),
       map(chartStats => this.filterArtists(chartStats, filterState)),
       map(chartStats => this.filterAlbums(chartStats, filterState)),
-      map(chartStats => this.filterTracks(chartStats, filterState))
+      map(chartStats => this.filterTracks(chartStats, filterState)),
+      // map(chartStats => {
+      //   if (filterState.view === 'Artists') {
+      //     return chartStats
+      //   } else if (filterState.view === 'Albums') {
+      //     const treeNodes = this.transformToTreemapDataAlbums(chartStats);
+      //     this.combineService.createCombinedAlbumTreeNode()
+      //   }
+      //   return chartStats;
+      // })
     )
   }
+
+  // transformToTreemapData(stats: ChartStats): TreeNode {
+  //   const treemapData = {
+  //     name: "ChartStats",
+  //     children: Object.keys(stats.artists).map(artistKey => {
+  //         const artist = stats.artists[artistKey];
+  //         return {
+  //             name: artist.name,
+  //             children: Object.keys(artist.albums).map(albumKey => {
+  //                 const album = artist.albums[albumKey];
+  //                 //console.log("Album: " + album.name + ", Color: " + album.color)
+  //                 return {
+  //                     name: album.name,
+  //                     children: Object.keys(album.tracks).map(trackKey => {
+  //                         const track = album.tracks[trackKey];
+  //                         return {
+  //                             name: track.name,
+  //                             value: track.scrobbles.length // or another metric for value
+  //                         };
+  //                     }),
+  //                     image: album.image_url,
+  //                     color: album.color
+  //                 };
+  //             }),
+  //             image: artist.image_url,
+  //             color: artist.color
+  //         };
+  //     })
+  //   };
+  //   return treemapData
+  // }
+
+  // transformToTreemapDataAlbums(stats: ChartStats): TreeNode {
+  //   const treemapData = {
+  //     name: "ChartStats",
+  //     children: [] as TreeNode[]
+  //   };
+  
+  //   // Iterate over each artist
+  //   Object.keys(stats.artists).forEach(artistKey => {
+  //     const artist = stats.artists[artistKey];
+  //     // Then iterate over each album of the artist
+  //     Object.keys(artist.albums).forEach(albumKey => {
+  //       const album = artist.albums[albumKey];
+  //       // Prepare the album TreeNode, including its tracks as children
+  //       const albumNode: TreeNode = {
+  //         name: album.name,
+  //         children: Object.keys(album.tracks).map(trackKey => {
+  //           const track = album.tracks[trackKey];
+  //           return {
+  //             name: track.name,
+  //             value: track.scrobbles.length, // Use the length of scrobbles array as value
+  //             // Additional properties like 'image' and 'color' could be included here if needed
+  //           };
+  //         }),
+  //         image: album.image_url, // Album image
+  //         color: album.color // Album color
+  //       };
+  //       // Add the albumNode to the children of the ChartStats TreeNode
+  //       treemapData.children.push(albumNode);
+  //     });
+  //   });
+  
+  //   //this.albumMode = true;
+  //   //this.currentDepth++;
+
+  //   return treemapData;
+  // }
+
+  // transformToTreemapDataTracks(stats: ChartStats): TreeNode {
+  //   const treemapData = {
+  //     name: "ChartStats",
+  //     children: [] as TreeNode[]
+  //   };
+  
+  //   // Iterate over each artist
+  //   Object.keys(stats.artists).forEach(artistKey => {
+  //     const artist = stats.artists[artistKey];
+  //     // Then iterate over each album of the artist
+  //     Object.keys(artist.albums).forEach(albumKey => {
+  //       const album = artist.albums[albumKey];
+
+  //       // Then iterate over each tracks of the album
+  //       Object.keys(album.tracks).forEach(trackKey => {
+  //         const track = album.tracks[trackKey];
+
+  //         const trackNode: TreeNode = {
+  //           name: track.name,
+  //           children: [],
+  //           value: track.scrobbles.length,
+  //           image: album.image_url,
+  //           color: album.color
+  //         }
+
+  //         treemapData.children.push(trackNode);
+  //       })
+  //     });
+  //   });
+  
+  //   //this.albumMode = true;
+  //   //this.currentDepth++;
+
+  //   return treemapData;
+  // }
 
   filterArtists(chartStats: ChartStats, filterState: FilterState): ChartStats {
     const filteredArtists = Object.keys(chartStats.artists).reduce((acc, artistName) => {
@@ -329,7 +447,8 @@ export class StatsConverterService {
           scrobbles: [],
           name: scrobble.artistName,
           image_url: '',
-          color: ''
+          color: '',
+          isCombo: false,
         };
       } else {
         chartStats.artists[scrobble.artistName] = {
@@ -337,7 +456,8 @@ export class StatsConverterService {
           scrobbles: [],
           name: scrobble.artistName,
           image_url: this.artistImageStorage[scrobble.artistName][0] || '',
-          color: this.artistImageStorage[scrobble.artistName][1] || ''
+          color: this.artistImageStorage[scrobble.artistName][1] || '',
+          isCombo: false,
         };
       }
     }
@@ -350,7 +470,8 @@ export class StatsConverterService {
             tracks: {},
             scrobbles: [],
             name: scrobble.album,
-            image_url: scrobble.albumImage
+            image_url: scrobble.albumImage,
+            isCombo: false,
         };
         if (!this.albumImageStorage.artists[scrobble.artistName]) {
           this.albumImageStorage.artists[scrobble.artistName] = {}

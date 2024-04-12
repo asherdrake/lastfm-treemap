@@ -1,21 +1,20 @@
 import { ViewChildren, QueryList, Component, NgZone, ChangeDetectorRef, ElementRef } from '@angular/core';
-import { ChartStats } from 'src/app/items';
+import { ChartStats, Artist, Album, TreemapViewType } from 'src/app/items';
 import { CombineService } from 'src/app/combine.service';
 import { FiltersService } from 'src/app/filters.service';
 import { ScrobbleStorageService } from '../scrobble-storage.service';
-import { drag } from 'd3';
-//import { tap, pipe } from 'rxjs';
 
-interface Artist {
-  name: string,
-  scrobbles: number,
+interface Combo {
+  name: string
+  children: string[]
+  childrenVisible: boolean
+  isEditing: boolean
 }
 
-interface Combination {
-  name: string,
-  artists: string[],
-  childrenVisible: boolean,
-  isEditing: boolean
+interface Node {
+  name: string
+  scrobbles: number
+  artist?: string
 }
 
 @Component({
@@ -24,101 +23,192 @@ interface Combination {
   styleUrls: ['./dataset.component.css']
 })
 export class DatasetComponent {
-  artists: string[] = [];
-  searchTerm: string = '';
-  filteredArtists: string[] = [];
-  newArtistName: string = '';
-  combinations: Combination[] = [];
+  chartStats: ChartStats = { artists: {} };
 
-  constructor(private cdr: ChangeDetectorRef, private combineService: CombineService, private filters: FiltersService, private storage: ScrobbleStorageService) {
-    this.storage.combos.subscribe({
+  searchTerm: string = '';
+  newComboName: string = '';
+  currentViewType: TreemapViewType = 'Artists';
+  nodes: Node[] = [];
+  filteredNodes: Node[] = [];
+
+  currentCombos: Combo[] = [];
+
+  albumCombos: Combo[] = [];
+  artistCombos: Combo[] = [];
+
+  removedNodes: Node[] = [];
+
+  constructor(private cdr: ChangeDetectorRef, 
+              private combineService: CombineService, 
+              private filters: FiltersService, 
+              private storage: ScrobbleStorageService) {
+    this.storage.artistCombos.subscribe({
       next: (c) => {
-        this.combinations = c.map(combo => {
+       // console.log("datasetcomponent: artistCombos subscription: " + c[0].name)
+        this.artistCombos = c.map(combo => {
           return {
             name: combo.name,
-            artists: combo.artists,
+            children: combo.children,
             childrenVisible: false,
             isEditing: false
           }
         });
+        this.currentCombos = this.artistCombos
+      }
+    })
+
+    this.storage.albumCombos.subscribe({
+      next: (c) => {
+        this.albumCombos = c.map(combo => {
+          return {
+            name: combo.name,
+            children: combo.children,
+            childrenVisible: false,
+            isEditing: false
+          }
+        })
       }
     })
   }
 
-  transformChartStats(chartStats: ChartStats): void {
-    //this.chartStats = chartStats;
-    const artists: string[] = [];
+  fetchArtistNodesViaName(names: string[]): Node[] {
+    const artists = Object.values(this.chartStats.artists).filter(a => names.includes(a.name))
+    const artistNodes = artists.map(a => {
+      return {
+        name: a.name,
+        scrobbles: a.scrobbles.length
+      }
+    })
+    return artistNodes
+  }
+
+  fetchAlbumNodesViaName(names: string[]): Node[] {
+    const albumNodes: Node[] = [];
+    for (const artistKey in this.chartStats.artists) {
+      const artist = this.chartStats.artists[artistKey];
+      for (const albumKey in artist.albums) {
+        const album = artist.albums[albumKey];
+        if (names.includes(album.name)) {
+          albumNodes.push({
+            name: album.name,
+            scrobbles: album.scrobbles.length,
+            artist: artist.name
+          })
+        }
+      }
+    }
+    return albumNodes
+  }
+
+  ngOnInit() {
+    this.filters.state$.subscribe(filter => {
+      if (filter.view === 'Artists') {
+        this.currentCombos = this.artistCombos;
+      } else {
+        this.currentCombos = this.albumCombos;
+      }
+      this.currentViewType = filter.view;
+      this.cdr.detectChanges();
+    })
+  }
+
+  transformChartStatsArtists(chartStats: ChartStats): void {
+    this.chartStats = chartStats;
+    const artists: Node[] = [];
     
     // Iterate over each artist in the chartStats object
     for (const artistKey in chartStats.artists) {
         const artist = chartStats.artists[artistKey];
-        // Aggregate scrobbles counts. Assuming we sum them up
-        //const totalScrobbles = artist.scrobbles.reduce((acc, curr) => acc + curr, 0);
-        
-        // Transform into the SimplifiedArtist format
-        const simplifiedArtist: Artist = {
-            name: artist.name,
-            scrobbles: artist.scrobbles.length
-        };
-
-        artists.push(artist.name);
+        artists.push({
+          name: artist.name,
+          scrobbles: artist.scrobbles.length
+        });
     }
 
-    const combinationNames = this.combinations.map(c => c.name);
-    const artistsWithoutCombos = artists.filter(a => !combinationNames.includes(a))
-    this.artists = artistsWithoutCombos;
-    this.filteredArtists = artistsWithoutCombos;
+    const combinationNames = this.artistCombos.map(c => c.name);
+    const artistsWithoutCombos = artists.filter(a => !combinationNames.includes(a.name))
+    this.nodes = artistsWithoutCombos;
+    this.filteredNodes = artistsWithoutCombos;
+    this.removedNodes = this.fetchArtistNodesViaName(this.artistCombos.map(c => c.children).flat());
+  }
+
+  transformChartStatsAlbums(chartStats: ChartStats): void {
+    this.chartStats = chartStats;
+    const albums: Node[] = [];
+    
+    // Iterate over each artist in the chartStats object
+    for (const artistKey in chartStats.artists) {
+        const artist = chartStats.artists[artistKey];
+        for (const albumKey in artist.albums) {
+          const album = artist.albums[albumKey];
+          albums.push({
+            name: album.name,
+            scrobbles: album.scrobbles.length,
+            artist: artist.name
+          });
+        }
+    }
+
+    const combinationNames = this.albumCombos.map(c => c.name);
+    const albumsWithoutCombos = albums.filter(a => !combinationNames.includes(a.name))
+    this.nodes = albumsWithoutCombos;
+    this.filteredNodes = albumsWithoutCombos;
+    this.removedNodes = this.fetchAlbumNodesViaName(this.artistCombos.map(c => c.children).flat());
   }
 
   search(): void {
     if (!this.searchTerm) {
-      this.filteredArtists = this.artists;
+      this.filteredNodes = this.nodes;
     } else {
-      this.filteredArtists = this.artists.filter(artist => 
-        artist.toLowerCase().includes(this.searchTerm.toLowerCase())
+      this.filteredNodes = this.nodes.filter(node => 
+        node.name.toLowerCase().includes(this.searchTerm.toLowerCase())
       );
     }
   }
 
   submitCombos(): void {
-    const combos = this.combinations.map(c => {
+    const combos = this.currentCombos.map(c => {
       return {
         name: c.name,
-        artists: c.artists
+        children: c.children
       }
     })
-    this.storage.updateCombos(combos);
+    this.currentViewType === 'Artists' ? this.storage.updateArtistCombos(combos) : this.storage.updateAlbumCombos(combos);
   }
 
-  toggleChildren(combo: Combination): void {
+  toggleChildren(combo: Combo): void {
     combo.childrenVisible = !combo.childrenVisible
   }
 
-  deleteCombo(combo: Combination/*, event: Event*/): void {
+  deleteCombo(combo: Combo/*, event: Event*/): void {
     //event.stopPropagation();
-
-    this.combinations = this.combinations.filter(c => c !== combo);
-    this.artists = [...this.artists, ...combo.artists];
+    this.currentCombos = this.currentCombos.filter(c => c !== combo);
+    const returningNodes = this.removedNodes.filter(node => combo.children.includes(node.name))
+    this.removedNodes = this.removedNodes.filter(node => !combo.children.includes(node.name))
+    this.nodes = [...this.nodes, ...returningNodes];
   }
 
-  deleteArtistFromCombo(artist: string, combo: Combination/*, event: Event*/): void {
-    //event.stopPropagation();
-
-    combo.artists = combo.artists.filter(a => a !== artist);
+  deleteChildFromCombo(name: string, combo: Combo): void {
+    combo.children = combo.children.filter(a => a !== name);
+    const returningNodes = this.removedNodes.filter(node => combo.children.includes(node.name))
+    this.removedNodes = this.removedNodes.filter(node => !combo.children.includes(node.name))
+    this.nodes = [...this.nodes, ...returningNodes];
   }
 
-  onDragStartBtwnCombos(event: DragEvent, artistName: string, sourceCombo: Combination): void {
+  //saving data for dragging an Artist/Album between Combos
+  onDragStartBtwnCombos(event: DragEvent, name: string, sourceCombo: Combo): void {
     const dragData = {
-      name: artistName,
-      source: sourceCombo.name
+      name: name,
+      source: sourceCombo
     }
 
     event.dataTransfer?.setData('text/plain', JSON.stringify(dragData));
   }
 
-  onDragStart(event: DragEvent, artistName: string): void {
+  //saving data for dragging an artist/album from the dataset table to a Combo
+  onDragStart(event: DragEvent, data: Artist | Album): void {
     const dragData = {
-      name: artistName
+      data: data
     }
 
     event.dataTransfer?.setData('text/plain', JSON.stringify(dragData));
@@ -128,51 +218,50 @@ export class DatasetComponent {
     event.preventDefault(); // Necessary to allow the drop
   }
 
-  onDropOnCombos(event: DragEvent, targetCombo: Combination): void {
+  onDropOnCombos(event: DragEvent, targetCombo: Combo): void {
     event.preventDefault();
     const dragDataString = event.dataTransfer?.getData('text/plain');
 
     if (dragDataString) {
       const dragData = JSON.parse(dragDataString);
-      const artistName = dragData.name;
-      if (dragData.source) {
+      const name = dragData.name;
+      if (dragData.source) { //true if the data was dragged from a combination
         const sourceComboName = dragData.source;
-
-        const sourceComboIndex = this.combinations.findIndex(c => c.name === sourceComboName);
-        this.deleteArtistFromCombo(artistName, this.combinations[sourceComboIndex]);
+        const sourceComboIndex = this.currentCombos.findIndex(c => c.name === sourceComboName);
+        this.deleteChildFromCombo(name, this.artistCombos[sourceComboIndex]);
       } else {
-        this.artists = this.artists.filter(a => a !== artistName);
-        this.filteredArtists = this.filteredArtists.filter(a => a !== artistName);
+        // this.names = this.names.filter(n => n !== name);
+        // this.filteredNames = this.filteredNames.filter(n => n !== name);
       }
-      targetCombo.artists = [...targetCombo.artists, artistName];
-      //sourceCombo.artists.forEach(a => console.log(a));
+      targetCombo.children = [...targetCombo.children, name];
     }
   }
 
-  onDrop(event: DragEvent): void {
+  onDropOnDataset(event: DragEvent): void {
     event.preventDefault();
     const dragDataString = event.dataTransfer?.getData('text/plain');
 
     if (dragDataString) {
       const dragData = JSON.parse(dragDataString);
-      const artistName = dragData.name;
+      const name = dragData.data;
       const sourceComboName = dragData.source;
-
-      const sourceComboIndex = this.combinations.findIndex(c => c.name === sourceComboName);
-      this.deleteArtistFromCombo(artistName, this.combinations[sourceComboIndex]);
-      this.artists = [...this.artists, artistName];
+      const sourceComboIndex = this.currentCombos.findIndex(c => c.name === sourceComboName);
+      this.deleteChildFromCombo(name, this.currentCombos[sourceComboIndex]);
+      //this.names = [...this.names, name];
     }
   }
 
   @ViewChildren('comboNameInput') comboNameInputElements!: QueryList<ElementRef>;
   addNewCombo(): void {
-    const newCombo: Combination = {
+    const newCombo: Combo = {
       name: '',
-      artists: [],
+      children: [],
       childrenVisible: false,
       isEditing: true
     };
-    this.combinations.push(newCombo);
+
+
+    this.artistCombos.push(newCombo);
     this.cdr.detectChanges();
 
     setTimeout(() => {
@@ -182,11 +271,11 @@ export class DatasetComponent {
     }, 0);
   }
 
-  editComboName(combo: Combination): void {
+  editComboName(combo: Combo): void {
     combo.isEditing = true;
   }
 
-  updateComboName(event: Event, combo: Combination): void {
+  updateComboName(event: Event, combo: Combo): void {
     const inputElement = event.target as HTMLInputElement;
     combo.name = inputElement.value;
 

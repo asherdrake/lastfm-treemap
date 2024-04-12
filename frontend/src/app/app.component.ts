@@ -1,7 +1,7 @@
 import { ComponentRef, ViewContainerRef, ViewChild, Component, OnInit, ComponentFactoryResolver, ChangeDetectorRef } from '@angular/core';
 import { StatsConverterService } from './stats-converter.service';
 import { TreemapComponent } from './treemap/treemap.component';
-import { ChartStats } from './items';
+import { ChartStats, TreemapViewType } from './items';
 import { ScrobbleStorageService } from './scrobble-storage.service';
 import { tap } from 'rxjs';
 import { FiltersService } from './filters.service';
@@ -16,7 +16,7 @@ export class AppComponent implements OnInit{
   @ViewChild('treemapPlaceholder', { read: ViewContainerRef }) treemapContainer!: ViewContainerRef;
   @ViewChild(DatasetComponent) datasetComponent!: DatasetComponent;
   private currentTreemapComponentRef: ComponentRef<TreemapComponent> | null = null;
-  view: string = "Artists"
+  view: TreemapViewType = "Artists"
   constructor(
     private statsConverterService: StatsConverterService, 
     private storage: ScrobbleStorageService, 
@@ -42,16 +42,17 @@ export class AppComponent implements OnInit{
     this.treemapContainer.clear();
     console.log("treemapContainer cleared")
 
-    const componentRef = this.treemapContainer.createComponent(TreemapComponent);
+    const componentRef: ComponentRef<TreemapComponent> = this.treemapContainer.createComponent(TreemapComponent);
     if (this.view === "Artists") {
       componentRef.instance.treemapData = componentRef.instance.transformToTreemapData(chartStats);
+      this.datasetComponent.transformChartStatsArtists(chartStats);
     } else if (this.view === 'Albums') {
       componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataAlbums(chartStats);
-    } else {
+      this.datasetComponent.transformChartStatsAlbums(chartStats);
+    } else { 
       componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataTracks(chartStats);
     }
 
     componentRef.instance.initializeTreemap();
-    this.datasetComponent.transformChartStats(chartStats);
   }
 }

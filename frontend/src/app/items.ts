@@ -31,7 +31,17 @@ export interface ScrobblesJSON {
             }
         }
     }
-    combinations: Combination[]
+    artistCombinations: Combo[],
+    albumCombinations: Combo[]
+}
+
+export interface TreeNode {
+    name: string;
+    value?: number;
+    children?: TreeNode[];
+    image?: string;
+    color?: string;
+    //isCombo: boolean;
 }
 
 export interface AlbumImages {
@@ -60,21 +70,22 @@ export interface Artist {
     albums: {
         [key: string]: Album
     }
-    scrobbles: number[], //holds the date values of each scrobble
-    name: string,
-    image_url?: string
-    color?: string
-}
-
-export interface Album {    
-    //artist: string,
-    tracks: {
-        [key: string]: Track
-    },
-    scrobbles: number[],
+    scrobbles: number[] //holds the date values of each scrobble
     name: string
     image_url?: string
     color?: string
+    isCombo: boolean
+}
+
+export interface Album {    
+    tracks: {
+        [key: string]: Track
+    }
+    scrobbles: number[]
+    name: string
+    image_url?: string
+    color?: string
+    isCombo: boolean
 }
 
 export interface Track {
@@ -84,7 +95,19 @@ export interface Track {
     name: string
 }
 
-export interface Combination {
+export interface Combo {
     name: string,
-    artists: string[]
+    children: string[]
 }
+
+// export interface ArtistCombo {
+//     name: string,
+//     children: Artist[]
+// }
+
+// export interface ArtistCombo {
+//     name: string,
+//     children: Artist[]
+// }
+
+export type TreemapViewType = 'Artists' | 'Albums'
