@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
-import { ChartStats, Artist, Combo, Album, TreeNode } from './items';
+import { chart, Chart } from 'highcharts';
+import { ChartStats, Artist, ArtistCombo, Album, AlbumCombo } from './items';
 
 @Injectable({
   providedIn: 'root'
@@ -8,7 +9,7 @@ export class CombineService {
 
   constructor() { }
 
-  public combineArtists(chartStats: ChartStats, combinations: Combo[]): ChartStats {
+  public combineArtists(chartStats: ChartStats, combinations: ArtistCombo[]): ChartStats {
     if (combinations) {
       combinations.forEach(combination => {
         const combinedArtist = this.createCombinedArtist(chartStats, combination);
@@ -18,7 +19,17 @@ export class CombineService {
     return chartStats;
   }
 
-  private createCombinedArtist(chartStats: ChartStats, combination: Combo): Artist {
+  public combineAlbums(chartStats: ChartStats, combinations: AlbumCombo[]): ChartStats {
+    if (combinations) {
+      combinations.forEach(combination => {
+        const combinedAlbumParent: Artist = this.createCombinedAlbum(chartStats, combination);
+        this.assignCombinedAlbumToChartStats(chartStats, combinedAlbumParent, combination)
+      })
+    }
+    return chartStats
+  }
+
+  private createCombinedArtist(chartStats: ChartStats, combination: ArtistCombo): Artist {
     let combinedArtist: Artist = {
       albums: {},
       scrobbles: [],
@@ -29,9 +40,9 @@ export class CombineService {
     };
 
     let maxScrobbles = -1;
-    combination.children.forEach(artistName => {
-      const artist = chartStats.artists[artistName];
-      console.log("artistName: " + artistName);
+    combination.children.forEach(comboArtist => {
+      const artist = chartStats.artists[comboArtist.name];
+      //console.log("artistName: " + artistName[1]);
       //console.log("CombineService_createCombinedArtist: " + artist.name);
       if (artist) {
         this.mergeArtistData(artist, combinedArtist, maxScrobbles);
@@ -41,49 +52,26 @@ export class CombineService {
     return combinedArtist;
   }
 
-  // public combineAlbumsTreeNode(treeNodes: TreeNode, combinations: Combo[]): TreeNode {
-  //   if (combinations) {
-  //     combinations.forEach(combination => {
-  //       const combinedAlbum = this.createCombinedAlbumTreeNode(treeNodes, combination);
-  //       this.assignCombinedArtistToChartStats(chartStats, combinedArtist, combination);
-  //     });
-  //   }
-  //   return chartStats;
-  // }
+  //returns the combined album under a parent dummy Artist
+  private createCombinedAlbum(chartStats: ChartStats, combination: AlbumCombo): Artist {
+    const combinedAlbumParent: Artist = {
+      albums: {},
+      scrobbles: [],
+      name: combination.name,
+      isCombo: true
+    }
 
-  // private createCombinedAlbumTreeNode(treeNodes: TreeNode, combination: Combination): TreeNode {
-  //   let combinedAlbum: TreeNode = {
-  //     children: [],
-  //     value: 0,
-  //     name: combination.name,
-  //     image: '',
-  //     color: '' // Placeholder for default or logic-based color
-  //   };
+    let maxScrobbles = -1;
+    combination.children.forEach(comboAlbum => {
+      const album = chartStats.artists[comboAlbum.artistName].albums[comboAlbum.name];
+      //console.log("albumName: " + albumInfo[1]);
+      if (album) {
+        this.mergeAlbumsAndTracks(album, combinedAlbumParent, album.name);
+      }
+    });
 
-  //   let maxScrobbles = -1;
-  //   combination.children.forEach(albumName => {
-  //     const albums = treeNodes.children!.filter(a => a.name !== albumName);
-  //     console.log("artistName: " + albumName);
-  //     //console.log("CombineService_createCombinedArtist: " + artist.name);
-  //     albums.forEach(a => this.mergeAlbumTreeNodes(a, combinedAlbum));
-  //   });
-
-  //   return combinedAlbum;
-  // }
-
-  // private mergeAlbumTreeNodes(album: TreeNode, combinedAlbum: TreeNode): void {
-  //   combinedAlbum.value! += album.value!;
-  //   combinedAlbum.color = album.color;
-  //   combinedAlbum.image = album.image;
-  //   album.children?.forEach(track => {
-  //     const existingTrack = combinedAlbum.children?.find(trackName => trackName.name === track.name)
-  //     if (existingTrack) {
-  //       existingTrack.value! += track.value!;
-  //     } else {
-  //       combinedAlbum.children?.push(track)
-  //     }
-  //   })
-  // }
+    return combinedAlbumParent;
+  }
 
   private mergeArtistData(artist: Artist, combinedArtist: Artist, maxScrobbles: number): void {
     const totalScrobbles = artist.scrobbles.reduce((acc, cur) => acc + cur, 0);
@@ -116,21 +104,21 @@ export class CombineService {
     }
   }
 
-  private assignCombinedArtistToChartStats(chartStats: ChartStats, combinedArtist: Artist, combination: Combo): void {
+  private assignCombinedArtistToChartStats(chartStats: ChartStats, combinedArtist: Artist, combination: ArtistCombo): void {
     // Remove original artists
-    combination.children.forEach(artistName => {
-      delete chartStats.artists[artistName];
+    combination.children.forEach(artist => {
+      delete chartStats.artists[artist.name];
     });
 
     chartStats.artists[combination.name] = combinedArtist;
   }
 
-  // private assignCombinedAlbumToTreeNodes(treeNodes: TreeNode, combinedAlbum: TreeNode, combination: Combination): void {
-  //   // Remove original albums
-  //   combination.children.forEach(albumName => {
-  //     treeNodes.children = treeNodes.children?.filter(album => album.name !== albumName)
-  //   });
+  private assignCombinedAlbumToChartStats(chartStats: ChartStats, combinedArtist: Artist, combination: AlbumCombo): void {
+    // Remove original albums
+    combination.children.forEach(album => {
+      delete chartStats.artists[album.artistName].albums[album.name];
+    });
 
-  //   chartStats.artists[combination.name] = combinedArtist;
-  // }
+    chartStats.artists[combination.name] = combinedArtist;
+  }
 }

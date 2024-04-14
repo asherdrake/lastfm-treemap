@@ -15,20 +15,6 @@ import { ScrollingModule } from '@angular/cdk/scrolling';
 import { TableVirtualScrollModule } from 'ng-table-virtual-scroll';
 import { RouterModule, Routes } from '@angular/router';
 
-// const routes: Routes = [
-//   {
-//     path: 'home',
-//     component: AppComponent,
-//     children: [
-//       { path: 'treemap', component: TreemapComponent},
-//       { path: 'loading', component: LoadingComponent},
-//       { path: 'dataset', component: DatasetComponent},
-//     ]
-//   }
-  
-//   //{ path: '', redirectTo: '/parent/', pathMatch: 'full' },
-// ];
-
 @NgModule({
   declarations: [
     AppComponent,

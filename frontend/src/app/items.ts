@@ -31,8 +31,8 @@ export interface ScrobblesJSON {
             }
         }
     }
-    artistCombinations: Combo[],
-    albumCombinations: Combo[]
+    artistCombinations: ArtistCombo[],
+    albumCombinations: AlbumCombo[]
 }
 
 export interface TreeNode {
@@ -86,6 +86,7 @@ export interface Album {
     image_url?: string
     color?: string
     isCombo: boolean
+    artistName: string
 }
 
 export interface Track {
@@ -95,19 +96,15 @@ export interface Track {
     name: string
 }
 
-export interface Combo {
+
+export interface ArtistCombo {
     name: string,
-    children: string[]
+    children: Artist[]
 }
 
-// export interface ArtistCombo {
-//     name: string,
-//     children: Artist[]
-// }
-
-// export interface ArtistCombo {
-//     name: string,
-//     children: Artist[]
-// }
+export interface AlbumCombo {
+    name: string,
+    children: Album[]
+}
 
 export type TreemapViewType = 'Artists' | 'Albums'

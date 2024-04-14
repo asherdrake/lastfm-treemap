@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
 import { distinctUntilChanged, filter, map, pairwise, switchMap, tap } from 'rxjs';
-import { AlbumImages, Scrobble, User, Combo, Artist, Album } from './items';
+import { AlbumImages, Scrobble, User, ArtistCombo, AlbumCombo, Artist, Album } from './items';
 import { MessageService } from './message.service';
 
 export interface ScrobbleState {
@@ -12,8 +12,8 @@ export interface ScrobbleState {
   albumImages?: AlbumImages
   user?: User;
 
-  artistCombinations: Combo[];
-  albumCombinations: Combo[];
+  artistCombinations: ArtistCombo[];
+  albumCombinations: AlbumCombo[];
 
   totalTrackPages: number;
   currTrackPage: number;
@@ -36,7 +36,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     });
   }
 
-  readonly updateArtistCombos = this.updater((currData: ScrobbleState, artistCombos: Combo[]) => {
+  readonly updateArtistCombos = this.updater((currData: ScrobbleState, artistCombos: ArtistCombo[]) => {
     //const updatedCombos = [...currData.combinations, ...combo];
     return {
       ...currData,
@@ -44,7 +44,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly updateAlbumCombos = this.updater((currData: ScrobbleState, albumCombos: Combo[]) => {
+  readonly updateAlbumCombos = this.updater((currData: ScrobbleState, albumCombos: AlbumCombo[]) => {
     //const updatedCombos = [...currData.combinations, ...combo];
     return {
       ...currData,
@@ -52,7 +52,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages, artistCombinations: Combo[], albumCombinations: Combo[] }) => {
+  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[] }) => {
     return {
       ...currData,
       scrobbles: [...imported.importedScrobbles],

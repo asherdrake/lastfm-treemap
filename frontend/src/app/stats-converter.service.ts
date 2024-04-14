@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { TreeNode, ChartStats, Scrobble, Artist, Album, Combo } from './items';
+import { TreeNode, ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo } from './items';
 import { from, mergeMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
@@ -68,8 +68,8 @@ export class StatsConverterService {
 
   getChartStatsObservable(): Observable<ChartStats> {
     let filterState: FilterState;
-    let artistCombinations: Combo[];
-    let albumCombinations: Combo[];
+    let artistCombinations: ArtistCombo[];
+    let albumCombinations: AlbumCombo[];
     return combineLatest([
       this.completed,
       this.filters.state$
@@ -98,19 +98,18 @@ export class StatsConverterService {
         )
       ),
       map(chartStats => this.combineService.combineArtists(chartStats, artistCombinations)),
-      //map(chartStats => this.combineService.combineAlbums(chartStats, albumCombinations)),
+      map(chartStats => {
+        // Conditionally apply the transformation if the condition is true
+        if (filterState.view === 'Albums') {
+          return this.combineService.combineAlbums(chartStats, albumCombinations)
+        } else {
+          // Pass through the chartStats unchanged if the condition is false
+          return chartStats;
+        }
+      }),
       map(chartStats => this.filterArtists(chartStats, filterState)),
       map(chartStats => this.filterAlbums(chartStats, filterState)),
       map(chartStats => this.filterTracks(chartStats, filterState)),
-      // map(chartStats => {
-      //   if (filterState.view === 'Artists') {
-      //     return chartStats
-      //   } else if (filterState.view === 'Albums') {
-      //     const treeNodes = this.transformToTreemapDataAlbums(chartStats);
-      //     this.combineService.createCombinedAlbumTreeNode()
-      //   }
-      //   return chartStats;
-      // })
     )
   }
 
@@ -472,6 +471,7 @@ export class StatsConverterService {
             name: scrobble.album,
             image_url: scrobble.albumImage,
             isCombo: false,
+            artistName: artist.name
         };
         if (!this.albumImageStorage.artists[scrobble.artistName]) {
           this.albumImageStorage.artists[scrobble.artistName] = {}

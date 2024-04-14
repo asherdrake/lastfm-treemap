@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { User, Scrobble, AlbumImages, Combo } from './items';
+import { User, Scrobble, AlbumImages, ArtistCombo, AlbumCombo } from './items';
 import { catchError, Observable, of, throwError} from 'rxjs';
 import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
@@ -62,7 +62,7 @@ export class ScrobbleGetterService {
 
   constructor(private http: HttpClient, private messageService: MessageService) { }
 
-  initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: Combo[], albumCombinations: Combo[]) {
+  initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]) {
     this.getUser(username).subscribe({
       next: user => {
         storage.updateUser(user);
