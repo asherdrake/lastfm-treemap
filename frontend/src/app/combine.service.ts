@@ -71,10 +71,12 @@ export class CombineService {
 
     let maxScrobbles = -1;
     combination.children.forEach(comboAlbum => {
-      const album = chartStats.artists[comboAlbum.artistName].albums[comboAlbum.name];
-      //console.log("albumName: " + albumInfo[1]);
-      if (album) {
-        this.mergeAlbumsForCombinedAlbum(album, combinedAlbum, maxScrobbles);
+      const artist = chartStats.artists[comboAlbum.artistName]
+      if (artist) {
+        const album = artist.albums[comboAlbum.name];
+        if (album) {
+          this.mergeAlbumsForCombinedAlbum(album, combinedAlbum, maxScrobbles);
+        }
       }
     });
     combinedAlbumParent.albums[combination.name] = combinedAlbum
@@ -148,7 +150,10 @@ export class CombineService {
   private assignCombinedAlbumToChartStats(chartStats: ChartStats, combinedArtist: Artist, combination: AlbumCombo): void {
     // Remove original albums
     combination.children.forEach(album => {
-      delete chartStats.artists[album.artistName].albums[album.name];
+      const artist = chartStats.artists[album.artistName]
+      if (artist) {
+        delete artist.albums[album.name];
+      }
     });
 
     chartStats.artists[combination.name] = combinedArtist;
