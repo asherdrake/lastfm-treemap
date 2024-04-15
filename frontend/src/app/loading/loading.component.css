@@ -70,3 +70,30 @@ select {
         padding: 8px;
     }
 }
+
+/* Base styles for the sidebar */
+.sidebar {
+    height: 100%;
+    width: 0; /* Initially set to 0 to hide the sidebar */
+    position: fixed;
+    z-index: 1;
+    top: 0;
+    left: 0;
+    background-color: #111;
+    overflow-x: hidden;
+    transition: 0.5s; /* Smooth transition */
+    padding-top: 60px;
+  }
+  
+  /* When sidebar is active, set width to 250px or any desired value */
+  .sidebar.active {
+    width: 250px;
+  }
+  
+  /* Style for the toggle button */
+  .toggle-button {
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  

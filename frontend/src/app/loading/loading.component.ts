@@ -23,6 +23,7 @@ export class LoadingComponent implements OnInit {
   minTrackScrobbles: number = 0;
   public viewOptions: string[] = ["Artists", "Albums", "Tracks"];
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
+  sidebarActive: boolean = true;
   constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private statsConverterService: StatsConverterService, private filters: FiltersService) {
     this.storage.loadingStatus.pipe(
       map(loadingStatus => {
@@ -31,6 +32,10 @@ export class LoadingComponent implements OnInit {
         this.totalPages = loadingStatus[2];
       })
     ).subscribe();
+  }
+
+  toggleSidebar(): void {
+    this.sidebarActive = !this.sidebarActive
   }
 
   downloadJSON(): void {

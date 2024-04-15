@@ -1,41 +1,54 @@
-<!-- Loading component HTML with added classes -->
-<p class="loading-text">loading works!</p>
-<div class="loading-container">
-    <p class="loading-text">
-        Loading track page {{totalPages - pageNumber}}/{{totalPages}} <br>
-        Scrobbles Fetched: {{scrobblesFetched}}
-    </p>
-    <div>
-        <label class="loading-text">Enter Username:</label>
-        <input type="text" id="username" class="loading-input" [(ngModel)]="username"/> 
-        <button class="loading-button" (click)="startFetching([], {}, { artists: {} }, [], [])">Submit</button>
+<button class="toggle-button" (click)="toggleSidebar()">
+    <span class="icon" [class.active]="sidebarActive">☰</span>
+</button>
+
+
+<div class="sidebar-wrapper">
+    <div class="sidebar-collapsed" *ngIf="!sidebarActive">
+
     </div>
-    <div>
-        <label class="loading-text">Start Date:</label>
-        <input type="text" id="start-date" class="loading-input" [(ngModel)]="startDate"/> 
-        <label class="loading-text">End Date:</label>
-        <input type="text" id="end-date" class="loading-input" [(ngModel)]="endDate"/>
-    </div>
-    <div>
-        <label class="loading-text">Minimum Artist Scrobbles:</label>
-        <input type="text" id="minArtistScrobbles" class="loading-input" [(ngModel)]="minArtistScrobbles"/>
-    </div>
-    <div>
-        <label class="loading-text">Minimum Album Scrobbles:</label>
-        <input type="text" id="minAlbumScrobbles" class="loading-input" [(ngModel)]="minAlbumScrobbles"/>
-    </div>
-    <div>
-        <label class="loading-text">Minimum Track Scrobbles:</label>
-        <input type="text" id="minAlbumScrobbles" class="loading-input" [(ngModel)]="minTrackScrobbles"/>
-    </div>
-    <div>
-        <select class="loading-select" [(ngModel)]="selectedView">
-            <option *ngFor="let option of viewOptions" [value]="option">{{option}}</option>
-        </select>
-        <button class="loading-button" (click)="applySettings()">Apply Settings</button>
-    </div>
-    <div>
-        <input type="file" class="file-upload loading-input" (change)="fileInput($event)">
-        <button class="loading-button" (click)="downloadJSON()">Download JSON</button>
+    <div class="sidebar" [class.active]="sidebarActive">
+        <button class="toggle-button" (click)="toggleSidebar()">
+            <span class="icon" [class.active]="sidebarActive">☰</span>
+        </button>
+        <div class="loading-container">
+            <p class="loading-text">
+                Loading track page {{totalPages - pageNumber}}/{{totalPages}} <br>
+                Scrobbles Fetched: {{scrobblesFetched}}
+            </p>
+            <div>
+                <label class="loading-text">Enter Username:</label>
+                <input type="text" id="username" class="loading-input" [(ngModel)]="username"/> 
+                <button class="loading-button" (click)="startFetching([], {}, { artists: {} }, [], [])">Submit</button>
+            </div>
+            <div>
+                <label class="loading-text">Start Date:</label>
+                <input type="text" id="start-date" class="loading-input" [(ngModel)]="startDate"/> 
+                <label class="loading-text">End Date:</label>
+                <input type="text" id="end-date" class="loading-input" [(ngModel)]="endDate"/>
+            </div>
+            <div>
+                <label class="loading-text">Minimum Artist Scrobbles:</label>
+                <input type="text" id="minArtistScrobbles" class="loading-input" [(ngModel)]="minArtistScrobbles"/>
+            </div>
+            <div>
+                <label class="loading-text">Minimum Album Scrobbles:</label>
+                <input type="text" id="minAlbumScrobbles" class="loading-input" [(ngModel)]="minAlbumScrobbles"/>
+            </div>
+            <div>
+                <label class="loading-text">Minimum Track Scrobbles:</label>
+                <input type="text" id="minAlbumScrobbles" class="loading-input" [(ngModel)]="minTrackScrobbles"/>
+            </div>
+            <div>
+                <select class="loading-select" [(ngModel)]="selectedView">
+                    <option *ngFor="let option of viewOptions" [value]="option">{{option}}</option>
+                </select>
+                <button class="loading-button" (click)="applySettings()">Apply Settings</button>
+            </div>
+            <div>
+                <input type="file" class="file-upload loading-input" (change)="fileInput($event)">
+                <button class="loading-button" (click)="downloadJSON()">Download JSON</button>
+            </div>
+        </div>
     </div>
 </div>

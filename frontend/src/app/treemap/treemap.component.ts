@@ -369,7 +369,7 @@ export class TreemapComponent implements OnInit{
     })
     .on("mousemove", (event) => {
         tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top", (event.pageY - 1580) + "px");
+               .style("top", (event.pageY - 580) + "px");
     })
     .on("mouseout", () => {
         tooltip.style("opacity", 0); // Hide the tooltip when not hovering
