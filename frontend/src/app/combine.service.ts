@@ -61,14 +61,23 @@ export class CombineService {
       isCombo: true
     }
 
+    const combinedAlbum: Album = {
+      tracks: {},
+      scrobbles: [],
+      name: combination.name,
+      isCombo: true,
+      artistName: combination.name
+    }
+
     let maxScrobbles = -1;
     combination.children.forEach(comboAlbum => {
       const album = chartStats.artists[comboAlbum.artistName].albums[comboAlbum.name];
       //console.log("albumName: " + albumInfo[1]);
       if (album) {
-        this.mergeAlbumsAndTracks(album, combinedAlbumParent, album.name);
+        this.mergeAlbumsForCombinedAlbum(album, combinedAlbum, maxScrobbles);
       }
     });
+    combinedAlbumParent.albums[combination.name] = combinedAlbum
 
     return combinedAlbumParent;
   }
@@ -81,10 +90,33 @@ export class CombineService {
       combinedArtist.color = artist.color;
     }
 
+    combinedArtist.scrobbles = combinedArtist.scrobbles.concat(artist.scrobbles);
+
     Object.keys(artist.albums).forEach(albumName => {
       this.mergeAlbumsAndTracks(artist.albums[albumName], combinedArtist, albumName);
     });
   }
+
+  private mergeAlbumsForCombinedAlbum(album: Album, combinedAlbum: Album, maxScrobbles: number): void {
+    const totalScrobbles = album.scrobbles.reduce((acc, cur) => acc + cur, 0);
+    if (totalScrobbles > maxScrobbles) {
+      maxScrobbles = totalScrobbles;
+      combinedAlbum.image_url = album.image_url;
+      combinedAlbum.color = album.color;
+    }
+
+    combinedAlbum.scrobbles = combinedAlbum.scrobbles.concat(album.scrobbles);
+
+    Object.keys(album.tracks).forEach(trackName => {
+      if (!combinedAlbum.tracks[trackName]) {
+        combinedAlbum.tracks[trackName] = JSON.parse(JSON.stringify(album.tracks[trackName]));
+      } else {
+        combinedAlbum.tracks[trackName].scrobbles =
+          combinedAlbum.tracks[trackName].scrobbles.concat(album.tracks[trackName].scrobbles);
+      }
+    });
+  }
+
 
   private mergeAlbumsAndTracks(album: Album, combinedArtist: Artist, albumName: string): void {
     if (!combinedArtist.albums[albumName]) {
