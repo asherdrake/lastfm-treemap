@@ -45,6 +45,7 @@ export class DatasetComponent {
   filteredAlbums: Album[] = [];
   albumCombos: AlbumCombo[] = [];
 
+  isVisible: boolean = false;
   constructor(private cdr: ChangeDetectorRef, 
               private combineService: CombineService, 
               private filters: FiltersService, 
@@ -81,6 +82,10 @@ export class DatasetComponent {
       this.currentViewType = filter.view;
       this.cdr.detectChanges();
     })
+  }
+
+  toggleBar(): void {
+    this.isVisible = !this.isVisible;
   }
 
   transformChartStatsArtists(chartStats: ChartStats): void {

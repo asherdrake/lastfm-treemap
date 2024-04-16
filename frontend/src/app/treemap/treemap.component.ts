@@ -16,8 +16,8 @@ import textFit  from 'textfit';
 })
 export class TreemapComponent implements OnInit{
   treemapData: TreeNode = {} as TreeNode;
-  width: number = 2000;
-  height: number = 2000;
+  width: number = 2500;
+  height: number = 2500;
   hierarchy: d3.HierarchyNode<TreeNode> = {} as d3.HierarchyNode<TreeNode>;
   root: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   tooltip: d3.Selection<BaseType, unknown, HTMLElement, any> = {} as d3.Selection<BaseType, unknown, HTMLElement, any>;
@@ -365,11 +365,11 @@ export class TreemapComponent implements OnInit{
         tooltip.style("opacity", 1);
         tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
             .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
-            .style("top", (event.pageY - 1500) + "px"); // Position the tooltip below the cursor
+            .style("top", (event.pageY - 120) + "px"); // Position the tooltip below the cursor
     })
     .on("mousemove", (event) => {
         tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top", (event.pageY - 580) + "px");
+               .style("top", (event.pageY - 120) + "px");
     })
     .on("mouseout", () => {
         tooltip.style("opacity", 0); // Hide the tooltip when not hovering

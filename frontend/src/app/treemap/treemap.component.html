@@ -1,9 +1,11 @@
-<p>treemap works!</p>
+<!-- <p>treemap works!</p>
 <div>
-    <button (click)="zoomOut()">Zoom Out</button> <br>
+  <button (click)="zoomOut()">Zoom Out</button> <br> 
     <button (click)="transition(this.target)">Smooth Zoom</button> <br>
     Current Depth: {{currentDepth}} <br>
-</div>
+</div> -->
 <div id="treemap-container">
+    <button id="zoom-out-btn" (click)="zoomOut()">Zoom Out</button>
+    <div id="current-depth">Current Depth: {{ currentDepth }}</div>
     <div id="tooltip" style="position: absolute; opacity: 0; pointer-events: none; background-color: white; border: 1px solid black; border-radius: 5px; padding: 10px;"></div>
 </div>

@@ -2,7 +2,7 @@
 body {
     font-family: Arial, sans-serif;
     margin: 0;
-    padding: 20px;
+    /* padding: 20px; */
     background-color: #f4f4f4;
 }
 
@@ -48,11 +48,15 @@ nav {
 
 /* Styling for the loading and treemap components to make them distinct */
 app-loading, app-messages, .treemap {
-    padding: 20px;
-    margin-bottom: 20px;
+    /* padding: 20px;
+    margin-bottom: 20px; */
     border-radius: 5px;
     background-color: white;
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+app-loading {
+    z-index: 100;
 }
 
 /* Enhancements for the loading component specifics */
@@ -63,9 +67,9 @@ app-loading, app-messages, .treemap {
 
 /* Responsive layout adjustments */
 @media (max-width: 768px) {
-    body {
+    /* body {
         padding: 10px;
-    }
+    } */
 
     input[type="text"], select, .file-upload {
         width: 100%;
