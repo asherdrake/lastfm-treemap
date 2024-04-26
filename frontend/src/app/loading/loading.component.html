@@ -23,6 +23,7 @@
             <p class="or-text">OR</p>
             <input type="file" class="file-upload loading-input" (change)="fileInput($event)">
         </div>
+        <p class="option-text">OPTIONS</p>
         <div class="date-select-wrapper">
             <div class="date-select">
                 <label class="loading-text">Start Date:</label>
@@ -32,31 +33,27 @@
                 <label class="loading-text">End Date:</label>
                 <input type="date" id="end-date" class="date-box" [(ngModel)]="endDate"/>
             </div>
+            <div class="top-level-wrapper">
+                <label class="top-level-text">Top Level:</label>
+                <select class="loading-select" [(ngModel)]="selectedView" (ngModelChange)="setSelectedView($event)">
+                    <option *ngFor="let option of viewOptions" [value]="option">{{option}}</option>
+                </select>
+            </div>
+            <div class="min-wrapper">
+                <label class="loading-text">Minimum {{ selectedView }} Scrobbles:</label>
+                <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="minScrobbles"/>
+            </div>
+        </div>
+        <div class="bottom-buttons">
+            <button class="bottom-button" (click)="applySettings()">Apply Options</button>
+            <button class="bottom-button" (click)="downloadJSON()">Download JSON</button>
         </div>
         <p class="loading-text">
             Loading track page {{totalPages - pageNumber}}/{{totalPages}} <br>
             Scrobbles Fetched: {{scrobblesFetched}}
         </p>
-        <div>
-            <label class="loading-text">Minimum Artist Scrobbles:</label>
-            <input type="text" id="minArtistScrobbles" class="loading-input" [(ngModel)]="minArtistScrobbles"/>
-        </div>
-        <div>
-            <label class="loading-text">Minimum Album Scrobbles:</label>
-            <input type="text" id="minAlbumScrobbles" class="loading-input" [(ngModel)]="minAlbumScrobbles"/>
-        </div>
-        <div>
-            <label class="loading-text">Minimum Track Scrobbles:</label>
-            <input type="text" id="minAlbumScrobbles" class="loading-input" [(ngModel)]="minTrackScrobbles"/>
-        </div>
-        <div>
-            <select class="loading-select" [(ngModel)]="selectedView">
-                <option *ngFor="let option of viewOptions" [value]="option">{{option}}</option>
-            </select>
-            <button class="loading-button" (click)="applySettings()">Apply Settings</button>
-        </div>
-        <div>
-            <button class="loading-button" (click)="downloadJSON()">Download JSON</button>
+        <div class="loading-bar-container">
+            <div class="loading-bar" [style.width]="loadingBarWidth()"></div>
         </div>
     </div>
 </div>

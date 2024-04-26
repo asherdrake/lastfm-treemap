@@ -3,7 +3,7 @@
   <span class="icon" [class.active]="isVisible">☰</span>
 </button>
 
-<div class="container" [class.hidden]="!isVisible">
+<div class="container" [class.sidebar-active]="sidebarActive" [class.hidden]="!isVisible">
   <div *ngIf="this.currentViewType === 'Artists'">
     <div class="search-bar">
       <input type="text" placeholder="Search artist" [(ngModel)]="searchTerm" (keyup)="searchArtists()"/>

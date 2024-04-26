@@ -17,6 +17,7 @@ export class AppComponent implements OnInit{
   @ViewChild(DatasetComponent) datasetComponent!: DatasetComponent;
   private currentTreemapComponentRef: ComponentRef<TreemapComponent> | null = null;
   view: TreemapViewType = "Artists"
+  sidebarActive: boolean = false;
   constructor(
     private statsConverterService: StatsConverterService, 
     private storage: ScrobbleStorageService, 
@@ -54,5 +55,13 @@ export class AppComponent implements OnInit{
     }
 
     componentRef.instance.initializeTreemap();
+  }
+
+  handleSidebarState(state: boolean): void {
+    this.sidebarActive = state;
+    if (this.datasetComponent) {
+      this.datasetComponent.sidebarActive = state;
+      this.cdr.detectChanges();
+    }
   }
 }

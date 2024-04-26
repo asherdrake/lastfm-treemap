@@ -1,4 +1,4 @@
-import { ViewChildren, QueryList, Component, NgZone, ChangeDetectorRef, ElementRef } from '@angular/core';
+import { Input, ViewChildren, QueryList, Component, NgZone, ChangeDetectorRef, ElementRef } from '@angular/core';
 import { ChartStats, Artist, Album, TreemapViewType } from 'src/app/items';
 import { CombineService } from 'src/app/combine.service';
 import { FiltersService } from 'src/app/filters.service';
@@ -46,6 +46,7 @@ export class DatasetComponent {
   albumCombos: AlbumCombo[] = [];
 
   isVisible: boolean = false;
+  @Input() sidebarActive: boolean = false;
   constructor(private cdr: ChangeDetectorRef, 
               private combineService: CombineService, 
               private filters: FiltersService, 

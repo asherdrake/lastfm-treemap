@@ -107,4 +107,4 @@ export interface AlbumCombo {
     children: Album[]
 }
 
-export type TreemapViewType = 'Artists' | 'Albums'
+export type TreemapViewType = 'Artists' | 'Albums' | 'Tracks'
