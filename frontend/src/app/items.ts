@@ -27,7 +27,7 @@ export interface ScrobblesJSON {
     albumImages: {
         artists: {
             [key: string]: {
-              [key: string]: string
+                [key: string]: string
             }
         }
     }
@@ -46,12 +46,12 @@ export interface TreeNode {
 
 export interface AlbumImages {
     artists: {
-      [key: string]: {
-        [key: string]: string
-      }
+        [key: string]: {
+            [key: string]: string
+        }
     }
-  }
-  
+}
+
 
 export interface LoadingStats {
     scrobblesFetched: number,
@@ -77,7 +77,7 @@ export interface Artist {
     isCombo: boolean
 }
 
-export interface Album {    
+export interface Album {
     tracks: {
         [key: string]: Track
     }

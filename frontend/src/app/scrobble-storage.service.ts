@@ -24,8 +24,8 @@ export interface ScrobbleState {
 @Injectable({
   providedIn: 'root'
 })
-export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
-  constructor(private messageService: MessageService) { 
+export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
+  constructor(private messageService: MessageService) {
     super({
       scrobbles: [],
       totalTrackPages: 0,
@@ -52,7 +52,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[] }) => {
+  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[] }) => {
     return {
       ...currData,
       scrobbles: [...imported.importedScrobbles],
@@ -73,7 +73,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly updateTrackTotal = this.updater((currData: ScrobbleState, page: {totalTrackPages: number, currTrackPage: number}) => {
+  readonly updateTrackTotal = this.updater((currData: ScrobbleState, page: { totalTrackPages: number, currTrackPage: number }) => {
     //this.log('updateTotal');
 
     return {
@@ -83,7 +83,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly updateDateRange = this.updater((currData: ScrobbleState, dateRange: {startDate: number, endDate: number}) => {
+  readonly updateDateRange = this.updater((currData: ScrobbleState, dateRange: { startDate: number, endDate: number }) => {
     console.log('updateDateRange');
 
     return {
@@ -117,8 +117,8 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       albumImages: albumImages
     }
   })
-  
-  readonly updateAlbumTotal = this.updater((currData: ScrobbleState, page: {totalAlbumPages: number, currAlbumPage: number}) => {
+
+  readonly updateAlbumTotal = this.updater((currData: ScrobbleState, page: { totalAlbumPages: number, currAlbumPage: number }) => {
     return {
       ...currData,
       ...page,
@@ -133,7 +133,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       ...currData,
       state
     }
-  }) 
+  })
 
   readonly loadingState = this.select(state => state.state);
 
@@ -145,14 +145,15 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
 
   readonly scrobbles$ = this.select(state => state.scrobbles);
 
-  readonly trackPageChunk = this.select(state => state.state === 'GETTINGSCROBBLES', {debounce: false})
+  readonly trackPageChunk = this.select(state => state.state === 'GETTINGSCROBBLES', { debounce: false })
     .pipe(
       filter(canProcess => canProcess),
       distinctUntilChanged(),
       switchMap(() => this.scrobbles$),
       pairwise(),
+      tap(() => console.log('trackPageChunk')),
       map(([previous, next]) => next.slice(previous.length))
-  );
+    );
 
   readonly artistImageStorage = this.state$.pipe(
     map(state => state.artistImages)
@@ -171,7 +172,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   )
 
   readonly artistImageUpdate = this.select(state => state.artistImages);
-  
+
   private log(message: string) {
     this.messageService.add(`ScrobbleStorage: ${message}`);
   }

@@ -6,7 +6,8 @@ import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
 import { FiltersService } from 'src/app/filters.service';
 import { BaseType } from 'd3';
-import textFit  from 'textfit';
+import { tap } from 'rxjs/operators';
+import textFit from 'textfit';
 
 @Component({
   selector: 'app-treemap',
@@ -14,7 +15,7 @@ import textFit  from 'textfit';
   styleUrls: ['./treemap.component.css'],
   encapsulation: ViewEncapsulation.None
 })
-export class TreemapComponent implements OnInit{
+export class TreemapComponent implements OnInit {
   treemapData: TreeNode = {} as TreeNode;
   width: number = 2500;
   height: number = 2500;
@@ -51,10 +52,17 @@ export class TreemapComponent implements OnInit{
     this.updateTreemap = this.updateTreemap.bind(this);
     this.updateScales = this.updateScales.bind(this);
     this.calculateFontSize = this.calculateFontSize.bind(this);
+
+    this.statsConverterService.chartStats.subscribe((stats: ChartStats) => {
+      console.log("ChartStats received in treemap component");
+      this.treemapData = this.transformToTreemapData(stats);
+      this.initializeTreemap();
+    });
   };
 
   ngOnInit(): void {
     //this.initializeTreemap();
+
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
@@ -66,28 +74,28 @@ export class TreemapComponent implements OnInit{
     const treemapData = {
       name: "ChartStats",
       children: Object.keys(stats.artists).map(artistKey => {
-          const artist = stats.artists[artistKey];
-          return {
-              name: artist.name,
-              children: Object.keys(artist.albums).map(albumKey => {
-                  const album = artist.albums[albumKey];
-                  //console.log("Album: " + album.name + ", Color: " + album.color)
-                  return {
-                      name: album.name,
-                      children: Object.keys(album.tracks).map(trackKey => {
-                          const track = album.tracks[trackKey];
-                          return {
-                              name: track.name,
-                              value: track.scrobbles.length // or another metric for value
-                          };
-                      }),
-                      image: album.image_url,
-                      color: album.color
-                  };
+        const artist = stats.artists[artistKey];
+        return {
+          name: artist.name,
+          children: Object.keys(artist.albums).map(albumKey => {
+            const album = artist.albums[albumKey];
+            //console.log("Album: " + album.name + ", Color: " + album.color)
+            return {
+              name: album.name,
+              children: Object.keys(album.tracks).map(trackKey => {
+                const track = album.tracks[trackKey];
+                return {
+                  name: track.name,
+                  value: track.scrobbles.length // or another metric for value
+                };
               }),
-              image: artist.image_url,
-              color: artist.color
-          };
+              image: album.image_url,
+              color: album.color
+            };
+          }),
+          image: artist.image_url,
+          color: artist.color
+        };
       })
     };
     return treemapData
@@ -98,7 +106,7 @@ export class TreemapComponent implements OnInit{
       name: "ChartStats",
       children: [] as TreeNode[]
     };
-  
+
     // Iterate over each artist
     Object.keys(stats.artists).forEach(artistKey => {
       const artist = stats.artists[artistKey];
@@ -123,7 +131,7 @@ export class TreemapComponent implements OnInit{
         treemapData.children.push(albumNode);
       });
     });
-  
+
     this.albumMode = true;
     this.currentDepth++;
 
@@ -135,7 +143,7 @@ export class TreemapComponent implements OnInit{
       name: "ChartStats",
       children: [] as TreeNode[]
     };
-  
+
     // Iterate over each artist
     Object.keys(stats.artists).forEach(artistKey => {
       const artist = stats.artists[artistKey];
@@ -159,7 +167,7 @@ export class TreemapComponent implements OnInit{
         })
       });
     });
-  
+
     this.albumMode = true;
     this.currentDepth++;
 
@@ -203,7 +211,7 @@ export class TreemapComponent implements OnInit{
     this.group = this.svg.append("g")
 
     this.svg.call(this.zoom)
-     //.on("dblclick.zoom", null);
+    //.on("dblclick.zoom", null);
 
     this.currentRoot = this.root;
     this.updateTreemap();
@@ -211,7 +219,7 @@ export class TreemapComponent implements OnInit{
 
   transition(target: [number, number, number]): void {
     const i = d3.interpolateZoom(this.currentTransform, target);
-  
+
     let duration = i.duration;
     if (duration < 250) { // If the calculated duration is too short, extend it
       duration = 250; // Adjust this value as needed
@@ -222,7 +230,7 @@ export class TreemapComponent implements OnInit{
       .attr("transform", "translate(100,100) scale(2)")
       .on("end", () => console.log("Transition complete"));
   }
-  
+
   transform(x: number, y: number, r: number): string {
     // This should return a string in the format of "translate(x, y) scale(z)"
     return `translate(${this.width / 2 - x}, ${this.height / 2 - y}) scale(${this.height / r})`;
@@ -268,7 +276,7 @@ export class TreemapComponent implements OnInit{
         return "#ccc";
       })
       .attr("stroke", "#000")
-      //.attr("stroke-width", '0')
+    //.attr("stroke-width", '0')
 
     if (this.currentDepth == 2) {
       rect.attr("fill", "rgba(0, 0, 0, 0.4)");
@@ -280,9 +288,9 @@ export class TreemapComponent implements OnInit{
 
     node.append("text") //Titles
       .attr("font-size", d => `${this.calculateFontSize(d)}px`)
-      .attr("fill-opacity", 0.7) 
+      .attr("fill-opacity", 0.7)
       .text(d => d.data.name)
-      .each(function(d) {
+      .each(function (d) {
         const currText = d3.select(this)
         const textLength = currText.node()?.getBBox();
         const rectWidth = self.x(d.x1) - self.y(d.x0);
@@ -311,9 +319,9 @@ export class TreemapComponent implements OnInit{
 
     node.append("text") //Scrobble Count
       .attr("font-size", d => `${self.calculateFontSize(d)}px`)
-      .attr("fill-opacity", 0.7) 
+      .attr("fill-opacity", 0.7)
       .text((d: any) => d.value)
-      .each(function(d) {
+      .each(function (d) {
         const currText = d3.select(this)
         const textLength = currText.node()?.getBBox();
 
@@ -362,18 +370,18 @@ export class TreemapComponent implements OnInit{
     const tooltip = d3.select("#tooltip");
 
     node.on("mouseover", (event, d) => {
-        tooltip.style("opacity", 1);
-        tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
-            .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
-            .style("top", (event.pageY - 120) + "px"); // Position the tooltip below the cursor
+      tooltip.style("opacity", 1);
+      tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
+        .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
+        .style("top", (event.pageY - 120) + "px"); // Position the tooltip below the cursor
     })
-    .on("mousemove", (event) => {
+      .on("mousemove", (event) => {
         tooltip.style("left", (event.pageX + 10) + "px")
-               .style("top", (event.pageY - 120) + "px");
-    })
-    .on("mouseout", () => {
+          .style("top", (event.pageY - 120) + "px");
+      })
+      .on("mouseout", () => {
         tooltip.style("opacity", 0); // Hide the tooltip when not hovering
-    }); 
+      });
   }
 
   backgroundImage(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>, group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>): void {
@@ -411,28 +419,28 @@ export class TreemapComponent implements OnInit{
       .style("font-size", d => `${this.calculateFontSize(d) * 2}px`)
       .html(d => `<xhtml:span>${d.data.name}</xhtml:span>`)
 
-    nodeWrapperDiv.each(function(d) {
+    nodeWrapperDiv.each(function (d) {
       const divElement = (this as HTMLElement).querySelector('div');
       if (divElement) {
-        textFit(divElement, { 
-          alignVertWithFlexbox: true, 
-          alignHoriz: true, 
+        textFit(divElement, {
+          alignVertWithFlexbox: true,
+          alignHoriz: true,
           multiLine: true,
           maxFontSize: 1000
         });
       }
     });
   }
-  
+
   formatScrobbleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
     currText.attr("x", (d: any) => {
       const [width, height] = this.imageCalculations(d);
       return (width / 2) - textLength!.width / 2
     })
-    .attr("y", (d: any) => {
-      const [width, height] = this.imageCalculations(d);
-      return (height / 2) + (width < height ? width * 0.6 : height * 0.6) / 2 + textLength!.height
-    })
+      .attr("y", (d: any) => {
+        const [width, height] = this.imageCalculations(d);
+        return (height / 2) + (width < height ? width * 0.6 : height * 0.6) / 2 + textLength!.height
+      })
   }
 
   formatTitleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
@@ -440,25 +448,25 @@ export class TreemapComponent implements OnInit{
       const [width, height] = this.imageCalculations(d);
       return (width / 2) - textLength!.width / 2
     })
-    .attr("y", (d: any) => {
-      const [width, height] = this.imageCalculations(d);
-      return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2 - textLength!.height / 2
-    })
+      .attr("y", (d: any) => {
+        const [width, height] = this.imageCalculations(d);
+        return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2 - textLength!.height / 2
+      })
   }
 
   hexToRgb(hex: string): [number, number, number] {
     // Remove the hash at the start if it's there
     if (!hex) {
-      hex = "#cccccc" 
+      hex = "#cccccc"
     }
 
     hex = hex.replace(/^#/, '');
-  
+
     // Parse the r, g, b values
     let r = parseInt(hex.substring(0, 2), 16);
     let g = parseInt(hex.substring(2, 4), 16);
     let b = parseInt(hex.substring(4, 6), 16);
-  
+
     return [r, g, b];
   }
 
@@ -479,10 +487,10 @@ export class TreemapComponent implements OnInit{
 
   positionSelection(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
     group.selectAll("g")
-        .attr("transform", (d: any) => d === root ? `translate(0,-30)` : `translate(${this.x(d.x0)},${this.y(d.y0)})`)
+      .attr("transform", (d: any) => d === root ? `translate(0,-30)` : `translate(${this.x(d.x0)},${this.y(d.y0)})`)
       .select("rect")
-        .attr("width", (d: any) => d === root ? this.width : this.x(d.x1) - this.x(d.x0))
-        .attr("height", (d: any) => d === root ? 30 : this.y(d.y1) - this.y(d.y0));
+      .attr("width", (d: any) => d === root ? this.width : this.x(d.x1) - this.x(d.x0))
+      .attr("height", (d: any) => d === root ? 30 : this.y(d.y1) - this.y(d.y0));
   }
 
   zoomIn(node: d3.HierarchyRectangularNode<TreeNode>) {
@@ -520,8 +528,12 @@ export class TreemapComponent implements OnInit{
   }
 
   updateTreemap() {
-    console.log(this.group.remove());
+    //console.log(this.group.remove());
+    // if (this.group) {
+    //   this.group.remove();
+    // }
     //d3.select('#treemap-container').select('svg').remove();
+    this.svg.selectAll("g").remove();
     console.log("updateTreemap remove");
     this.group = this.svg.append("g");
     this.group.call(this.renderNode, this.currentRoot);
