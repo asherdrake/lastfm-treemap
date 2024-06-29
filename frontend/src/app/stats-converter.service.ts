@@ -80,6 +80,7 @@ export class StatsConverterService {
       tap(([_, filters]) => this.filterState = filters),
       tap(() => console.log("combineLatest")),
       scan((acc, [scrobbles, filters]) => this.updateChartStats(scrobbles, filters, acc), { artists: {} } as ChartStats),
+      map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
       map(chartStats => this.filterArtists(chartStats, this.filterState)),
       map(chartStats => this.filterAlbums(chartStats, this.filterState)),
       map(chartStats => this.filterTracks(chartStats, this.filterState)),
@@ -91,7 +92,7 @@ export class StatsConverterService {
   updateChartStats(scrobbles: Scrobble[], filterState: FilterState, chartStats: ChartStats): ChartStats {
     console.log("updateChartStats")
     this.convertScrobbles(scrobbles, filterState, chartStats);
-    return chartStats;;
+    return chartStats;
   }
 
   getChartStatsObservable(): Observable<ChartStats> {
@@ -117,14 +118,14 @@ export class StatsConverterService {
       }),
       map(([newChartStats, filters]) => this.addArtistImagesRetry(newChartStats as ChartStats, filters as FilterState)),
       //map(([newChartStats, filters]) => this.addAlbumColors(newChartStats, filters)),
-      mergeMap(([newChartStats, filters]) =>
-        this.addAlbumColors(newChartStats).pipe(
-          map(updatedChartStats => {
-            //this.storage.updateAlbumImages(this.albumImageStorage);
-            return updatedChartStats;
-          })
-        )
-      ),
+      // mergeMap(([newChartStats, filters]) =>
+      //   this.addAlbumColors(newChartStats).pipe(
+      //     map(updatedChartStats => {
+      //       //this.storage.updateAlbumImages(this.albumImageStorage);
+      //       return updatedChartStats;
+      //     })
+      //   )
+      // ),
       map(chartStats => this.combineService.combineArtists(chartStats, artistCombinations)),
       map(chartStats => {
         // Conditionally apply the transformation if the condition is true
@@ -297,18 +298,20 @@ export class StatsConverterService {
     })
   }
 
-  addArtistImagesRetry(newChartStats: ChartStats, filters: FilterState): [ChartStats, FilterState] {
+  addArtistImagesRetry(newChartStats: ChartStats, filters: FilterState): ChartStats {
     console.log("addArtistImagesRetry, " + this.missingArtists.size);
     for (const artist of this.missingArtists) {
       newChartStats.artists[artist] = {
         ...newChartStats.artists[artist],
-        image_url: this.artistImageStorage[artist][0] || '',
-        color: this.artistImageStorage[artist][1] || ''
+        image_url: this.artistImageStorage[artist] ? this.artistImageStorage[artist][0] : '',
+        color: this.artistImageStorage[artist] ? this.artistImageStorage[artist][1] : ''
       }
-      console.log("retried missing artist: " + artist + this.artistImageStorage[artist][0]);
-      this.missingArtists.delete(artist);
+      if (this.artistImageStorage[artist]) {
+        console.log("retried missing artist: " + artist + this.artistImageStorage[artist][0]);
+        this.missingArtists.delete(artist);
+      }
     }
-    return [newChartStats, filters];
+    return newChartStats;
   }
 
   addAlbumColors(newChartStats: ChartStats): Observable<ChartStats> {
