@@ -6,7 +6,7 @@ import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
 import { FiltersService } from 'src/app/filters.service';
 import { BaseType } from 'd3';
-import { tap } from 'rxjs/operators';
+import { bufferCount } from 'rxjs/operators';
 import textFit from 'textfit';
 
 @Component({
@@ -53,8 +53,11 @@ export class TreemapComponent implements OnInit {
     this.updateScales = this.updateScales.bind(this);
     this.calculateFontSize = this.calculateFontSize.bind(this);
 
-    this.statsConverterService.chartStats.subscribe((stats: ChartStats) => {
+    this.statsConverterService.chartStats.pipe(
+      bufferCount(5, 5) //collects emission in buffers of 5, every 5 emissions
+    ).subscribe((statsArray: ChartStats[]) => {
       console.log("ChartStats received in treemap component");
+      const stats = statsArray[statsArray.length - 1]; //renders every 5th emission
       this.treemapData = this.transformToTreemapData(stats);
       this.initializeTreemap();
     });

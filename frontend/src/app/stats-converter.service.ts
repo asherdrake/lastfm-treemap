@@ -363,7 +363,7 @@ export class StatsConverterService {
     // If the artist doesn't exist in chartStats, initialize it
     if (!chartStats.artists[scrobble.artistName]) {
       if (!this.artistImageStorage[scrobble.artistName]) {
-        console.log("adding missing Artist to set: " + scrobble.artistName);
+        //console.log("adding missing Artist to set: " + scrobble.artistName);
         this.missingArtists.add(scrobble.artistName);
         chartStats.artists[scrobble.artistName] = {
           albums: {},

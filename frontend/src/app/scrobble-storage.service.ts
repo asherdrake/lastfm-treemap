@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
-import { distinctUntilChanged, filter, map, pairwise, switchMap, tap } from 'rxjs';
+import { distinctUntilChanged, filter, map, pairwise, switchMap, takeWhile, tap } from 'rxjs';
 import { AlbumImages, Scrobble, User, ArtistCombo, AlbumCombo, Artist, Album } from './items';
 import { MessageService } from './message.service';
 
@@ -147,13 +147,15 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
 
   readonly trackPageChunk = this.select(state => state.state === 'GETTINGSCROBBLES', { debounce: false })
     .pipe(
-      filter(canProcess => canProcess),
+      // takeWhile(canProcess => canProcess),
+      //filter(canProcess => canProcess),
       distinctUntilChanged(),
       switchMap(() => this.scrobbles$),
       pairwise(),
       tap(() => console.log('trackPageChunk')),
       map(([previous, next]) => next.slice(previous.length))
     );
+
 
   readonly artistImageStorage = this.state$.pipe(
     map(state => state.artistImages)
