@@ -44,15 +44,15 @@ export class AppComponent implements OnInit {
     console.log("treemapContainer cleared")
 
     const componentRef: ComponentRef<TreemapComponent> = this.treemapContainer.createComponent(TreemapComponent);
-    if (this.view === "Artists") {
-      componentRef.instance.treemapData = componentRef.instance.transformToTreemapData(chartStats);
-      this.datasetComponent.transformChartStatsArtists(chartStats);
-    } else if (this.view === 'Albums') {
-      componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataAlbums(chartStats);
-      this.datasetComponent.transformChartStatsAlbums(chartStats);
-    } else {
-      componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataTracks(chartStats);
-    }
+    // if (this.view === "Artists") {
+    //   componentRef.instance.treemapData = componentRef.instance.transformToTreemapData(chartStats);
+    //   this.datasetComponent.transformChartStatsArtists(chartStats);
+    // } else if (this.view === 'Albums') {
+    //   componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataAlbums(chartStats);
+    //   this.datasetComponent.transformChartStatsAlbums(chartStats);
+    // } else {
+    //   componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataTracks(chartStats);
+    // }
 
     componentRef.instance.initializeTreemap();
   }

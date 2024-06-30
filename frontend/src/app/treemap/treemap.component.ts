@@ -4,9 +4,10 @@ import { Scrobble, ChartStats, TreeNode, ScrobblesJSON } from 'src/app/items';
 import { StatsConverterService } from 'src/app/stats-converter.service';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
-import { FiltersService } from 'src/app/filters.service';
+import { FilterState, FiltersService } from 'src/app/filters.service';
 import { BaseType } from 'd3';
-import { bufferCount } from 'rxjs/operators';
+import { takeUntil, bufferCount, take } from 'rxjs/operators';
+import { Subject } from 'rxjs';
 import textFit from 'textfit';
 
 @Component({
@@ -35,6 +36,7 @@ export class TreemapComponent implements OnInit {
   initialScale = 0.2; // This means 50% zoom level (zoomed out)
   initialX = this.width * 0.1; // Centering on the X axis
   initialY = this.height * 0.1; // Centering on the Y axis
+  filterState: FilterState = {} as FilterState;
 
   constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -53,13 +55,33 @@ export class TreemapComponent implements OnInit {
     this.updateScales = this.updateScales.bind(this);
     this.calculateFontSize = this.calculateFontSize.bind(this);
 
-    this.statsConverterService.chartStats.pipe(
-      bufferCount(5, 5) //collects emission in buffers of 5, every 5 emissions
+    let finChartStats: ChartStats;
+    const finished = new Subject<void>();
+
+    this.statsConverterService.filteredChartStats.pipe(
+      bufferCount(5, 5), //collects emission in buffers of 5, every 5 emissions
+      takeUntil(finished)
     ).subscribe((statsArray: ChartStats[]) => {
       console.log("ChartStats received in treemap component");
       const stats = statsArray[statsArray.length - 1]; //renders every 5th emission
-      this.treemapData = this.transformToTreemapData(stats);
+      this.transformToTreemapData(stats);
       this.initializeTreemap();
+    });
+
+    this.statsConverterService.finishedChartStats.subscribe((stats: ChartStats) => {
+      console.log("FINISHED ChartStats received in treemap component");
+      finChartStats = stats;
+      this.transformToTreemapData(stats);
+      this.initializeTreemap();
+
+      if (!finished.complete) {
+        finished.next();
+        finished.complete();
+      }
+    });
+
+    this.filters.state$.subscribe((state) => {
+      this.filterState = state;
     });
   };
 
@@ -73,7 +95,17 @@ export class TreemapComponent implements OnInit {
     document.removeEventListener('keydown', this.handleKeyDown.bind(this));
   }
 
-  transformToTreemapData(stats: ChartStats): TreeNode {
+  transformToTreemapData(stats: ChartStats): void {
+    if (this.filterState.view === "Albums") {
+      this.treemapData = this.transformToTreemapDataAlbums(stats);
+    } else if (this.filterState.view === "Tracks") {
+      this.treemapData = this.transformToTreemapDataTracks(stats);
+    } else {
+      this.treemapData = this.transformToTreemapDataArtists(stats);
+    }
+  }
+
+  transformToTreemapDataArtists(stats: ChartStats): TreeNode {
     const treemapData = {
       name: "ChartStats",
       children: Object.keys(stats.artists).map(artistKey => {

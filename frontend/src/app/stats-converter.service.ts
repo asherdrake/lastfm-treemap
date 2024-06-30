@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { TreeNode, ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo } from './items';
-import { scan, from, mergeMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
+import { scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
@@ -25,7 +25,8 @@ interface AlbumImages {
   providedIn: 'root'
 })
 export class StatsConverterService {
-  chartStats: Observable<ChartStats>;
+  filteredChartStats: Observable<ChartStats>;
+  finishedChartStats: Observable<ChartStats>;
   startDate: number = 0;
   endDate: number = 0;
   artistImageStorage: ArtistImages = {};
@@ -73,7 +74,7 @@ export class StatsConverterService {
     this.completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
 
     // const chunk 
-    this.chartStats = combineLatest([
+    const chartStats = combineLatest([
       this.storage.trackPageChunk,
       this.filters.state$
     ]).pipe(
@@ -81,13 +82,43 @@ export class StatsConverterService {
       tap(() => console.log("combineLatest")),
       scan((acc, [scrobbles, filters]) => this.updateChartStats(scrobbles, filters, acc), { artists: {} } as ChartStats),
       map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
-      map(chartStats => this.filterArtists(chartStats, this.filterState)),
-      map(chartStats => this.filterAlbums(chartStats, this.filterState)),
-      map(chartStats => this.filterTracks(chartStats, this.filterState)),
     );
 
+    this.filteredChartStats = chartStats.pipe(
+      map(stats => this.filterArtists(stats, this.filterState)),
+      map(stats => this.filterAlbums(stats, this.filterState)),
+      map(stats => this.filterTracks(stats, this.filterState)),
+    );
+
+    this.finishedChartStats = chartStats.pipe(
+      switchMap(chartStats =>
+        this.waitForCondition(() => this.checkCondition(chartStats)).pipe(
+          switchMap(() => of(chartStats))
+        )
+      ),
+      map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
+      map(stats => this.filterArtists(stats, this.filterState)),
+      map(stats => this.filterAlbums(stats, this.filterState)),
+      map(stats => this.filterTracks(stats, this.filterState)),
+      tap(() => console.log("FINISHED CHART STATS")),
+    )
     //this.chartStats.subscribe();
   };
+
+  waitForCondition(conditionFn: () => boolean): Observable<boolean> {
+    return timer(0, 1000).pipe(
+      filter(() => conditionFn()),
+      switchMap(() => of(true)),
+      take(1)
+    );
+  }
+
+  checkCondition(chartStats: ChartStats): boolean {
+    console.log('Checking condition...');
+    console.log("artistImageStorage: " + Object.keys(this.artistImageStorage).length);
+    console.log("newChartStats: " + Object.keys(chartStats.artists).length);
+    return Object.keys(chartStats.artists).length === Object.keys(this.artistImageStorage).length && Object.keys(chartStats.artists).length !== 0;
+  }
 
   updateChartStats(scrobbles: Scrobble[], filterState: FilterState, chartStats: ChartStats): ChartStats {
     console.log("updateChartStats")
@@ -216,15 +247,22 @@ export class StatsConverterService {
             console.log("artistImageStorage: " + Object.keys(this.artistImageStorage).length);
             console.log("newChartStats: " + Object.keys(newChartStats.artists).length);
           }),
-          filter(() => Object.keys(newChartStats.artists).length <= Object.keys(this.artistImageStorage).length),
+          filter(() => Object.keys(newChartStats.artists).length <= Object.keys(this.artistImageStorage).length && Object.keys(newChartStats.artists).length !== 0),
           take(1)
-        ).subscribe(() => {
-          // Once condition is met, complete the checkSubscription and let the source observable proceed
-          source.subscribe({
-            next: (value) => subscriber.next(value),
-            error: (err) => subscriber.error(err),
-            complete: () => subscriber.complete(),
-          });
+        ).subscribe({
+          next: () => {
+            // Once condition is met, complete the checkSubscription and let the source observable proceed
+            source.subscribe({
+              next: (value) => subscriber.next(value),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete(),
+            });
+          },
+          error: (err) => subscriber.error(err),
+          complete: () => {
+            subscriber.complete();
+          }
+
         });
 
         // Return the teardown logic
@@ -256,7 +294,10 @@ export class StatsConverterService {
             this.currentlyRetrieving.delete(scrobble.artistName);
             this.resetTimer.next();
           },
-          error: (err) => console.error('Error while fetching artist image:', err)
+          error: (err) => {
+            console.error('Error while fetching artist image:', err);
+            this.artistImageStorage[scrobble.artistName] = ['', ''];
+          }
         })
       }
     }
