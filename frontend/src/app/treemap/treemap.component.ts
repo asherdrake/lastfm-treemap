@@ -46,9 +46,7 @@ export class TreemapComponent implements OnInit {
         this.currentTransform = [event.transform.x, event.transform.y, event.transform.k];
       })
 
-    this.renderNode = this.renderNode.bind(this);
     this.positionSelection = this.positionSelection.bind(this);
-    //this.positionTransition = this.positionTransition.bind(this);
     this.zoomIn = this.zoomIn.bind(this);
     this.zoomOut = this.zoomOut.bind(this);
     this.updateTreemap = this.updateTreemap.bind(this);
@@ -88,9 +86,9 @@ export class TreemapComponent implements OnInit {
   };
 
   ngOnInit(): void {
-    this.initializeTreemap();
-
+    console.log("ngOnInit");
     document.addEventListener('keydown', this.handleKeyDown.bind(this));
+    this.initializeTreemap();
   }
 
   ngOnDestroy(): void {
@@ -144,67 +142,98 @@ export class TreemapComponent implements OnInit {
   updateTreemap() {
     const self = this;
 
+    this.group.selectAll(".album-background").remove();
+
     // Recalculate the hierarchy with the updated data
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
-    this.root = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);
+
+    if (this.currentDepth == 0) {
+      this.currentRoot = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);
+    }
+    console.log('currentRoot:', this.currentRoot.data.name);
 
     // Join the data with the existing elements
     const node = this.group.selectAll<SVGGElement, d3.HierarchyRectangularNode<TreeNode>>("g")
-      .data(this.root.children!, (d: any) => d.data.name);
+      .data(this.currentRoot.children!, (d: any) => d.data.name);
 
     // Handle entering elements
     const nodeEnter = node.enter().append("g");
 
-    // Append rectangles to entering elements
-    nodeEnter.append("rect")
-      .attr("x", d => d.x0)
-      .attr("y", d => d.y0)
-      .attr("width", d => d.x1 - d.x0)
-      .attr("height", d => d.y1 - d.y0)
-      .attr("fill", d => d.data.color ? d.data.color : "#ccc")
-      .attr("stroke", "#000");
-
-    // Append images to entering elements
-    nodeEnter.append("image")
-      .attr('width', d => {
-        const [width, height] = self.imageCalculations(d);
-        return width < height ? width * 0.6 : height * 0.6;
-      })
-      .attr('height', d => {
-        const [width, height] = self.imageCalculations(d);
-        return width < height ? width * 0.6 : height * 0.6;
-      })
-      .attr('x', d => {
-        const [width, height] = self.imageCalculations(d);
-        return (width / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
-      })
-      .attr('y', d => {
-        const [width, height] = self.imageCalculations(d);
-        return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
-      })
-      .attr("preserveAspectRatio", 'xMidYMid meet')
-      .attr("href", d => d.data.image || "");
+    // Append rectangles, images, and tooltips to the entering elements
+    this.appendRectangles(nodeEnter.append("rect"));
+    this.addTooltips(nodeEnter);
+    if (this.currentDepth == 0 || this.currentDepth == 1) {
+      this.appendImages(nodeEnter.append("image"));
+    } else {
+      this.appendTrackText(nodeEnter);
+    }
 
     // Handle updating elements
     const nodeUpdate = nodeEnter.merge(node);
 
-    nodeUpdate.select("rect")
-      .attr("x", d => d.x0)
-      .attr("y", d => d.y0)
-      .attr("width", d => d.x1 - d.x0)
-      .attr("height", d => d.y1 - d.y0)
-      .attr("fill", d => d.data.color ? d.data.color : "#ccc")
-      .attr("stroke", "#000");
+    this.appendRectangles(nodeUpdate.select("rect"));
+    this.addTooltips(nodeUpdate);
+    if (this.currentDepth == 0 || this.currentDepth == 1) {
+      this.appendImages(nodeUpdate.select("image"));
+      nodeUpdate.attr("cursor", "pointer")
+        .on("click", (event, d) => this.zoomIn(d));
+    } else {
+      this.appendTrackText(nodeUpdate);
+      this.backgroundImage();
+    }
 
-    nodeUpdate.select("image")
+    // Handle exiting elements
+    node.exit().remove();
+
+    // Apply transformations;
+    this.group.call(this.positionSelection, this.currentRoot);
+  }
+
+  zoomIn(node: d3.HierarchyRectangularNode<TreeNode>) {
+    console.log("zoomin clicked");
+    if (this.currentDepth == 2) {
+      return;
+    }
+    this.currentDepth++;
+    this.currentRoot = node;
+    //console.log("current root:" + this.currentRoot.data.name);
+    this.updateScales(node);
+    this.updateTreemap();
+  }
+
+  appendRectangles(node: d3.Selection<SVGRectElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+    //const rect = node.append("rect")
+    node
+      .attr('width', d => { return d.x1 - d.x0 })
+      .attr('height', d => { return d.y1 - d.y0 })
+      .attr("fill", d => {
+        if (d.data.color) {
+          return d.data.color
+        }
+        return "#ccc";
+      })
+      .attr("stroke", "#000")
+    //.attr("stroke-width", '0')
+
+    if (this.currentDepth == 2) {
+      node.attr("fill", "rgba(0, 0, 0, 0.4)");
+    }
+  }
+
+  appendImages(node: d3.Selection<SVGImageElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+    const self = this;
+    const marginRatio = 0.1;
+
+    //node.append("image")
+    node
       .attr('width', d => {
         const [width, height] = self.imageCalculations(d);
-        return width < height ? width * 0.6 : height * 0.6;
+        return width < height ? width * 0.6 : height * 0.6
       })
       .attr('height', d => {
         const [width, height] = self.imageCalculations(d);
-        return width < height ? width * 0.6 : height * 0.6;
+        return width < height ? width * 0.6 : height * 0.6
       })
       .attr('x', d => {
         const [width, height] = self.imageCalculations(d);
@@ -215,41 +244,72 @@ export class TreemapComponent implements OnInit {
         return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
       })
       .attr("preserveAspectRatio", 'xMidYMid meet')
-      .attr("href", d => d.data.image || "");
-
-    // Handle exiting elements
-    node.exit().remove();
-
-    // Apply transformations
-    this.addTooltips(node);
-    this.group.call(this.positionSelection, this.root);
+      .attr("href", d => {
+        return d.data.image!
+      })
   }
 
-  renderNode(group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>) {
+  addTooltips(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+    const tooltip = d3.select("#tooltip");
+
+    node.on("mouseover", (event, d) => {
+      tooltip.style("opacity", 1);
+      tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
+        .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
+        .style("top", (event.pageY - 120) + "px"); // Position the tooltip below the cursor
+    })
+      .on("mousemove", (event) => {
+        tooltip.style("left", (event.pageX + 10) + "px")
+          .style("top", (event.pageY - 120) + "px");
+      })
+      .on("mouseout", () => {
+        tooltip.style("opacity", 0); // Hide the tooltip when not hovering
+      });
+  }
+
+  backgroundImage(): void {
+    this.group.insert("image", ":first-child")
+      .attr("class", "album-background")
+      .attr("width", this.width)
+      .attr("height", this.height)
+      .attr("xlink:href", d => this.currentRoot.data.image!)
+  }
+
+  appendTrackText(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const self = this;
+    const nodeEnter = node.append('foreignObject')
+      .attr("class", "node-foreign")
+      .attr("width", d => this.x(d.x1) - this.x(d.x0))
+      .attr("height", d => this.y(d.y1) - this.y(d.y0))
+      .attr("x", d => d.x0)
+      .attr("y", d => d.y0);
 
-    const node = group
-    //   .selectAll("g")
-    //   .data(root.children!)
-    //   .join("g");
+    console.log("appendTrackText")
 
-    // node.filter((d: any) => d === root ? d.parent : d.children)
-    //   .attr("cursor", "pointer")
-    //   .on("click", (event, d) => d === root ? this.zoomOut() : this.zoomIn(d));
+    const nodeWrapperDiv = nodeEnter.append("xhtml:div")
+      .attr("class", "node-wrapper")
+      .style("width", d => `${(this.x(d.x1) - this.x(d.x0))}px`)
+      .style("height", d => `${this.y(d.y1) - this.y(d.y0)}px`)
 
-    // //this.appendRectangles(node)
-    // this.addTooltips(node);
+    const textDiv = nodeWrapperDiv.append("xhtml:div")
+      .attr("class", "node-text")
+      .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml")
+      .style("width", d => `${(this.x(d.x1) - this.x(d.x0)) * 0.7}px`)
+      .style("height", d => `${(this.y(d.y1) - this.y(d.y0)) * 0.4}px`)
+      .style("font-size", d => `${this.calculateFontSize(d) * 2}px`)
+      .html(d => `<xhtml:span>${d.data.name}</xhtml:span>`)
 
-    // if (this.currentDepth == 0 || this.currentDepth == 1) {
-    //   //this.appendText(node);
-    //   //this.appendImages(node);
-    // } else {
-    //   this.backgroundImage(node, group, root);
-    //   this.appendTrackText(node);
-    // }
-
-    group.call(this.positionSelection, root);
-    console.log("renderNode");
+    nodeWrapperDiv.each(function (d) {
+      const divElement = (this as HTMLElement).querySelector('div');
+      if (divElement) {
+        textFit(divElement, {
+          alignVertWithFlexbox: true,
+          alignHoriz: true,
+          multiLine: true,
+          maxFontSize: 1000
+        });
+      }
+    });
   }
 
   transformToTreemapData(stats: ChartStats): void {
@@ -380,29 +440,6 @@ export class TreemapComponent implements OnInit {
       .on("end", () => console.log("Transition complete"));
   }
 
-  transform(x: number, y: number, r: number): string {
-    // This should return a string in the format of "translate(x, y) scale(z)"
-    return `translate(${this.width / 2 - x}, ${this.height / 2 - y}) scale(${this.height / r})`;
-  }
-
-  appendRectangles(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
-    const rect = node.append("rect")
-      .attr('width', d => { return d.x1 - d.x0 })
-      .attr('height', d => { return d.y1 - d.y0 })
-      .attr("fill", d => {
-        if (d.data.color) {
-          return d.data.color
-        }
-        return "#ccc";
-      })
-      .attr("stroke", "#000")
-    //.attr("stroke-width", '0')
-
-    if (this.currentDepth == 2) {
-      rect.attr("fill", "rgba(0, 0, 0, 0.4)");
-    }
-  }
-
   appendText(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const self = this;
 
@@ -460,96 +497,9 @@ export class TreemapComponent implements OnInit {
       })
   }
 
-  appendImages(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
-    const self = this;
-    const marginRatio = 0.1;
-    node.append("image")
-      .attr('width', d => {
-        const [width, height] = self.imageCalculations(d);
-        return width < height ? width * 0.6 : height * 0.6
-      })
-      .attr('height', d => {
-        const [width, height] = self.imageCalculations(d);
-        return width < height ? width * 0.6 : height * 0.6
-      })
-      .attr('x', d => {
-        const [width, height] = self.imageCalculations(d);
-        return (width / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
-      })
-      .attr('y', d => {
-        const [width, height] = self.imageCalculations(d);
-        return (height / 2) - (width < height ? width * 0.6 : height * 0.6) / 2;
-      })
-      .attr("preserveAspectRatio", 'xMidYMid meet')
-      .attr("href", d => {
-        return d.data.image!
-      })
-  }
-
-  addTooltips(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
-    const tooltip = d3.select("#tooltip");
-
-    node.on("mouseover", (event, d) => {
-      tooltip.style("opacity", 1);
-      tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
-        .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
-        .style("top", (event.pageY - 120) + "px"); // Position the tooltip below the cursor
-    })
-      .on("mousemove", (event) => {
-        tooltip.style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 120) + "px");
-      })
-      .on("mouseout", () => {
-        tooltip.style("opacity", 0); // Hide the tooltip when not hovering
-      });
-  }
-
-  backgroundImage(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>, group: d3.Selection<SVGGElement, unknown, HTMLElement, any>, root: d3.HierarchyRectangularNode<TreeNode>): void {
-    const backgroundImage = group.selectAll(".album-background")
-      .data([root])
-      .enter()
-      .insert("image", ":first-child")
-      .attr("class", "album-background")
-      .attr("width", this.width)
-      .attr("height", this.height)
-      .attr("xlink:href", d => d.data.image!)
-  }
-
-  appendTrackText(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
-    const self = this;
-    const nodeEnter = node.append('foreignObject')
-      .attr("class", "node-foreign")
-      .attr("width", d => this.x(d.x1) - this.x(d.x0))
-      .attr("height", d => this.y(d.y1) - this.y(d.y0))
-      .attr("x", d => d.x0)
-      .attr("y", d => d.y0);
-
-    console.log("appendTrackText")
-
-    const nodeWrapperDiv = nodeEnter.append("xhtml:div")
-      .attr("class", "node-wrapper")
-      .style("width", d => `${(this.x(d.x1) - this.x(d.x0))}px`)
-      .style("height", d => `${this.y(d.y1) - this.y(d.y0)}px`)
-
-    const textDiv = nodeWrapperDiv.append("xhtml:div")
-      .attr("class", "node-text")
-      .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml")
-      .style("width", d => `${(this.x(d.x1) - this.x(d.x0)) * 0.7}px`)
-      .style("height", d => `${(this.y(d.y1) - this.y(d.y0)) * 0.4}px`)
-      .style("font-size", d => `${this.calculateFontSize(d) * 2}px`)
-      .html(d => `<xhtml:span>${d.data.name}</xhtml:span>`)
-
-    nodeWrapperDiv.each(function (d) {
-      const divElement = (this as HTMLElement).querySelector('div');
-      if (divElement) {
-        textFit(divElement, {
-          alignVertWithFlexbox: true,
-          alignHoriz: true,
-          multiLine: true,
-          maxFontSize: 1000
-        });
-      }
-    });
+  transform(x: number, y: number, r: number): string {
+    // This should return a string in the format of "translate(x, y) scale(z)"
+    return `translate(${this.width / 2 - x}, ${this.height / 2 - y}) scale(${this.height / r})`;
   }
 
   formatScrobbleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
@@ -613,16 +563,9 @@ export class TreemapComponent implements OnInit {
       .attr("height", (d: any) => d === root ? 30 : this.y(d.y1) - this.y(d.y0));
   }
 
-  zoomIn(node: d3.HierarchyRectangularNode<TreeNode>) {
-    this.currentDepth++;
-    this.currentRoot = node;
-    this.updateScales(node);
-    this.updateTreemap();
-  }
-
   handleKeyDown(event: KeyboardEvent): void {
-    // Check if Shift + Z was pressed
-    if (event.shiftKey && event.key === 'Z') {
+    // Check if Ctrl + Z was pressed
+    if (event.ctrlKey && event.key === 'z') {
       this.zoomOut();
     }
   }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { TreeNode, ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo } from './items';
-import { scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
+import { mergeMap, scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
@@ -82,6 +82,13 @@ export class StatsConverterService {
       tap(() => console.log("combineLatest")),
       scan((acc, [scrobbles, filters]) => this.updateChartStats(scrobbles, filters, acc), { artists: {} } as ChartStats),
       map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
+      mergeMap(chartStats =>
+        this.addAlbumColors(chartStats).pipe(
+          map(updatedChartStats => {
+            return updatedChartStats;
+          })
+        )
+      ),
     );
 
     this.filteredChartStats = chartStats.pipe(
