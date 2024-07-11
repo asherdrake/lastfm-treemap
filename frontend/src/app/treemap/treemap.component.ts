@@ -157,28 +157,19 @@ export class TreemapComponent implements OnInit {
     const node = this.group.selectAll<SVGGElement, d3.HierarchyRectangularNode<TreeNode>>("g")
       .data(this.currentRoot.children!, (d: any) => d.data.name);
 
-    // Handle entering elements
     const nodeEnter = node.enter().append("g");
-
-    // Append rectangles, images, and tooltips to the entering elements
-    this.appendRectangles(nodeEnter.append("rect"));
-    this.addTooltips(nodeEnter);
-    if (this.currentDepth == 0 || this.currentDepth == 1) {
-      this.appendImages(nodeEnter.append("image"));
-    } else {
-      this.appendTrackText(nodeEnter);
-    }
-
-    // Handle updating elements
+    nodeEnter.append("rect");
     const nodeUpdate = nodeEnter.merge(node);
 
-    this.appendRectangles(nodeUpdate.select("rect"));
+    this.appendRectangles(nodeUpdate);
     this.addTooltips(nodeUpdate);
     if (this.currentDepth == 0 || this.currentDepth == 1) {
-      this.appendImages(nodeUpdate.select("image"));
+      nodeEnter.append("image");
+      this.appendImages(nodeUpdate);
       nodeUpdate.attr("cursor", "pointer")
         .on("click", (event, d) => this.zoomIn(d));
     } else {
+      nodeEnter.append('foreignObject');
       this.appendTrackText(nodeUpdate);
       this.backgroundImage();
     }
@@ -202,9 +193,9 @@ export class TreemapComponent implements OnInit {
     this.updateTreemap();
   }
 
-  appendRectangles(node: d3.Selection<SVGRectElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+  appendRectangles(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     //const rect = node.append("rect")
-    node
+    node.select("rect")
       .attr('width', d => { return d.x1 - d.x0 })
       .attr('height', d => { return d.y1 - d.y0 })
       .attr("fill", d => {
@@ -217,16 +208,16 @@ export class TreemapComponent implements OnInit {
     //.attr("stroke-width", '0')
 
     if (this.currentDepth == 2) {
-      node.attr("fill", "rgba(0, 0, 0, 0.4)");
+      node.select("rect").attr("fill", "rgba(0, 0, 0, 0.4)");
     }
   }
 
-  appendImages(node: d3.Selection<SVGImageElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+  appendImages(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const self = this;
     const marginRatio = 0.1;
 
     //node.append("image")
-    node
+    node.select("image")
       .attr('width', d => {
         const [width, height] = self.imageCalculations(d);
         return width < height ? width * 0.6 : height * 0.6
@@ -277,12 +268,13 @@ export class TreemapComponent implements OnInit {
 
   appendTrackText(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const self = this;
-    const nodeEnter = node.append('foreignObject')
-      .attr("class", "node-foreign")
-      .attr("width", d => this.x(d.x1) - this.x(d.x0))
-      .attr("height", d => this.y(d.y1) - this.y(d.y0))
-      .attr("x", d => d.x0)
-      .attr("y", d => d.y0);
+    const nodeEnter = //node.append('foreignObject')
+      node.select("foreignObject")
+        .attr("class", "node-foreign")
+        .attr("width", d => this.x(d.x1) - this.x(d.x0))
+        .attr("height", d => this.y(d.y1) - this.y(d.y0))
+        .attr("x", d => d.x0)
+        .attr("y", d => d.y0);
 
     console.log("appendTrackText")
 
@@ -589,12 +581,4 @@ export class TreemapComponent implements OnInit {
     this.x.domain([node.x0, node.x1]);
     this.y.domain([node.y0, node.y1]);
   }
-
-  // updateTreemap() {
-  //   this.svg.selectAll("g").remove();
-  //   console.log("updateTreemap remove");
-  //   this.group = this.svg.append("g");
-  //   this.group.call(this.renderNode, this.currentRoot);
-  //   this.group.attr("transform", `translate(${this.currentTransform[0]},${this.currentTransform[1]}) scale(${this.currentTransform[2]})`);
-  // }
 }
