@@ -155,7 +155,7 @@ export class TreemapComponent implements OnInit {
 
     // Join the data with the existing elements
     const node = this.group.selectAll<SVGGElement, d3.HierarchyRectangularNode<TreeNode>>("g")
-      .data(this.currentRoot.children!, (d: any) => d.data.name);
+      .data(this.currentRoot.children!, (d: any) => d.data.name + d.depth);
 
     const nodeEnter = node.enter().append("g");
     nodeEnter.append("rect");
@@ -163,12 +163,13 @@ export class TreemapComponent implements OnInit {
 
     this.appendRectangles(nodeUpdate);
     this.addTooltips(nodeUpdate);
-    if (this.currentDepth == 0 || this.currentDepth == 1) {
+
+    if (this.currentDepth === 0 || this.currentDepth === 1) {
       nodeEnter.append("image");
       this.appendImages(nodeUpdate);
       nodeUpdate.attr("cursor", "pointer")
         .on("click", (event, d) => this.zoomIn(d));
-    } else {
+    } else if (this.currentDepth === 2) {
       nodeEnter.append('foreignObject');
       this.appendTrackText(nodeUpdate);
       this.backgroundImage();
@@ -188,7 +189,6 @@ export class TreemapComponent implements OnInit {
     }
     this.currentDepth++;
     this.currentRoot = node;
-    //console.log("current root:" + this.currentRoot.data.name);
     this.updateScales(node);
     this.updateTreemap();
   }
@@ -276,7 +276,7 @@ export class TreemapComponent implements OnInit {
         .attr("x", d => d.x0)
         .attr("y", d => d.y0);
 
-    console.log("appendTrackText")
+    console.log("appendTrackText" + nodeEnter)
 
     const nodeWrapperDiv = nodeEnter.append("xhtml:div")
       .attr("class", "node-wrapper")
@@ -306,6 +306,7 @@ export class TreemapComponent implements OnInit {
 
   transformToTreemapData(stats: ChartStats): void {
     if (this.filterState.view === "Albums") {
+      console.log("Albums Top View")
       this.treemapData = this.transformToTreemapDataAlbums(stats);
     } else if (this.filterState.view === "Tracks") {
       this.treemapData = this.transformToTreemapDataTracks(stats);
