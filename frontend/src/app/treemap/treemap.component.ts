@@ -148,7 +148,7 @@ export class TreemapComponent implements OnInit {
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
 
-    if (this.currentDepth == 0) {
+    if ((this.filterState.view === "Artists" && this.currentDepth === 0) || (this.filterState.view === "Albums" && this.currentDepth === 1) || (this.filterState.view === "Tracks" && this.currentDepth === 2)) {
       this.currentRoot = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);
     }
     console.log('currentRoot:', this.currentRoot.data.name);
@@ -343,6 +343,7 @@ export class TreemapComponent implements OnInit {
         };
       })
     };
+    this.currentDepth = 0;
     return treemapData
   }
 
@@ -378,7 +379,7 @@ export class TreemapComponent implements OnInit {
     });
 
     this.albumMode = true;
-    this.currentDepth++;
+    this.currentDepth = 1;
 
     return treemapData;
   }
@@ -414,7 +415,7 @@ export class TreemapComponent implements OnInit {
     });
 
     this.albumMode = true;
-    this.currentDepth++;
+    this.currentDepth = 2;
 
     return treemapData;
   }

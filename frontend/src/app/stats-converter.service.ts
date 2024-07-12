@@ -109,7 +109,6 @@ export class StatsConverterService {
       map(stats => this.filterTracks(stats, this.filterState)),
       tap(() => console.log("FINISHED CHART STATS")),
     )
-    //this.chartStats.subscribe();
   };
 
   waitForCondition(conditionFn: () => boolean): Observable<boolean> {
@@ -201,20 +200,33 @@ export class StatsConverterService {
   }
 
   filterAlbums(chartStats: ChartStats, filter: FilterState): ChartStats {
-    for (const artistKey in chartStats.artists) {
+    const filteredArtists = Object.keys(chartStats.artists).reduce((acc, artistKey) => {
       const artist = chartStats.artists[artistKey];
-      for (const albumKey in artist.albums) {
+      const filteredAlbums = Object.keys(artist.albums).reduce((albumAcc, albumKey) => {
         const album = artist.albums[albumKey];
-        const totalScrobbles = album.scrobbles.length; // Assuming this is the correct way to get the scrobble count for an album
+        const totalScrobbles = album.scrobbles.length;
 
-        if (totalScrobbles < filter.minAlbumScrobbles) {
-          console.log("filterAlbums")
-          delete artist.albums[albumKey]; // Remove the album if it doesn't meet the scrobble count criteria
+        if (totalScrobbles >= filter.minAlbumScrobbles) {
+          albumAcc[albumKey] = album;
         }
-      }
-    }
 
-    return chartStats
+        return albumAcc;
+      }, {} as { [key: string]: Album });
+
+      if (Object.keys(filteredAlbums).length > 0) {
+        acc[artistKey] = {
+          ...artist,
+          albums: filteredAlbums
+        };
+      }
+
+      return acc;
+    }, {} as { [key: string]: Artist });
+
+    return {
+      ...chartStats,
+      artists: filteredArtists
+    };
   }
 
   filterTracks(chartStats: ChartStats, filter: FilterState): ChartStats {
