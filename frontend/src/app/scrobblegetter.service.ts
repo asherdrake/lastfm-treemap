@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { User, Scrobble, AlbumImages, ArtistCombo, AlbumCombo } from './items';
-import { catchError, Observable, of, throwError} from 'rxjs';
+import { catchError, Observable, of, throwError } from 'rxjs';
 import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
 import { MessageService } from './message.service';
@@ -100,8 +100,9 @@ export class ScrobbleGetterService {
             currTrackPage: pageTotal
           });
           console.log("Getting scrobbles start...");
-          this.iterateTrackPages({...loadingState, trackPage: pageTotal, totalTrackPages: pageTotal});
+          this.iterateTrackPages({ ...loadingState, trackPage: pageTotal, totalTrackPages: pageTotal });
         } else {
+          console.log("GETTING SCROBBLES FINISHED (calcTrackPages");
           loadingState.storage.finish('FINISHED');
         }
       }
@@ -124,6 +125,7 @@ export class ScrobbleGetterService {
           this.iterateTrackPages(loadingState);
         } else {
           console.log("else loadingState.trackPage: " + loadingState.trackPage);
+          console.log("GETTING SCROBBLES FINISHED (iterateTrackPages)");
           loadingState.storage.finish('FINISHED');
         }
       },
@@ -140,6 +142,7 @@ export class ScrobbleGetterService {
       date: new Date(t.date.uts * 1000)
     })).reverse();
 
+    console.log("NEW SCROBBLES: " + scrobbles.length)
     loadingState.trackPage!--;
     loadingState.storage.addTrackPage(scrobbles);
   }
@@ -154,8 +157,8 @@ export class ScrobbleGetterService {
       .append('limit', 200)
       .append('api_key', this.API_KEY);
 
-    console.log("getScrobbles page: " + String(loadingState.trackPage))  
-    return this.http.get<{recenttracks: RecentTracks}>(this.URL, {params}).pipe(
+    console.log("getScrobbles page: " + String(loadingState.trackPage))
+    return this.http.get<{ recenttracks: RecentTracks }>(this.URL, { params }).pipe(
       map(response => response.recenttracks)
     );
   }
@@ -168,7 +171,7 @@ export class ScrobbleGetterService {
       .append('format', 'json')
       .append('api_key', this.API_KEY);
 
-    return this.http.get<{user: User}>(this.URL, {params}).pipe(
+    return this.http.get<{ user: User }>(this.URL, { params }).pipe(
       map(u => u.user),
       tap(user => this.log(`fetched last.fm user=${user.name}`))
     );
@@ -177,7 +180,7 @@ export class ScrobbleGetterService {
   getArtistImage(artistName: string): Observable<string> {
     //code to call the backend server-side proxy
     const url = `/api/artist-image/${artistName}`;
-    return this.http.get<{imageUrl: string}>(url).pipe(
+    return this.http.get<{ imageUrl: string }>(url).pipe(
       map(response => response.imageUrl),
       catchError(this.handleError<string>('getArtistImage'))
     );

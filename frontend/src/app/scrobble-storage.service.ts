@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
-import { distinctUntilChanged, filter, map, pairwise, switchMap, tap } from 'rxjs';
+import { merge, distinctUntilChanged, filter, map, pairwise, switchMap, takeWhile, tap } from 'rxjs';
 import { AlbumImages, Scrobble, User, ArtistCombo, AlbumCombo, Artist, Album } from './items';
 import { MessageService } from './message.service';
 
@@ -24,8 +24,8 @@ export interface ScrobbleState {
 @Injectable({
   providedIn: 'root'
 })
-export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
-  constructor(private messageService: MessageService) { 
+export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
+  constructor(private messageService: MessageService) {
     super({
       scrobbles: [],
       totalTrackPages: 0,
@@ -52,7 +52,8 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string]}, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[] }) => {
+  readonly addImport = this.updater((currData: ScrobbleState, imported: { importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[] }) => {
+    console.log("json imported, artistImages: " + imported.artistImages)
     return {
       ...currData,
       scrobbles: [...imported.importedScrobbles],
@@ -73,7 +74,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly updateTrackTotal = this.updater((currData: ScrobbleState, page: {totalTrackPages: number, currTrackPage: number}) => {
+  readonly updateTrackTotal = this.updater((currData: ScrobbleState, page: { totalTrackPages: number, currTrackPage: number }) => {
     //this.log('updateTotal');
 
     return {
@@ -83,7 +84,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
     }
   })
 
-  readonly updateDateRange = this.updater((currData: ScrobbleState, dateRange: {startDate: number, endDate: number}) => {
+  readonly updateDateRange = this.updater((currData: ScrobbleState, dateRange: { startDate: number, endDate: number }) => {
     console.log('updateDateRange');
 
     return {
@@ -105,6 +106,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   })
 
   readonly updateArtistImages = this.updater((currData: ScrobbleState, artistImages: { [key: string]: [string, string] }) => {
+    console.log("updateArtistImages(componentstore): " + artistImages)
     return {
       ...currData,
       artistImages: artistImages
@@ -117,8 +119,8 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       albumImages: albumImages
     }
   })
-  
-  readonly updateAlbumTotal = this.updater((currData: ScrobbleState, page: {totalAlbumPages: number, currAlbumPage: number}) => {
+
+  readonly updateAlbumTotal = this.updater((currData: ScrobbleState, page: { totalAlbumPages: number, currAlbumPage: number }) => {
     return {
       ...currData,
       ...page,
@@ -133,7 +135,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
       ...currData,
       state
     }
-  }) 
+  })
 
   readonly loadingState = this.select(state => state.state);
 
@@ -145,16 +147,30 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
 
   readonly scrobbles$ = this.select(state => state.scrobbles);
 
-  readonly trackPageChunk = this.select(state => state.state === 'GETTINGSCROBBLES', {debounce: false})
+  readonly trackPageChunk = this.state$
     .pipe(
-      filter(canProcess => canProcess),
+      filter(state => state.state === 'GETTINGSCROBBLES'),
       distinctUntilChanged(),
       switchMap(() => this.scrobbles$),
       pairwise(),
+      tap(() => console.log('trackPageChunk')),
       map(([previous, next]) => next.slice(previous.length))
+    );
+
+  readonly imported = this.state$
+    .pipe(
+      filter(state => state.state === 'GETTINGUSER'),
+      tap(() => console.log("IMPORTED")),
+      map(state => state.scrobbles)
+    );
+
+  readonly chunk = merge(
+    this.imported.pipe(map(scrobbles => [scrobbles, false] as [Scrobble[], boolean])),
+    this.trackPageChunk.pipe(map(scrobbles => [scrobbles, true] as [Scrobble[], boolean]))
   );
 
   readonly artistImageStorage = this.state$.pipe(
+    tap(state => console.log("artistImageStorage emit: " + state.artistImages)),
     map(state => state.artistImages)
   )
 
@@ -171,7 +187,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState>{
   )
 
   readonly artistImageUpdate = this.select(state => state.artistImages);
-  
+
   private log(message: string) {
     this.messageService.add(`ScrobbleStorage: ${message}`);
   }

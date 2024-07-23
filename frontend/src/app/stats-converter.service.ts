@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { TreeNode, ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo } from './items';
-import { from, mergeMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
+import { TreeNode, ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track } from './items';
+import { skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
 import ColorThief from 'color-thief-ts';
 import { CombineService } from './combine.service';
+import { chart } from 'highcharts';
 
 interface ArtistImages {
   [key: string]: [string, string]
@@ -24,7 +25,8 @@ interface AlbumImages {
   providedIn: 'root'
 })
 export class StatsConverterService {
-  //chartStats: Observable<ChartStats>;
+  filteredChartStats: Observable<ChartStats>;
+  finishedChartStats: Observable<ChartStats>;
   startDate: number = 0;
   endDate: number = 0;
   artistImageStorage: ArtistImages = {};
@@ -36,13 +38,21 @@ export class StatsConverterService {
   private resetTimer = new Subject<void>();
   imageProcessingComplete = new Subject<void>();
   completed: Observable<ScrobbleState>;
+  filterState: FilterState = {
+    startDate: 0,
+    endDate: Date.now(),
+    minArtistScrobbles: 0,
+    minAlbumScrobbles: 0,
+    minTrackScrobbles: 0,
+    view: "Artists"
+  };
 
   constructor(
-      private router: Router, 
-      private storage: ScrobbleStorageService, 
-      private scrobbleGetterService: ScrobbleGetterService, 
-      private filters: FiltersService,
-      private combineService: CombineService) {
+    private router: Router,
+    private storage: ScrobbleStorageService,
+    private scrobbleGetterService: ScrobbleGetterService,
+    private filters: FiltersService,
+    private combineService: CombineService) {
     this.imageProcessing = this.storage.trackPageChunk.pipe(
       map(scrobbles => this.storeArtistImage(scrobbles)),
       // takeUntil(timerResetObservable),
@@ -51,171 +61,204 @@ export class StatsConverterService {
 
     this.storage.artistImageStorage.subscribe({
       next: (artistImages) => {
-        this.artistImageStorage = artistImages as ArtistImages
+        if (artistImages) {
+          this.artistImageStorage = artistImages as ArtistImages;
+          console.log('artistImageStorage updated:', this.artistImageStorage);
+        } else {
+          console.warn('Received undefined artistImageStorage');
+          console.log('curr artistImageStorage:', this.artistImageStorage);
+        }
+      },
+      error: (err) => {
+        console.error('Error in artistImageStorage subscription:', err);
       }
-    })
+    }); 
 
     this.storage.albumImageStorage.subscribe({
       next: (albumImages) => {
-        this.albumImageStorage = albumImages as AlbumImages
+        if (albumImages) {
+          this.albumImageStorage = albumImages as AlbumImages
+          console.log("albumImageStorage updated:", this.albumImageStorage);
+        } else {
+          console.warn('Received undefined albumImageStorage');
+          console.log("curr albumImageStorage:", this.albumImageStorage);
+        }
       }
     })
 
-    //this.chartStats = this.getChartStatsObservable();
-    
     this.completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
-  };
 
-  getChartStatsObservable(): Observable<ChartStats> {
-    let filterState: FilterState;
-    let artistCombinations: ArtistCombo[];
-    let albumCombinations: AlbumCombo[];
-    return combineLatest([
-      this.completed,
+    // const chunk 
+    const chartStats = this.storage.chunk
+      .pipe(
+        skip(1),
+        tap(() => console.log("chartStats (statsconvertersservice)")),
+        scan((acc, scrobbles) => this.updateChartStats(scrobbles[0], scrobbles[1] ? acc : { artists: {} } as ChartStats), { artists: {} } as ChartStats),
+        map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
+        tap(chartStats => console.log("curr stats: " + Object.keys(chartStats.artists))),
+        mergeMap(chartStats =>
+          this.addAlbumColors(chartStats).pipe(
+            map(updatedChartStats => {
+              return updatedChartStats;
+            })
+          )
+        ),
+      );
+
+    this.filteredChartStats = combineLatest([
+      chartStats,
       this.filters.state$
     ]).pipe(
-      map(([scrobbles, filters]) => {
-        filterState = filters;
-        artistCombinations = scrobbles.artistCombinations
-        albumCombinations = scrobbles.albumCombinations
-        return this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })
-      }),
-      concatMap(([newChartStats, filters]) => {
-        return this.pauseUntilConditionMet(newChartStats)(of(newChartStats)).pipe(
-          map(() => {
-            return [newChartStats, filters]
-          })
-        );
-      }),
-      map(([newChartStats, filters]) => this.addArtistImagesRetry(newChartStats as ChartStats, filters as FilterState)),
-      //map(([newChartStats, filters]) => this.addAlbumColors(newChartStats, filters)),
-      mergeMap(([newChartStats, filters]) => 
-        this.addAlbumColors(newChartStats).pipe(
-          map(updatedChartStats => {
-            //this.storage.updateAlbumImages(this.albumImageStorage);
-            return updatedChartStats;
-          })
+      tap(() => console.log("filteredChartStats (statsconvertersservice)")),
+      tap(([_, filterState]) => this.filterState = filterState),
+      map(([stats, _]) => this.filterByDate(stats, this.filterState)),
+      map(stats => this.filterArtists(stats, this.filterState)),
+      map(stats => this.filterAlbums(stats, this.filterState)),
+      map(stats => this.filterTracks(stats, this.filterState)),
+    );
+
+    this.finishedChartStats = combineLatest([
+      chartStats,
+      this.filters.state$
+    ]).pipe(
+      tap(() => console.log("finishedChartStats (statsconvertersservice)")),
+      tap(([_, filterState]) => this.filterState = filterState),
+      switchMap(([chartStats, _]) =>
+        this.waitForCondition(() => this.checkCondition(chartStats)).pipe(
+          switchMap(() => of(chartStats))
         )
       ),
-      map(chartStats => this.combineService.combineArtists(chartStats, artistCombinations)),
-      map(chartStats => {
-        // Conditionally apply the transformation if the condition is true
-        if (filterState.view === 'Albums') {
-          return this.combineService.combineAlbums(chartStats, albumCombinations)
-        } else {
-          // Pass through the chartStats unchanged if the condition is false
-          return chartStats;
-        }
-      }),
-      map(chartStats => this.filterArtists(chartStats, filterState)),
-      map(chartStats => this.filterAlbums(chartStats, filterState)),
-      map(chartStats => this.filterTracks(chartStats, filterState)),
+      map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
+      map(stats => this.filterByDate(stats, this.filterState)),
+      map(stats => this.filterArtists(stats, this.filterState)),
+      map(stats => this.filterAlbums(stats, this.filterState)),
+      map(stats => this.filterTracks(stats, this.filterState)),
+      tap(() => console.log("FINISHED CHART STATS")),
     )
+  };
+
+  waitForCondition(conditionFn: () => boolean): Observable<boolean> {
+    return timer(0, 1000).pipe(
+      filter(() => conditionFn()),
+      switchMap(() => of(true)),
+      take(1)
+    );
   }
 
-  // transformToTreemapData(stats: ChartStats): TreeNode {
-  //   const treemapData = {
-  //     name: "ChartStats",
-  //     children: Object.keys(stats.artists).map(artistKey => {
-  //         const artist = stats.artists[artistKey];
-  //         return {
-  //             name: artist.name,
-  //             children: Object.keys(artist.albums).map(albumKey => {
-  //                 const album = artist.albums[albumKey];
-  //                 //console.log("Album: " + album.name + ", Color: " + album.color)
-  //                 return {
-  //                     name: album.name,
-  //                     children: Object.keys(album.tracks).map(trackKey => {
-  //                         const track = album.tracks[trackKey];
-  //                         return {
-  //                             name: track.name,
-  //                             value: track.scrobbles.length // or another metric for value
-  //                         };
-  //                     }),
-  //                     image: album.image_url,
-  //                     color: album.color
-  //                 };
-  //             }),
-  //             image: artist.image_url,
-  //             color: artist.color
-  //         };
-  //     })
-  //   };
-  //   return treemapData
+  checkCondition(chartStats: ChartStats): boolean {
+    console.log('Checking condition...');
+    console.log("artistImageStorage: " + Object.keys(this.artistImageStorage).length);
+    console.log("newChartStats: " + Object.keys(chartStats.artists).length);
+    return Object.keys(chartStats.artists).length === Object.keys(this.artistImageStorage).length && Object.keys(chartStats.artists).length !== 0;
+  }
+
+  updateChartStats(scrobbles: Scrobble[], chartStats: ChartStats): ChartStats {
+    console.log("updateChartStats")
+    this.convertScrobbles(scrobbles, chartStats);
+    return chartStats;
+  }
+
+  // getChartStatsObservable(): Observable<ChartStats> {
+  //   let filterState: FilterState;
+  //   let artistCombinations: ArtistCombo[];
+  //   let albumCombinations: AlbumCombo[];
+  //   return combineLatest([
+  //     this.completed,
+  //     this.filters.state$
+  //   ]).pipe(
+  //     map(([scrobbles, filters]) => {
+  //       filterState = filters;
+  //       artistCombinations = scrobbles.artistCombinations
+  //       albumCombinations = scrobbles.albumCombinations
+  //       return this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })
+  //     }),
+  //     concatMap(([newChartStats, filters]) => {
+  //       return this.pauseUntilConditionMet(newChartStats)(of(newChartStats)).pipe(
+  //         map(() => {
+  //           return [newChartStats, filters]
+  //         })
+  //       );
+  //     }),
+  //     map(([newChartStats, filters]) => this.addArtistImagesRetry(newChartStats as ChartStats, filters as FilterState)),
+  //     //map(([newChartStats, filters]) => this.addAlbumColors(newChartStats, filters)),
+  //     // mergeMap(([newChartStats, filters]) =>
+  //     //   this.addAlbumColors(newChartStats).pipe(
+  //     //     map(updatedChartStats => {
+  //     //       //this.storage.updateAlbumImages(this.albumImageStorage);
+  //     //       return updatedChartStats;
+  //     //     })
+  //     //   )
+  //     // ),
+  //     map(chartStats => this.combineService.combineArtists(chartStats, artistCombinations)),
+  //     map(chartStats => {
+  //       // Conditionally apply the transformation if the condition is true
+  //       if (filterState.view === 'Albums') {
+  //         return this.combineService.combineAlbums(chartStats, albumCombinations)
+  //       } else {
+  //         // Pass through the chartStats unchanged if the condition is false
+  //         return chartStats;
+  //       }
+  //     }),
+  //     map(chartStats => this.filterArtists(chartStats, filterState)),
+  //     map(chartStats => this.filterAlbums(chartStats, filterState)),
+  //     map(chartStats => this.filterTracks(chartStats, filterState)),
+  //   )
   // }
 
-  // transformToTreemapDataAlbums(stats: ChartStats): TreeNode {
-  //   const treemapData = {
-  //     name: "ChartStats",
-  //     children: [] as TreeNode[]
-  //   };
-  
-  //   // Iterate over each artist
-  //   Object.keys(stats.artists).forEach(artistKey => {
-  //     const artist = stats.artists[artistKey];
-  //     // Then iterate over each album of the artist
-  //     Object.keys(artist.albums).forEach(albumKey => {
-  //       const album = artist.albums[albumKey];
-  //       // Prepare the album TreeNode, including its tracks as children
-  //       const albumNode: TreeNode = {
-  //         name: album.name,
-  //         children: Object.keys(album.tracks).map(trackKey => {
-  //           const track = album.tracks[trackKey];
-  //           return {
-  //             name: track.name,
-  //             value: track.scrobbles.length, // Use the length of scrobbles array as value
-  //             // Additional properties like 'image' and 'color' could be included here if needed
-  //           };
-  //         }),
-  //         image: album.image_url, // Album image
-  //         color: album.color // Album color
-  //       };
-  //       // Add the albumNode to the children of the ChartStats TreeNode
-  //       treemapData.children.push(albumNode);
-  //     });
-  //   });
-  
-  //   //this.albumMode = true;
-  //   //this.currentDepth++;
+  filterByDate(chartStats: ChartStats, filterState: FilterState): ChartStats {
+    const filteredChartStats: ChartStats = { artists: {} };
+    console.log("filter dates: "  + filterState.startDate + "    " + filterState.endDate)
+    for (const artistKey in chartStats.artists) {
+        const artist = chartStats.artists[artistKey];
+        const filteredArtist: Artist = {
+            ...artist,
+            scrobbles: artist.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate),
+            albums: {}
+        };
 
-  //   return treemapData;
-  // }
+        for (const albumKey in artist.albums) {
+            const album = artist.albums[albumKey];
+            const filteredAlbum: Album = {
+                ...album,
+                scrobbles: album.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate),
+                tracks: {}
+            };
 
-  // transformToTreemapDataTracks(stats: ChartStats): TreeNode {
-  //   const treemapData = {
-  //     name: "ChartStats",
-  //     children: [] as TreeNode[]
-  //   };
-  
-  //   // Iterate over each artist
-  //   Object.keys(stats.artists).forEach(artistKey => {
-  //     const artist = stats.artists[artistKey];
-  //     // Then iterate over each album of the artist
-  //     Object.keys(artist.albums).forEach(albumKey => {
-  //       const album = artist.albums[albumKey];
+            for (const trackKey in album.tracks) {
+                const track = album.tracks[trackKey];
+                const filteredTrack: Track = {
+                    ...track,
+                    scrobbles: track.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate)
+                };
 
-  //       // Then iterate over each tracks of the album
-  //       Object.keys(album.tracks).forEach(trackKey => {
-  //         const track = album.tracks[trackKey];
+                if (filteredTrack.scrobbles.length >= filterState.minTrackScrobbles && filteredTrack.scrobbles.length != 0) {
+                    filteredAlbum.tracks[trackKey] = filteredTrack;
+                }
+            }
 
-  //         const trackNode: TreeNode = {
-  //           name: track.name,
-  //           children: [],
-  //           value: track.scrobbles.length,
-  //           image: album.image_url,
-  //           color: album.color
-  //         }
+            if (filteredAlbum.scrobbles.length >= filterState.minAlbumScrobbles && filteredAlbum.scrobbles.length != 0) {
+                filteredArtist.albums[albumKey] = filteredAlbum;
+            }
+        }
 
-  //         treemapData.children.push(trackNode);
-  //       })
-  //     });
-  //   });
-  
-  //   //this.albumMode = true;
-  //   //this.currentDepth++;
+        if (filteredArtist.scrobbles.length >= filterState.minArtistScrobbles && filteredArtist.scrobbles.length != 0) {
+            filteredChartStats.artists[artistKey] = filteredArtist;
+        }
+    }
 
-  //   return treemapData;
-  // }
+    //console.log("filterByDate: ")
+    for (const artistKey in filteredChartStats.artists) {
+      const artist = filteredChartStats.artists[artistKey];
+      for (const albumKey in artist.albums) {
+          const album = artist.albums[albumKey];
+          for (const trackKey in album.tracks) {
+              const track = album.tracks[trackKey];
+              //console.log(track.name + ": " + track.scrobbles.length);
+          }
+      }
+  }
+    return filteredChartStats;
+}
 
   filterArtists(chartStats: ChartStats, filterState: FilterState): ChartStats {
     const filteredArtists = Object.keys(chartStats.artists).reduce((acc, artistName) => {
@@ -238,47 +281,60 @@ export class StatsConverterService {
   }
 
   filterAlbums(chartStats: ChartStats, filter: FilterState): ChartStats {
-    for (const artistKey in chartStats.artists) {
-        const artist = chartStats.artists[artistKey];
-        for (const albumKey in artist.albums) {
-            const album = artist.albums[albumKey];
-            const totalScrobbles = album.scrobbles.length; // Assuming this is the correct way to get the scrobble count for an album
-            
-            if (totalScrobbles < filter.minAlbumScrobbles) {
-              console.log("filterAlbums")
-              delete artist.albums[albumKey]; // Remove the album if it doesn't meet the scrobble count criteria
-            }
-        }
-    }
+    const filteredArtists = Object.keys(chartStats.artists).reduce((acc, artistKey) => {
+      const artist = chartStats.artists[artistKey];
+      const filteredAlbums = Object.keys(artist.albums).reduce((albumAcc, albumKey) => {
+        const album = artist.albums[albumKey];
+        const totalScrobbles = album.scrobbles.length;
 
-    return chartStats
+        if (totalScrobbles >= filter.minAlbumScrobbles) {
+          albumAcc[albumKey] = album;
+        }
+
+        return albumAcc;
+      }, {} as { [key: string]: Album });
+
+      if (Object.keys(filteredAlbums).length > 0) {
+        acc[artistKey] = {
+          ...artist,
+          albums: filteredAlbums
+        };
+      }
+
+      return acc;
+    }, {} as { [key: string]: Artist });
+
+    return {
+      ...chartStats,
+      artists: filteredArtists
+    };
   }
 
   filterTracks(chartStats: ChartStats, filter: FilterState): ChartStats {
     for (const artistKey in chartStats.artists) {
-        const artist = chartStats.artists[artistKey];
-        for (const albumKey in artist.albums) {
-            const album = artist.albums[albumKey];
-            for (const trackKey in album.tracks) {
-              const track = album.tracks[trackKey];
-              const totalScrobbles = track.scrobbles.length;
-              if (totalScrobbles < filter.minTrackScrobbles) {
-                delete album.tracks[trackKey];
-              }
-            }
+      const artist = chartStats.artists[artistKey];
+      for (const albumKey in artist.albums) {
+        const album = artist.albums[albumKey];
+        for (const trackKey in album.tracks) {
+          const track = album.tracks[trackKey];
+          const totalScrobbles = track.scrobbles.length;
+          if (totalScrobbles < filter.minTrackScrobbles) {
+            delete album.tracks[trackKey];
+          }
         }
+      }
     }
 
     return chartStats
   }
 
-  convertScrobbles(scrobbles: Scrobble[], filters: FilterState, newChartStats: ChartStats): [ChartStats, FilterState] {
+  convertScrobbles(scrobbles: Scrobble[], newChartStats: ChartStats): ChartStats {
     //console.log("convertScrobbles: " + filters.startDate + " | " + filters.endDate);
-    for (const scrobble of this.filterScrobbles(scrobbles, filters)) {
+    for (const scrobble of scrobbles/*this.filterScrobbles(scrobbles, filters)*/) {
       this.handleScrobble(scrobble, newChartStats);
     }
     console.log("convertScrobbles finished");
-    return [newChartStats, filters];
+    return newChartStats;
   }
 
   pauseUntilConditionMet(newChartStats: ChartStats) {
@@ -291,17 +347,24 @@ export class StatsConverterService {
             console.log("artistImageStorage: " + Object.keys(this.artistImageStorage).length);
             console.log("newChartStats: " + Object.keys(newChartStats.artists).length);
           }),
-          filter(() => Object.keys(newChartStats.artists).length <= Object.keys(this.artistImageStorage).length),
+          filter(() => Object.keys(newChartStats.artists).length <= Object.keys(this.artistImageStorage).length && Object.keys(newChartStats.artists).length !== 0),
           take(1)
-        ).subscribe(() => {
-          // Once condition is met, complete the checkSubscription and let the source observable proceed
-          source.subscribe({
-            next: (value) => subscriber.next(value),
-            error: (err) => subscriber.error(err),
-            complete: () => subscriber.complete(),
-          });
+        ).subscribe({
+          next: () => {
+            // Once condition is met, complete the checkSubscription and let the source observable proceed
+            source.subscribe({
+              next: (value) => subscriber.next(value),
+              error: (err) => subscriber.error(err),
+              complete: () => subscriber.complete(),
+            });
+          },
+          error: (err) => subscriber.error(err),
+          complete: () => {
+            subscriber.complete();
+          }
+
         });
-  
+
         // Return the teardown logic
         return () => {
           checkSubscription.unsubscribe();
@@ -331,7 +394,10 @@ export class StatsConverterService {
             this.currentlyRetrieving.delete(scrobble.artistName);
             this.resetTimer.next();
           },
-          error: (err) => console.error('Error while fetching artist image:', err)
+          error: (err) => {
+            console.error('Error while fetching artist image:', err);
+            this.artistImageStorage[scrobble.artistName] = ['', ''];
+          }
         })
       }
     }
@@ -373,24 +439,26 @@ export class StatsConverterService {
     })
   }
 
-  addArtistImagesRetry(newChartStats: ChartStats, filters: FilterState): [ChartStats, FilterState] {
+  addArtistImagesRetry(newChartStats: ChartStats, filters: FilterState): ChartStats {
     console.log("addArtistImagesRetry, " + this.missingArtists.size);
     for (const artist of this.missingArtists) {
       newChartStats.artists[artist] = {
         ...newChartStats.artists[artist],
-        image_url: this.artistImageStorage[artist][0] || '',
-        color: this.artistImageStorage[artist][1] || ''
+        image_url: this.artistImageStorage[artist] ? this.artistImageStorage[artist][0] : '',
+        color: this.artistImageStorage[artist] ? this.artistImageStorage[artist][1] : ''
       }
-      console.log("retried missing artist: " +artist + this.artistImageStorage[artist][0]);
-      this.missingArtists.delete(artist);
+      if (this.artistImageStorage[artist]) {
+        console.log("retried missing artist: " + artist + this.artistImageStorage[artist][0]);
+        this.missingArtists.delete(artist);
+      }
     }
-    return [newChartStats, filters];
+    return newChartStats;
   }
 
   addAlbumColors(newChartStats: ChartStats): Observable<ChartStats> {
     // Collect an array of observables for color updates
     const colorUpdates$: any = [];
-    
+
     console.log("addAlbumColors");
 
     // Iterate over artists and albums to update colors
@@ -418,7 +486,7 @@ export class StatsConverterService {
               return of(null); // Continue the observable chain even if there's an error
             })
           );
-  
+
           colorUpdates$.push(colorUpdate$);
         }
       });
@@ -427,7 +495,7 @@ export class StatsConverterService {
     if (colorUpdates$.length === 0) {
       colorUpdates$.push(of(''));
     }
-  
+
     // Wait for all color updates to complete
     return forkJoin(colorUpdates$).pipe(
       map(() => newChartStats) // Return the updated ChartStats once all updates are done
@@ -435,11 +503,14 @@ export class StatsConverterService {
   }
 
   handleScrobble(scrobble: Scrobble, chartStats: ChartStats): void {
-    //console.log("handling " + scrobble.artistName)
+    // if (!this.artistImageStorage) {
+    //   console.error('artistImageStorage is undefined.');
+    //   return;
+    // }
     // If the artist doesn't exist in chartStats, initialize it
     if (!chartStats.artists[scrobble.artistName]) {
       if (!this.artistImageStorage[scrobble.artistName]) {
-        console.log("adding missing Artist to set: " + scrobble.artistName);
+        //console.log("adding missing Artist to set: " + scrobble.artistName);
         this.missingArtists.add(scrobble.artistName);
         chartStats.artists[scrobble.artistName] = {
           albums: {},
@@ -465,33 +536,33 @@ export class StatsConverterService {
 
     // If the album doesn't exist for the artist, initialize it
     if (!artist.albums[scrobble.album]) {
+      artist.albums[scrobble.album] = {
+        tracks: {},
+        scrobbles: [],
+        name: scrobble.album,
+        image_url: scrobble.albumImage,
+        isCombo: false,
+        artistName: artist.name
+      };
+      if (!this.albumImageStorage.artists[scrobble.artistName]) {
+        this.albumImageStorage.artists[scrobble.artistName] = {}
+      }
+      if (this.albumImageStorage.artists[scrobble.artistName][scrobble.album]) {
         artist.albums[scrobble.album] = {
-            tracks: {},
-            scrobbles: [],
-            name: scrobble.album,
-            image_url: scrobble.albumImage,
-            isCombo: false,
-            artistName: artist.name
+          ...artist.albums[scrobble.album],
+          color: this.albumImageStorage.artists[scrobble.artistName][scrobble.album]
         };
-        if (!this.albumImageStorage.artists[scrobble.artistName]) {
-          this.albumImageStorage.artists[scrobble.artistName] = {}
-        }
-        if (this.albumImageStorage.artists[scrobble.artistName][scrobble.album]) {
-          artist.albums[scrobble.album] = {
-            ...artist.albums[scrobble.album],
-            color: this.albumImageStorage.artists[scrobble.artistName][scrobble.album]
-          };
-        }
+      }
     }
 
     const album = artist.albums[scrobble.album];
 
     // If the track doesn't exist in the album, initialize it
     if (!album.tracks[scrobble.track]) {
-        album.tracks[scrobble.track] = {
-            scrobbles: [],
-            name: scrobble.track
-        };
+      album.tracks[scrobble.track] = {
+        scrobbles: [],
+        name: scrobble.track
+      };
     }
 
     const track = album.tracks[scrobble.track];

@@ -129,8 +129,8 @@ export class LoadingComponent implements OnInit {
 
   applySettings(): void {
     const timezoneOffset = new Date(this.startDate).getTimezoneOffset() * 60000;
-    const startDate = Date.parse(this.startDate) + timezoneOffset;
-    const endDate = Date.parse(this.endDate) + timezoneOffset;
+    const startDate = this.startDate ? Date.parse(this.startDate) + timezoneOffset : 0;
+    const endDate = this.endDate ? Date.parse(this.endDate) + timezoneOffset : Date.now();
     const minArtistScrobbles = this.minArtistScrobbles;
     const minAlbumScrobbles = this.minAlbumScrobbles;
     const minTrackScrobbles = this.minTrackScrobbles;

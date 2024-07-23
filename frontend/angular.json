@@ -63,10 +63,10 @@
           },
           "configurations": {
             "production": {
-              "browserTarget": "lastfm-data-visualizer:build:production"
+              "buildTarget": "lastfm-data-visualizer:build:production"
             },
             "development": {
-              "browserTarget": "lastfm-data-visualizer:build:development"
+              "buildTarget": "lastfm-data-visualizer:build:development"
             }
           },
           "defaultConfiguration": "development"
@@ -74,7 +74,7 @@
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",
           "options": {
-            "browserTarget": "lastfm-data-visualizer:build"
+            "buildTarget": "lastfm-data-visualizer:build"
           }
         },
         "test": {

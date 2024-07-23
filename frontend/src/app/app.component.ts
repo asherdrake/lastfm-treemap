@@ -12,15 +12,15 @@ import { DatasetComponent } from './dataset/dataset.component';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
 })
-export class AppComponent implements OnInit{
+export class AppComponent implements OnInit {
   @ViewChild('treemapPlaceholder', { read: ViewContainerRef }) treemapContainer!: ViewContainerRef;
   @ViewChild(DatasetComponent) datasetComponent!: DatasetComponent;
   private currentTreemapComponentRef: ComponentRef<TreemapComponent> | null = null;
   view: TreemapViewType = "Artists"
   sidebarActive: boolean = false;
   constructor(
-    private statsConverterService: StatsConverterService, 
-    private storage: ScrobbleStorageService, 
+    private statsConverterService: StatsConverterService,
+    private storage: ScrobbleStorageService,
     private filter: FiltersService,
     private cdr: ChangeDetectorRef) {
     this.filter.state$.pipe(
@@ -32,11 +32,11 @@ export class AppComponent implements OnInit{
   }
 
   ngOnInit(): void {
-    this.statsConverterService.getChartStatsObservable().subscribe({
-      next: (chartStats) => {
-        this.loadTreemapComponent(chartStats!);
-      }
-    })
+    // this.statsConverterService.getChartStatsObservable().subscribe({
+    //   next: (chartStats) => {
+    //     this.loadTreemapComponent(chartStats!);
+    //   }
+    // })
   }
 
   loadTreemapComponent(chartStats: ChartStats) {
@@ -44,15 +44,15 @@ export class AppComponent implements OnInit{
     console.log("treemapContainer cleared")
 
     const componentRef: ComponentRef<TreemapComponent> = this.treemapContainer.createComponent(TreemapComponent);
-    if (this.view === "Artists") {
-      componentRef.instance.treemapData = componentRef.instance.transformToTreemapData(chartStats);
-      this.datasetComponent.transformChartStatsArtists(chartStats);
-    } else if (this.view === 'Albums') {
-      componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataAlbums(chartStats);
-      this.datasetComponent.transformChartStatsAlbums(chartStats);
-    } else { 
-      componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataTracks(chartStats);
-    }
+    // if (this.view === "Artists") {
+    //   componentRef.instance.treemapData = componentRef.instance.transformToTreemapData(chartStats);
+    //   this.datasetComponent.transformChartStatsArtists(chartStats);
+    // } else if (this.view === 'Albums') {
+    //   componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataAlbums(chartStats);
+    //   this.datasetComponent.transformChartStatsAlbums(chartStats);
+    // } else {
+    //   componentRef.instance.treemapData = componentRef.instance.transformToTreemapDataTracks(chartStats);
+    // }
 
     componentRef.instance.initializeTreemap();
   }
