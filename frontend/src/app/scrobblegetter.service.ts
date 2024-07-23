@@ -102,6 +102,7 @@ export class ScrobbleGetterService {
           console.log("Getting scrobbles start...");
           this.iterateTrackPages({ ...loadingState, trackPage: pageTotal, totalTrackPages: pageTotal });
         } else {
+          console.log("GETTING SCROBBLES FINISHED (calcTrackPages");
           loadingState.storage.finish('FINISHED');
         }
       }
@@ -124,6 +125,7 @@ export class ScrobbleGetterService {
           this.iterateTrackPages(loadingState);
         } else {
           console.log("else loadingState.trackPage: " + loadingState.trackPage);
+          console.log("GETTING SCROBBLES FINISHED (iterateTrackPages)");
           loadingState.storage.finish('FINISHED');
         }
       },
@@ -140,6 +142,7 @@ export class ScrobbleGetterService {
       date: new Date(t.date.uts * 1000)
     })).reverse();
 
+    console.log("NEW SCROBBLES: " + scrobbles.length)
     loadingState.trackPage!--;
     loadingState.storage.addTrackPage(scrobbles);
   }

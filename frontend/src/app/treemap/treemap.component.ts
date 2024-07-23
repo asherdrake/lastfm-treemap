@@ -305,6 +305,7 @@ export class TreemapComponent implements OnInit {
   }
 
   transformToTreemapData(stats: ChartStats): void {
+    console.log("transformtoTreemapData: " + Object.keys(stats.artists));
     if (this.filterState.view === "Albums") {
       console.log("Albums Top View")
       this.treemapData = this.transformToTreemapDataAlbums(stats);

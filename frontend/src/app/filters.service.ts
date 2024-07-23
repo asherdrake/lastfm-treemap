@@ -1,5 +1,6 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store'
+import { filter } from 'd3';
 import { TreemapViewType } from 'src/app/items';
 
 export interface FilterState {
@@ -30,6 +31,7 @@ export class FiltersService extends ComponentStore<FilterState> {
   }
 
   readonly updateSettings = this.updater((currData: FilterState, settings: {startDate: number, endDate: number, minArtistScrobbles: number, minAlbumScrobbles: number, minTrackScrobbles: number, view: TreemapViewType}) => {
+    console.log("UPDATE SETTINGS: " +settings.startDate + " | " + settings.endDate)
     return {
       ...currData,
       ...settings
