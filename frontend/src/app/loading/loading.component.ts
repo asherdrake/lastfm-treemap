@@ -63,7 +63,7 @@ export class LoadingComponent implements OnInit {
     switch (this.selectedView) {
       case 'Artists':
         this.minAlbumScrobbles = 0;
-        this.minTrackScrobbles= 0;
+        this.minTrackScrobbles = 0;
         break;
       case 'Albums':
         this.minArtistScrobbles = 0;
@@ -128,16 +128,20 @@ export class LoadingComponent implements OnInit {
   }
 
   applySettings(): void {
-    const timezoneOffset = new Date(this.startDate).getTimezoneOffset() * 60000;
+    const timezoneOffset = new Date().getTimezoneOffset() * 60000;
     const startDate = this.startDate ? Date.parse(this.startDate) + timezoneOffset : 0;
     const endDate = this.endDate ? Date.parse(this.endDate) + timezoneOffset : Date.now();
+    console.log("timezoneOffset: " + timezoneOffset);
+    console.log("applySettings endDate: " + this.endDate + " | Date.parse(this.endDate) + timezoneOffset " + (Date.parse(this.endDate) + timezoneOffset));
+    console.log("endDate to be submitted: " + endDate);
+    console.log("startDate to be submitted: " + startDate);
     const minArtistScrobbles = this.minArtistScrobbles;
     const minAlbumScrobbles = this.minAlbumScrobbles;
     const minTrackScrobbles = this.minTrackScrobbles;
     const view = this.selectedView;
-    this.filters.updateSettings({startDate, endDate, minArtistScrobbles, minAlbumScrobbles, minTrackScrobbles, view });
+    this.filters.updateSettings({ startDate, endDate, minArtistScrobbles, minAlbumScrobbles, minTrackScrobbles, view });
   }
-  
+
   startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]): void {
     this.applySettings();
     this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages, albumImages, artistCombinations, albumCombinations);
