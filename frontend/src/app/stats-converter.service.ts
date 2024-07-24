@@ -44,6 +44,7 @@ export class StatsConverterService {
     minArtistScrobbles: 0,
     minAlbumScrobbles: 0,
     minTrackScrobbles: 0,
+    numNodes: 0,
     view: "Artists"
   };
 
@@ -72,7 +73,7 @@ export class StatsConverterService {
       error: (err) => {
         console.error('Error in artistImageStorage subscription:', err);
       }
-    }); 
+    });
 
     this.storage.albumImageStorage.subscribe({
       next: (albumImages) => {
@@ -115,6 +116,7 @@ export class StatsConverterService {
       map(stats => this.filterArtists(stats, this.filterState)),
       map(stats => this.filterAlbums(stats, this.filterState)),
       map(stats => this.filterTracks(stats, this.filterState)),
+      map(stats => this.getTopArtistsByScrobbles(stats, this.filterState)),
     );
 
     this.finishedChartStats = combineLatest([
@@ -133,7 +135,8 @@ export class StatsConverterService {
       map(stats => this.filterArtists(stats, this.filterState)),
       map(stats => this.filterAlbums(stats, this.filterState)),
       map(stats => this.filterTracks(stats, this.filterState)),
-      tap(() => console.log("FINISHED CHART STATS")),
+      map(stats => this.getTopArtistsByScrobbles(stats, this.filterState)),
+      //tap(() => console.log("FINISHED CHART STATS")),
     )
   };
 
@@ -158,107 +161,60 @@ export class StatsConverterService {
     return chartStats;
   }
 
-  // getChartStatsObservable(): Observable<ChartStats> {
-  //   let filterState: FilterState;
-  //   let artistCombinations: ArtistCombo[];
-  //   let albumCombinations: AlbumCombo[];
-  //   return combineLatest([
-  //     this.completed,
-  //     this.filters.state$
-  //   ]).pipe(
-  //     map(([scrobbles, filters]) => {
-  //       filterState = filters;
-  //       artistCombinations = scrobbles.artistCombinations
-  //       albumCombinations = scrobbles.albumCombinations
-  //       return this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })
-  //     }),
-  //     concatMap(([newChartStats, filters]) => {
-  //       return this.pauseUntilConditionMet(newChartStats)(of(newChartStats)).pipe(
-  //         map(() => {
-  //           return [newChartStats, filters]
-  //         })
-  //       );
-  //     }),
-  //     map(([newChartStats, filters]) => this.addArtistImagesRetry(newChartStats as ChartStats, filters as FilterState)),
-  //     //map(([newChartStats, filters]) => this.addAlbumColors(newChartStats, filters)),
-  //     // mergeMap(([newChartStats, filters]) =>
-  //     //   this.addAlbumColors(newChartStats).pipe(
-  //     //     map(updatedChartStats => {
-  //     //       //this.storage.updateAlbumImages(this.albumImageStorage);
-  //     //       return updatedChartStats;
-  //     //     })
-  //     //   )
-  //     // ),
-  //     map(chartStats => this.combineService.combineArtists(chartStats, artistCombinations)),
-  //     map(chartStats => {
-  //       // Conditionally apply the transformation if the condition is true
-  //       if (filterState.view === 'Albums') {
-  //         return this.combineService.combineAlbums(chartStats, albumCombinations)
-  //       } else {
-  //         // Pass through the chartStats unchanged if the condition is false
-  //         return chartStats;
-  //       }
-  //     }),
-  //     map(chartStats => this.filterArtists(chartStats, filterState)),
-  //     map(chartStats => this.filterAlbums(chartStats, filterState)),
-  //     map(chartStats => this.filterTracks(chartStats, filterState)),
-  //   )
-  // }
-
   filterByDate(chartStats: ChartStats, filterState: FilterState): ChartStats {
     const filteredChartStats: ChartStats = { artists: {} };
-    console.log("filter dates: "  + filterState.startDate + "    " + filterState.endDate)
+    console.log("filter dates: " + filterState.startDate + "    " + filterState.endDate)
     for (const artistKey in chartStats.artists) {
-        const artist = chartStats.artists[artistKey];
-        const filteredArtist: Artist = {
-            ...artist,
-            scrobbles: artist.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate),
-            albums: {}
+      const artist = chartStats.artists[artistKey];
+      const filteredArtist: Artist = {
+        ...artist,
+        scrobbles: artist.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate),
+        albums: {}
+      };
+
+      for (const albumKey in artist.albums) {
+        const album = artist.albums[albumKey];
+        const filteredAlbum: Album = {
+          ...album,
+          scrobbles: album.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate),
+          tracks: {}
         };
 
-        for (const albumKey in artist.albums) {
-            const album = artist.albums[albumKey];
-            const filteredAlbum: Album = {
-                ...album,
-                scrobbles: album.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate),
-                tracks: {}
-            };
+        for (const trackKey in album.tracks) {
+          const track = album.tracks[trackKey];
+          const filteredTrack: Track = {
+            ...track,
+            scrobbles: track.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate)
+          };
 
-            for (const trackKey in album.tracks) {
-                const track = album.tracks[trackKey];
-                const filteredTrack: Track = {
-                    ...track,
-                    scrobbles: track.scrobbles.filter(scrobble => scrobble >= filterState.startDate && scrobble <= filterState.endDate)
-                };
-
-                if (filteredTrack.scrobbles.length >= filterState.minTrackScrobbles && filteredTrack.scrobbles.length != 0) {
-                    filteredAlbum.tracks[trackKey] = filteredTrack;
-                }
-            }
-
-            if (filteredAlbum.scrobbles.length >= filterState.minAlbumScrobbles && filteredAlbum.scrobbles.length != 0) {
-                filteredArtist.albums[albumKey] = filteredAlbum;
-            }
+          if (filteredTrack.scrobbles.length >= filterState.minTrackScrobbles && filteredTrack.scrobbles.length != 0) {
+            filteredAlbum.tracks[trackKey] = filteredTrack;
+          }
         }
 
-        if (filteredArtist.scrobbles.length >= filterState.minArtistScrobbles && filteredArtist.scrobbles.length != 0) {
-            filteredChartStats.artists[artistKey] = filteredArtist;
+        if (filteredAlbum.scrobbles.length >= filterState.minAlbumScrobbles && filteredAlbum.scrobbles.length != 0) {
+          filteredArtist.albums[albumKey] = filteredAlbum;
         }
+      }
+
+      if (filteredArtist.scrobbles.length >= filterState.minArtistScrobbles && filteredArtist.scrobbles.length != 0) {
+        filteredChartStats.artists[artistKey] = filteredArtist;
+      }
     }
 
     //console.log("filterByDate: ")
     for (const artistKey in filteredChartStats.artists) {
       const artist = filteredChartStats.artists[artistKey];
       for (const albumKey in artist.albums) {
-          const album = artist.albums[albumKey];
-          for (const trackKey in album.tracks) {
-              const track = album.tracks[trackKey];
-              //console.log(track.name + ": " + track.scrobbles.length);
-          }
+        const album = artist.albums[albumKey];
+        for (const trackKey in album.tracks) {
+          const track = album.tracks[trackKey];
+          //console.log(track.name + ": " + track.scrobbles.length);
+        }
       }
-  }
+    }
     return filteredChartStats;
-}
+  }
 
   filterArtists(chartStats: ChartStats, filterState: FilterState): ChartStats {
     const filteredArtists = Object.keys(chartStats.artists).reduce((acc, artistName) => {
@@ -326,6 +282,36 @@ export class StatsConverterService {
     }
 
     return chartStats
+  }
+
+  getTopArtistsByScrobbles(chartStats: ChartStats, filterState: FilterState): ChartStats {
+    const numNodes = filterState.numNodes;
+    console.log("numNodes1: " + numNodes);
+    if (numNodes == 0) {
+      return chartStats;
+    }
+
+    // Get the artists array from the ChartStats object
+    const artistsArray = Object.values(chartStats.artists);
+
+    // Sort the artists by their scrobble count (total number of scrobbles)
+    const sortedArtists = artistsArray.sort((a, b) => b.scrobbles.length - a.scrobbles.length);
+
+    // Select the top 'x' artists
+    const topArtists = sortedArtists.slice(0, numNodes);
+
+    // Create a new ChartStats object with the top 'x' artists
+    const newChartStats: ChartStats = {
+      artists: {}
+    };
+
+    topArtists.forEach(artist => {
+      console.log("artist: " + artist.name + " | url: " + artist.image_url);
+      newChartStats.artists[artist.name] = artist;
+    });
+
+    console.log("numNodes2: " + numNodes);
+    return newChartStats;
   }
 
   convertScrobbles(scrobbles: Scrobble[], newChartStats: ChartStats): ChartStats {
