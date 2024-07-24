@@ -168,8 +168,8 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
     );
 
   readonly chunk = merge(
-    this.imported.pipe(map(scrobbles => [scrobbles, false] as [Scrobble[], boolean])),
-    this.trackPageChunk.pipe(map(scrobbles => [scrobbles, true] as [Scrobble[], boolean]))
+    this.imported,
+    this.trackPageChunk
   );
 
   readonly artistImageStorage = this.state$.pipe(

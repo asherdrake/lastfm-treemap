@@ -7,9 +7,7 @@ export interface FilterState {
   startDate: number,
   endDate: number,
 
-  minArtistScrobbles: number,
-  minAlbumScrobbles: number,
-  minTrackScrobbles: number,
+  minScrobbles: number,
 
   numNodes: number,
 
@@ -25,15 +23,13 @@ export class FiltersService extends ComponentStore<FilterState> {
     super({
       startDate: 0,
       endDate: Date.now(),
-      minArtistScrobbles: 0,
-      minAlbumScrobbles: 0,
-      minTrackScrobbles: 0,
+      minScrobbles: 0,
       numNodes: 0,
       view: "Artists"
     });
   }
 
-  readonly updateSettings = this.updater((currData: FilterState, settings: { startDate: number, endDate: number, minArtistScrobbles: number, minAlbumScrobbles: number, minTrackScrobbles: number, numNodes: number, view: TreemapViewType }) => {
+  readonly updateSettings = this.updater((currData: FilterState, settings: { startDate: number, endDate: number, minScrobbles: number, numNodes: number, view: TreemapViewType }) => {
     console.log("UPDATE SETTINGS: " + settings.startDate + " | " + settings.endDate)
     return {
       ...currData,

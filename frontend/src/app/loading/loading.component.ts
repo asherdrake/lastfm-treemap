@@ -19,9 +19,7 @@ export class LoadingComponent implements OnInit {
   endDate: string = '';
   username: string = '';
   numNodes: number = 0;
-  minArtistScrobbles: number = 0;
-  minAlbumScrobbles: number = 0;
-  minTrackScrobbles: number = 0;
+  minScrobbles: number = 0;
   public viewOptions: string[] = ["Artists", "Albums", "Tracks"];
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
   sidebarActive: boolean = true;
@@ -36,57 +34,10 @@ export class LoadingComponent implements OnInit {
     ).subscribe();
   }
 
-  // Getter to dynamically reference the correct property
-  get minScrobbles(): number {
-    if (this.selectedView === 'Artists') {
-      return this.minArtistScrobbles;
-    } else if (this.selectedView === 'Albums') {
-      return this.minAlbumScrobbles;
-    } else if (this.selectedView === 'Tracks') {
-      return this.minTrackScrobbles;
-    }
-    return 0; // default or error case
-  }
-
-  // Setter to dynamically update the correct property
-  set minScrobbles(value: number) {
-    if (this.selectedView === 'Artists') {
-      this.minArtistScrobbles = value;
-    } else if (this.selectedView === 'Albums') {
-      this.minAlbumScrobbles = value;
-    } else if (this.selectedView === 'Tracks') {
-      this.minTrackScrobbles = value;
-    }
-  }
-
-  // Method to reset non-corresponding scrobbles
-  resetMinScrobbles() {
-    switch (this.selectedView) {
-      case 'Artists':
-        this.minAlbumScrobbles = 0;
-        this.minTrackScrobbles = 0;
-        break;
-      case 'Albums':
-        this.minArtistScrobbles = 0;
-        this.minTrackScrobbles = 0;
-        break;
-      case 'Tracks':
-        this.minArtistScrobbles = 0;
-        this.minAlbumScrobbles = 0;
-        break;
-      default:
-        // Reset both if selectedView is not recognized
-        this.minArtistScrobbles = 0;
-        this.minAlbumScrobbles = 0;
-        this.minTrackScrobbles = 0;
-        break;
-    }
-  }
-
   // Watcher for selectedView changes
   setSelectedView(view: TreemapViewType) {
     this.selectedView = view;
-    this.resetMinScrobbles();
+    //this.resetMinScrobbles();
   }
 
   loadingBarWidth(): string {
@@ -132,16 +83,10 @@ export class LoadingComponent implements OnInit {
     const timezoneOffset = new Date().getTimezoneOffset() * 60000;
     const startDate = this.startDate ? Date.parse(this.startDate) + timezoneOffset : 0;
     const endDate = this.endDate ? Date.parse(this.endDate) + timezoneOffset : Date.now();
-    console.log("timezoneOffset: " + timezoneOffset);
-    console.log("applySettings endDate: " + this.endDate + " | Date.parse(this.endDate) + timezoneOffset " + (Date.parse(this.endDate) + timezoneOffset));
-    console.log("endDate to be submitted: " + endDate);
-    console.log("startDate to be submitted: " + startDate);
-    const minArtistScrobbles = this.minArtistScrobbles;
-    const minAlbumScrobbles = this.minAlbumScrobbles;
-    const minTrackScrobbles = this.minTrackScrobbles;
+    const minScrobbles = this.minScrobbles
     const numNodes = this.numNodes;
     const view = this.selectedView;
-    this.filters.updateSettings({ startDate, endDate, minArtistScrobbles, minAlbumScrobbles, minTrackScrobbles, numNodes, view });
+    this.filters.updateSettings({ startDate, endDate, minScrobbles, numNodes, view });
   }
 
   startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]): void {
