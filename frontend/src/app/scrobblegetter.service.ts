@@ -65,11 +65,12 @@ export class ScrobbleGetterService {
   initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]) {
     this.getUser(username).subscribe({
       next: user => {
-        storage.updateUser(user);
+        //storage.updateUser(user);
         console.log("initializing fetching....startDate = " + startDate);
 
         const from = String(this.getStartDate(importedScrobbles));
         storage.addImport({ importedScrobbles, artistImages, albumImages, artistCombinations, albumCombinations });
+        storage.updateUser(user);
         this.calcTrackPages({ storage, username: user.name, trackPageSize: 200, from })
 
       },

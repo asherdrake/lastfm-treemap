@@ -56,8 +56,6 @@ export class StatsConverterService {
     private combineService: CombineService) {
     this.imageProcessing = this.storage.trackPageChunk.pipe(
       map(scrobbles => this.storeArtistImage(scrobbles)),
-      // takeUntil(timerResetObservable),
-      // tap(() => console.log("Image Processing Complete."))
     ).subscribe();
 
     this.storage.artistImageStorage.subscribe({
@@ -90,21 +88,22 @@ export class StatsConverterService {
     this.completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
 
     // const chunk 
-    const chartStats = this.storage.chunk
-      .pipe(
-        skip(1),
-        tap(() => console.log("chartStats (statsconvertersservice)")),
-        scan((acc, scrobbles) => this.updateChartStats(scrobbles[0], scrobbles[1] ? acc : { artists: {} } as ChartStats), { artists: {} } as ChartStats),
-        map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
-        tap(chartStats => console.log("curr stats: " + Object.keys(chartStats.artists))),
-        mergeMap(chartStats =>
-          this.addAlbumColors(chartStats).pipe(
-            map(updatedChartStats => {
-              return updatedChartStats;
-            })
-          )
-        ),
-      );
+    const chartStats = this.storage.chunk.pipe(
+      skip(1),
+      tap(() => console.log("chartStats (statsconvertersservice)")),
+      scan((acc, scrobbles) => {
+        //const updatedChartStats = this.updateChartStats(scrobbles[0], scrobbles[1] ? acc : { artists: {} } as ChartStats);
+        const updatedChartStats = this.updateChartStats(scrobbles[0], acc);
+        const chartStatsWithImages = this.addArtistImagesRetry(updatedChartStats, this.filterState);
+
+        return chartStatsWithImages;
+      }, { artists: {} } as ChartStats),
+      mergeMap(chartStats =>
+        this.addAlbumColors(chartStats).pipe(
+          map(updatedChartStats => updatedChartStats)
+        )
+      )
+    );
 
     this.filteredChartStats = combineLatest([
       chartStats,
@@ -121,8 +120,10 @@ export class StatsConverterService {
 
     this.finishedChartStats = combineLatest([
       chartStats,
-      this.filters.state$
+      this.filters.state$,
+      this.storage.state$
     ]).pipe(
+      filter(([_, __, state]) => state.state === 'FINISHED'),
       tap(() => console.log("finishedChartStats (statsconvertersservice)")),
       tap(([_, filterState]) => this.filterState = filterState),
       switchMap(([chartStats, _]) =>
@@ -137,7 +138,7 @@ export class StatsConverterService {
       map(stats => this.filterTracks(stats, this.filterState)),
       map(stats => this.getTopArtistsByScrobbles(stats, this.filterState)),
       //tap(() => console.log("FINISHED CHART STATS")),
-    )
+    ) as Observable<ChartStats>;
   };
 
   waitForCondition(conditionFn: () => boolean): Observable<boolean> {
@@ -306,7 +307,9 @@ export class StatsConverterService {
     };
 
     topArtists.forEach(artist => {
-      console.log("artist: " + artist.name + " | url: " + artist.image_url);
+      if (artist.name === 'Lyn') {
+        console.log("artist: " + artist.name + " | url: " + artist.image_url);
+      }
       newChartStats.artists[artist.name] = artist;
     });
 
@@ -427,6 +430,7 @@ export class StatsConverterService {
 
   addArtistImagesRetry(newChartStats: ChartStats, filters: FilterState): ChartStats {
     console.log("addArtistImagesRetry, " + this.missingArtists.size);
+
     for (const artist of this.missingArtists) {
       newChartStats.artists[artist] = {
         ...newChartStats.artists[artist],
@@ -438,6 +442,13 @@ export class StatsConverterService {
         this.missingArtists.delete(artist);
       }
     }
+
+    Object.values(newChartStats.artists)
+      .filter(artist => artist.name === 'Lyn')
+      .forEach(artist => {
+        console.log("artist: " + artist.name + " | url: " + artist.image_url);
+      });
+
     return newChartStats;
   }
 
