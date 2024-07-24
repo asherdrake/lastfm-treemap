@@ -66,7 +66,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
 
   readonly updateUser = this.updater((currData: ScrobbleState, user: User) => {
     //this.log('updateUser');
-
+    console.log("state: CALCULATINGPAGES");
     return {
       ...currData,
       user,
@@ -77,6 +77,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
   readonly updateTrackTotal = this.updater((currData: ScrobbleState, page: { totalTrackPages: number, currTrackPage: number }) => {
     //this.log('updateTotal');
 
+    console.log("state: GETTINGSCROBBLES");
     return {
       ...currData,
       ...page,
@@ -121,6 +122,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
   })
 
   readonly updateAlbumTotal = this.updater((currData: ScrobbleState, page: { totalAlbumPages: number, currAlbumPage: number }) => {
+    console.log("state: GETTINGALBUMCOVERS");
     return {
       ...currData,
       ...page,
@@ -130,7 +132,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
 
   readonly finish = this.updater((currData: ScrobbleState, state: string) => {
     //this.log('finish');
-
+    console.log("state: " + state);
     return {
       ...currData,
       state

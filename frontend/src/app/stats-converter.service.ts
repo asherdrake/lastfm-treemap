@@ -92,7 +92,7 @@ export class StatsConverterService {
     // const chunk 
     const chartStats = this.storage.chunk
       .pipe(
-        skip(1),
+        //skip(1),
         tap(() => console.log("chartStats (statsconvertersservice)")),
         scan((acc, scrobbles) => this.updateChartStats(scrobbles[0], scrobbles[1] ? acc : { artists: {} } as ChartStats), { artists: {} } as ChartStats),
         map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
@@ -156,7 +156,7 @@ export class StatsConverterService {
   }
 
   updateChartStats(scrobbles: Scrobble[], chartStats: ChartStats): ChartStats {
-    console.log("updateChartStats")
+    console.log("updateChartStats: " + Object.keys(chartStats.artists).length);
     this.convertScrobbles(scrobbles, chartStats);
     return chartStats;
   }
