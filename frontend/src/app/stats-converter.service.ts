@@ -44,6 +44,7 @@ export class StatsConverterService {
     minArtistScrobbles: 0,
     minAlbumScrobbles: 0,
     minTrackScrobbles: 0,
+    numNodes: 0,
     view: "Artists"
   };
 
@@ -115,6 +116,7 @@ export class StatsConverterService {
       map(stats => this.filterArtists(stats, this.filterState)),
       map(stats => this.filterAlbums(stats, this.filterState)),
       map(stats => this.filterTracks(stats, this.filterState)),
+      map(stats => this.getTopArtistsByScrobbles(stats, this.filterState)),
     );
 
     this.finishedChartStats = combineLatest([
@@ -133,7 +135,8 @@ export class StatsConverterService {
       map(stats => this.filterArtists(stats, this.filterState)),
       map(stats => this.filterAlbums(stats, this.filterState)),
       map(stats => this.filterTracks(stats, this.filterState)),
-      tap(() => console.log("FINISHED CHART STATS")),
+      map(stats => this.getTopArtistsByScrobbles(stats, this.filterState)),
+      //tap(() => console.log("FINISHED CHART STATS")),
     )
   };
 
@@ -157,53 +160,6 @@ export class StatsConverterService {
     this.convertScrobbles(scrobbles, chartStats);
     return chartStats;
   }
-
-  // getChartStatsObservable(): Observable<ChartStats> {
-  //   let filterState: FilterState;
-  //   let artistCombinations: ArtistCombo[];
-  //   let albumCombinations: AlbumCombo[];
-  //   return combineLatest([
-  //     this.completed,
-  //     this.filters.state$
-  //   ]).pipe(
-  //     map(([scrobbles, filters]) => {
-  //       filterState = filters;
-  //       artistCombinations = scrobbles.artistCombinations
-  //       albumCombinations = scrobbles.albumCombinations
-  //       return this.convertScrobbles(scrobbles.scrobbles, filters, { artists: {} })
-  //     }),
-  //     concatMap(([newChartStats, filters]) => {
-  //       return this.pauseUntilConditionMet(newChartStats)(of(newChartStats)).pipe(
-  //         map(() => {
-  //           return [newChartStats, filters]
-  //         })
-  //       );
-  //     }),
-  //     map(([newChartStats, filters]) => this.addArtistImagesRetry(newChartStats as ChartStats, filters as FilterState)),
-  //     //map(([newChartStats, filters]) => this.addAlbumColors(newChartStats, filters)),
-  //     // mergeMap(([newChartStats, filters]) =>
-  //     //   this.addAlbumColors(newChartStats).pipe(
-  //     //     map(updatedChartStats => {
-  //     //       //this.storage.updateAlbumImages(this.albumImageStorage);
-  //     //       return updatedChartStats;
-  //     //     })
-  //     //   )
-  //     // ),
-  //     map(chartStats => this.combineService.combineArtists(chartStats, artistCombinations)),
-  //     map(chartStats => {
-  //       // Conditionally apply the transformation if the condition is true
-  //       if (filterState.view === 'Albums') {
-  //         return this.combineService.combineAlbums(chartStats, albumCombinations)
-  //       } else {
-  //         // Pass through the chartStats unchanged if the condition is false
-  //         return chartStats;
-  //       }
-  //     }),
-  //     map(chartStats => this.filterArtists(chartStats, filterState)),
-  //     map(chartStats => this.filterAlbums(chartStats, filterState)),
-  //     map(chartStats => this.filterTracks(chartStats, filterState)),
-  //   )
-  // }
 
   filterByDate(chartStats: ChartStats, filterState: FilterState): ChartStats {
     const filteredChartStats: ChartStats = { artists: {} };
@@ -326,6 +282,36 @@ export class StatsConverterService {
     }
 
     return chartStats
+  }
+
+  getTopArtistsByScrobbles(chartStats: ChartStats, filterState: FilterState): ChartStats {
+    const numNodes = filterState.numNodes;
+    console.log("numNodes1: " + numNodes);
+    if (numNodes == 0) {
+      return chartStats;
+    }
+
+    // Get the artists array from the ChartStats object
+    const artistsArray = Object.values(chartStats.artists);
+
+    // Sort the artists by their scrobble count (total number of scrobbles)
+    const sortedArtists = artistsArray.sort((a, b) => b.scrobbles.length - a.scrobbles.length);
+
+    // Select the top 'x' artists
+    const topArtists = sortedArtists.slice(0, numNodes);
+
+    // Create a new ChartStats object with the top 'x' artists
+    const newChartStats: ChartStats = {
+      artists: {}
+    };
+
+    topArtists.forEach(artist => {
+      console.log("artist: " + artist.name + " | url: " + artist.image_url);
+      newChartStats.artists[artist.name] = artist;
+    });
+
+    console.log("numNodes2: " + numNodes);
+    return newChartStats;
   }
 
   convertScrobbles(scrobbles: Scrobble[], newChartStats: ChartStats): ChartStats {

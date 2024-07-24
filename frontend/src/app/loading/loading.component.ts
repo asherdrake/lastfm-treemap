@@ -18,6 +18,7 @@ export class LoadingComponent implements OnInit {
   startDate: string = '';
   endDate: string = '';
   username: string = '';
+  numNodes: number = 0;
   minArtistScrobbles: number = 0;
   minAlbumScrobbles: number = 0;
   minTrackScrobbles: number = 0;
@@ -138,8 +139,9 @@ export class LoadingComponent implements OnInit {
     const minArtistScrobbles = this.minArtistScrobbles;
     const minAlbumScrobbles = this.minAlbumScrobbles;
     const minTrackScrobbles = this.minTrackScrobbles;
+    const numNodes = this.numNodes;
     const view = this.selectedView;
-    this.filters.updateSettings({ startDate, endDate, minArtistScrobbles, minAlbumScrobbles, minTrackScrobbles, view });
+    this.filters.updateSettings({ startDate, endDate, minArtistScrobbles, minAlbumScrobbles, minTrackScrobbles, numNodes, view });
   }
 
   startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]): void {

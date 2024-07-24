@@ -17,7 +17,7 @@
         <div class="username-input">
             <label class="loading-text">Enter Username:</label>
             <div class="input-group">
-                <input type="text" id="username" class="loading-input" [(ngModel)]="username"/> 
+                <input type="text" id="username" class="loading-input" [(ngModel)]="username" />
                 <button class="loading-button" (click)="startFetching([], {}, { artists: {} }, [], [])">Submit</button>
             </div>
             <p class="or-text">OR</p>
@@ -27,11 +27,11 @@
         <div class="date-select-wrapper">
             <div class="date-select">
                 <label class="loading-text">Start Date:</label>
-                <input type="date" id="start-date" class="date-box" [(ngModel)]="startDate"/>
+                <input type="date" id="start-date" class="date-box" [(ngModel)]="startDate" />
             </div>
             <div class="date-select">
                 <label class="loading-text">End Date:</label>
-                <input type="date" id="end-date" class="date-box" [(ngModel)]="endDate"/>
+                <input type="date" id="end-date" class="date-box" [(ngModel)]="endDate" />
             </div>
             <div class="top-level-wrapper">
                 <label class="top-level-text">Top Level:</label>
@@ -41,7 +41,11 @@
             </div>
             <div class="min-wrapper">
                 <label class="loading-text">Minimum {{ selectedView }} Scrobbles:</label>
-                <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="minScrobbles"/>
+                <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="minScrobbles" />
+            </div>
+            <div class="min-wrapper">
+                <label class="loading-text"># of {{ selectedView }} Displayed:</label>
+                <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="numNodes" />
             </div>
         </div>
         <div class="bottom-buttons">

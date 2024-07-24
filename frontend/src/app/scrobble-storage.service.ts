@@ -161,8 +161,9 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
 
   readonly imported = this.state$
     .pipe(
-      filter(state => state.state === 'CALCULATINGPAGES'),
-      tap(state => console.log("IMPORTED: " + state.scrobbles.length)),
+      filter(state => state.state === 'GETTINGUSER'),
+      //filter(state => state.state === 'CALCULATINGPAGES'),
+      tap(() => console.log("IMPORTED")),
       map(state => state.scrobbles)
     );
 
