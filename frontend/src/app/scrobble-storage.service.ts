@@ -1,8 +1,9 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
-import { merge, distinctUntilChanged, filter, map, pairwise, switchMap, takeWhile, tap } from 'rxjs';
+import { Observable, merge, distinctUntilChanged, filter, map, pairwise, switchMap, takeWhile, tap, take, share, shareReplay } from 'rxjs';
 import { AlbumImages, Scrobble, User, ArtistCombo, AlbumCombo, Artist, Album } from './items';
 import { MessageService } from './message.service';
+import { isEqual } from 'lodash';
 
 export interface ScrobbleState {
   scrobbles: Scrobble[];
@@ -90,14 +91,16 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
 
     return {
       ...currData,
-      //startDate: dateRange.startDate,
-      //endDate: dateRange.endDate
       ...dateRange
     }
   })
 
   readonly addTrackPage = this.updater((currData: ScrobbleState, newScrobbles: Scrobble[]) => {
     //this.log('addPage');
+    console.log("addTrackPage: ");
+    let names = ""
+    newScrobbles.forEach(scrobble => names += scrobble.artistName + ", ")
+    console.log(names)
 
     return {
       ...currData,
@@ -147,29 +150,37 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
     map(state => [state.scrobbles, state.currTrackPage, state.totalTrackPages] as [Scrobble[], number, number])
   );
 
-  readonly scrobbles$ = this.select(state => state.scrobbles);
+  readonly scrobbles$ = this.select(state => state.scrobbles)
+    .pipe(
+      shareReplay(1)
+    );
 
   readonly trackPageChunk = this.state$
     .pipe(
       filter(state => state.state === 'GETTINGSCROBBLES'),
-      distinctUntilChanged(),
       switchMap(() => this.scrobbles$),
       pairwise(),
-      tap(() => console.log('trackPageChunk')),
-      map(([previous, next]) => next.slice(previous.length))
+      map(([previous, next]) => next.slice(previous.length)),
     );
 
   readonly imported = this.state$
     .pipe(
       filter(state => state.state === 'GETTINGUSER'),
       //filter(state => state.state === 'CALCULATINGPAGES'),
-      tap(() => console.log("IMPORTED")),
+      tap((state) => {
+        console.log("IMPORTED: ")
+      }),
       map(state => state.scrobbles)
     );
 
   readonly chunk = merge(
-    this.imported,
-    this.trackPageChunk
+    this.imported.pipe(map(scrobbles => [scrobbles, false] as [Scrobble[], boolean])),
+    this.trackPageChunk.pipe(
+      distinctUntilChanged(),
+      tap((scrobbles1) => {
+        console.log("trackPageChunk: ")
+      }),
+      map(scrobbles => [scrobbles, true] as [Scrobble[], boolean]))
   );
 
   readonly artistImageStorage = this.state$.pipe(

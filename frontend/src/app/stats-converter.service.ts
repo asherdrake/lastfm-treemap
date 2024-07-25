@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { TreeNode, ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track } from './items';
-import { skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take } from 'rxjs';
+import { skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take, distinctUntilChanged, shareReplay } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
@@ -34,7 +34,6 @@ export class StatsConverterService {
   missingArtists = new Set<string>();
   currentlyRetrieving = new Set<string>();
   imageProcessing;
-  //private timerDuration: number = 10000;
   private resetTimer = new Subject<void>();
   imageProcessingComplete = new Subject<void>();
   completed: Observable<ScrobbleState>;
@@ -90,17 +89,16 @@ export class StatsConverterService {
       skip(1),
       tap(() => console.log("chartStats (statsconvertersservice)")),
       scan((acc, scrobbles) => {
-        //const updatedChartStats = this.updateChartStats(scrobbles[0], scrobbles[1] ? acc : { artists: {} } as ChartStats);
-        const updatedChartStats = this.updateChartStats(scrobbles, acc);
+        const updatedChartStats = this.updateChartStats(scrobbles[0], acc);
         const chartStatsWithImages = this.addArtistImagesRetry(updatedChartStats, this.filterState);
-
         return chartStatsWithImages;
       }, { artists: {} } as ChartStats),
       mergeMap(chartStats =>
         this.addAlbumColors(chartStats).pipe(
           map(updatedChartStats => updatedChartStats)
         )
-      )
+      ),
+      shareReplay(1)
     );
 
     this.filteredChartStats = combineLatest([
@@ -134,6 +132,10 @@ export class StatsConverterService {
       //tap(() => console.log("FINISHED CHART STATS")),
     ) as Observable<ChartStats>;
   };
+
+  deepEqual(a: any, b: any): boolean {
+    return JSON.stringify(a) === JSON.stringify(b);
+  }
 
   waitForCondition(conditionFn: () => boolean): Observable<boolean> {
     return timer(0, 1000).pipe(
@@ -279,9 +281,11 @@ export class StatsConverterService {
   getTopItemsByScrobbles(chartStats: ChartStats, filterState: FilterState): ChartStats {
     const numNodes = filterState.numNodes;
     console.log("numNodes1: " + numNodes);
-    if (numNodes === 0) {
+    if (numNodes == 0) {
+      console.log("numNodes0: " + numNodes);
       return chartStats;
     }
+    console.log("numNodes2: " + numNodes);
 
     if (filterState.view === 'Artists') {
       const artistsArray = Object.values(chartStats.artists);
@@ -296,7 +300,7 @@ export class StatsConverterService {
         newChartStats.artists[artist.name] = artist;
       });
 
-      console.log("numNodes2: " + numNodes);
+
       return newChartStats;
 
     } else if (filterState.view === 'Albums') {
@@ -471,16 +475,16 @@ export class StatsConverterService {
         color: this.artistImageStorage[artist] ? this.artistImageStorage[artist][1] : ''
       }
       if (this.artistImageStorage[artist]) {
-        console.log("retried missing artist: " + artist + this.artistImageStorage[artist][0]);
+        //console.log("retried missing artist: " + artist + this.artistImageStorage[artist][0]);
         this.missingArtists.delete(artist);
       }
     }
 
-    Object.values(newChartStats.artists)
-      .filter(artist => artist.name === 'Lyn')
-      .forEach(artist => {
-        console.log("artist: " + artist.name + " | url: " + artist.image_url);
-      });
+    // Object.values(newChartStats.artists)
+    //   .filter(artist => artist.name === 'Lyn')
+    //   .forEach(artist => {
+    //     console.log("artist: " + artist.name + " | url: " + artist.image_url);
+    //   });
 
     return newChartStats;
   }

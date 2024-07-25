@@ -57,13 +57,12 @@ export class TreemapComponent implements OnInit {
     const finished = new Subject<void>();
 
     this.statsConverterService.filteredChartStats.pipe(
-      bufferCount(5, 5), //collects emission in buffers of 5, every 5 emissions
+      bufferCount(10, 10), //collects emission in buffers of 5, every 5 emissions
       takeUntil(finished)
     ).subscribe((statsArray: ChartStats[]) => {
       console.log("ChartStats received in treemap component");
       const stats = statsArray[statsArray.length - 1]; //renders every 5th emission
       this.transformToTreemapData(stats);
-      //this.initializeTreemap();
       this.updateTreemap();
     });
 
@@ -71,7 +70,6 @@ export class TreemapComponent implements OnInit {
       console.log("FINISHED ChartStats received in treemap component");
       finChartStats = stats;
       this.transformToTreemapData(stats);
-      //this.initializeTreemap();
       this.updateTreemap();
 
       if (!finished.complete) {
@@ -141,7 +139,7 @@ export class TreemapComponent implements OnInit {
 
   updateTreemap() {
     const self = this;
-
+    console.log("UPDATE TREEMAP");
     this.group.selectAll(".album-background").remove();
 
     // Recalculate the hierarchy with the updated data
@@ -204,11 +202,13 @@ export class TreemapComponent implements OnInit {
         }
         return "#ccc";
       })
-      .attr("stroke", "#000")
+    // .attr("stroke", "#000")
     //.attr("stroke-width", '0')
 
     if (this.currentDepth == 2) {
-      node.select("rect").attr("fill", "rgba(0, 0, 0, 0.4)");
+      node.select("rect")
+        .attr("fill", "rgba(0, 0, 0, 0.4)")
+        .attr("stroke", "#fff")
     }
   }
 
@@ -305,7 +305,7 @@ export class TreemapComponent implements OnInit {
   }
 
   transformToTreemapData(stats: ChartStats): void {
-    console.log("transformtoTreemapData: " + Object.keys(stats.artists));
+    //console.log("transformtoTreemapData: " + Object.keys(stats.artists));
     if (this.filterState.view === "Albums") {
       console.log("Albums Top View")
       this.treemapData = this.transformToTreemapDataAlbums(stats);
@@ -321,6 +321,9 @@ export class TreemapComponent implements OnInit {
       name: "ChartStats",
       children: Object.keys(stats.artists).map(artistKey => {
         const artist = stats.artists[artistKey];
+        if (artist.name == "Lyn") {
+          console.log("Lyn scrobbles: " + artist.scrobbles.length);
+        }
         return {
           name: artist.name,
           children: Object.keys(artist.albums).map(albumKey => {
