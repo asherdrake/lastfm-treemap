@@ -563,7 +563,7 @@ export class TreemapComponent implements OnInit {
 
   handleKeyDown(event: KeyboardEvent): void {
     // Check if Ctrl + Z was pressed
-    if (event.ctrlKey && event.key === 'z') {
+    if (event.ctrlKey && event.shiftKey && event.key === 'Z') {
       this.zoomOut();
     }
   }

@@ -7,7 +7,6 @@ import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.servic
 import { FiltersService, FilterState } from './filters.service';
 import ColorThief from 'color-thief-ts';
 import { CombineService } from './combine.service';
-import { chart } from 'highcharts';
 
 interface ArtistImages {
   [key: string]: [string, string]
@@ -132,10 +131,6 @@ export class StatsConverterService {
       //tap(() => console.log("FINISHED CHART STATS")),
     ) as Observable<ChartStats>;
   };
-
-  deepEqual(a: any, b: any): boolean {
-    return JSON.stringify(a) === JSON.stringify(b);
-  }
 
   waitForCondition(conditionFn: () => boolean): Observable<boolean> {
     return timer(0, 1000).pipe(
