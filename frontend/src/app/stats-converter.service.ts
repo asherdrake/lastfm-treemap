@@ -35,6 +35,8 @@ export class StatsConverterService {
   imageProcessing;
   private resetTimer = new Subject<void>();
   imageProcessingComplete = new Subject<void>();
+  artistCombinations: ArtistCombo[] = [];
+  albumCombinations: AlbumCombo[] = [];
   completed: Observable<ScrobbleState>;
   filterState: FilterState = {
     startDate: 0,
@@ -81,6 +83,30 @@ export class StatsConverterService {
       }
     })
 
+    this.storage.artistCombos.subscribe({
+      next: (combos) => {
+        if (combos) {
+          this.artistCombinations = combos;
+          console.log("artistCombinations updated:", this.artistCombinations);
+        } else {
+          console.warn('Received undefined artistCombinations');
+          console.log("curr artistCombinations:", this.artistCombinations);
+        }
+      }
+    })
+
+    this.storage.albumCombos.subscribe({
+      next: (combos) => {
+        if (combos) {
+          this.albumCombinations = combos;
+          console.log("albumCombinations updated:", this.albumCombinations);
+        } else {
+          console.warn('Received undefined albumCombinations');
+          console.log("curr albumCombinations:", this.albumCombinations);
+        }
+      }
+    })
+
     this.completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
 
     // const chunk 
@@ -109,6 +135,14 @@ export class StatsConverterService {
       map(([stats, _]) => this.filterByDate(stats, this.filterState)),
       map(stats => this.filterChartStats(stats, this.filterState)),
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
+      map(stats => this.combineService.combineArtists(stats, this.artistCombinations)),
+      map(stats => {
+        if (this.filterState.view === 'Albums') {
+          return this.combineService.combineAlbums(stats, this.albumCombinations);
+        } else {
+          return stats;
+        }
+      }),
     );
 
     this.finishedChartStats = combineLatest([
@@ -128,7 +162,14 @@ export class StatsConverterService {
       map(stats => this.filterByDate(stats, this.filterState)),
       map(stats => this.filterChartStats(stats, this.filterState)),
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
-      //tap(() => console.log("FINISHED CHART STATS")),
+      map(stats => this.combineService.combineArtists(stats, this.artistCombinations)),
+      map(stats => {
+        if (this.filterState.view === 'Albums') {
+          return this.combineService.combineAlbums(stats, this.albumCombinations);
+        } else {
+          return stats;
+        }
+      }),
     ) as Observable<ChartStats>;
   };
 
@@ -348,7 +389,6 @@ export class StatsConverterService {
     return chartStats;
   }
 
-
   convertScrobbles(scrobbles: Scrobble[], newChartStats: ChartStats): ChartStats {
     //console.log("convertScrobbles: " + filters.startDate + " | " + filters.endDate);
     for (const scrobble of scrobbles/*this.filterScrobbles(scrobbles, filters)*/) {
@@ -532,10 +572,6 @@ export class StatsConverterService {
   }
 
   handleScrobble(scrobble: Scrobble, chartStats: ChartStats): void {
-    // if (!this.artistImageStorage) {
-    //   console.error('artistImageStorage is undefined.');
-    //   return;
-    // }
     // If the artist doesn't exist in chartStats, initialize it
     if (!chartStats.artists[scrobble.artistName]) {
       if (!this.artistImageStorage[scrobble.artistName]) {
