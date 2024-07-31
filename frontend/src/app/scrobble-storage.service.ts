@@ -193,11 +193,13 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
   )
 
   readonly artistCombos = this.state$.pipe(
-    map(state => state.artistCombinations)
+    map(state => state.artistCombinations),
+    shareReplay(1)
   )
 
   readonly albumCombos = this.state$.pipe(
-    map(state => state.albumCombinations)
+    map(state => state.albumCombinations),
+    shareReplay(1)
   )
 
   readonly artistImageUpdate = this.select(state => state.artistImages);

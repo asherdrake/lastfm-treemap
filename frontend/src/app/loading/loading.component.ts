@@ -20,7 +20,7 @@ export class LoadingComponent implements OnInit {
   username: string = '';
   numNodes: number = 50;
   minScrobbles: number = 0;
-  public viewOptions: string[] = ["Albums", "Artists", "Tracks"];
+  public viewOptions: string[] = ["Albums", "Artists"];
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
   sidebarActive: boolean = true;
   @Output() sidebarStateChanged = new EventEmitter<boolean>();

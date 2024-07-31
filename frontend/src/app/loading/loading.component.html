@@ -23,6 +23,10 @@
             <p class="or-text">OR</p>
             <input type="file" class="file-upload loading-input" (change)="fileInput($event)">
         </div>
+        <p class="progress-text">
+            Loading track page {{totalPages - pageNumber}}/{{totalPages}} <br>
+            Scrobbles Fetched: {{scrobblesFetched}}
+        </p>
         <p class="option-text">OPTIONS</p>
         <div class="date-select-wrapper">
             <div class="date-select">
@@ -52,10 +56,6 @@
             <button class="bottom-button" (click)="applySettings()">Apply Options</button>
             <button class="bottom-button" (click)="downloadJSON()">Download JSON</button>
         </div>
-        <p class="loading-text">
-            Loading track page {{totalPages - pageNumber}}/{{totalPages}} <br>
-            Scrobbles Fetched: {{scrobblesFetched}}
-        </p>
         <div class="loading-bar-container">
             <div class="loading-bar" [style.width]="loadingBarWidth()"></div>
         </div>

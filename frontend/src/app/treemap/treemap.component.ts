@@ -32,7 +32,6 @@ export class TreemapComponent implements OnInit {
   currentDepth: number = 0;
   currentTransform: [number, number, number] = [this.width / 2, this.height / 2, this.height];
   target: [number, number, number] = [this.width / 2, this.height / 2, this.height / 4];
-  albumMode: boolean = false;
   initialScale = 0.2; // This means 50% zoom level (zoomed out)
   initialX = this.width * 0.1; // Centering on the X axis
   initialY = this.height * 0.1; // Centering on the Y axis
@@ -382,7 +381,6 @@ export class TreemapComponent implements OnInit {
       });
     });
 
-    this.albumMode = true;
     this.currentDepth = 1;
 
     return treemapData;
@@ -418,7 +416,6 @@ export class TreemapComponent implements OnInit {
       });
     });
 
-    this.albumMode = true;
     this.currentDepth = 2;
 
     return treemapData;
@@ -569,9 +566,9 @@ export class TreemapComponent implements OnInit {
   }
 
   zoomOut() {
-    if (this.currentDepth > 0 && !this.albumMode) {
+    if (this.currentDepth > 0 && !(this.filterState.view === "Albums")) {
       this.currentDepth--;
-    } else if (this.albumMode && this.currentDepth > 1) {
+    } else if (this.filterState.view === "Albums" && this.currentDepth > 1) {
       this.currentDepth--;
     }
     console.log("Zoom Out button clicked")

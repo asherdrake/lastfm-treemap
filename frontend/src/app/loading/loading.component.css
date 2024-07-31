@@ -5,7 +5,7 @@
     background-color: #fff;
     /* padding: 20px; */
     border-radius: 8px;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     max-width: 600px;
     /* margin: 20px auto; */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -17,6 +17,14 @@
     color: white;
     line-height: 1.5;
     margin-bottom: 15px;
+}
+
+.progress-text {
+    color: white;
+    margin-bottom: 15px;
+    display: flex;
+    align-items: center;
+    flex-direction: column;
 }
 
 /* Styling for input fields, focused on visibility and ease of use */
@@ -31,7 +39,8 @@ input[type="text"] {
 
 /* Consistent styling for buttons to make actions clear */
 button {
-    background-color: #4CAF50; /* A vibrant green for primary actions */
+    background-color: #cc2d35;
+    /* A vibrant green for primary actions */
     color: white;
     padding: 10px 15px;
     border: none;
@@ -41,7 +50,8 @@ button {
 }
 
 button:hover {
-    background-color: #45a049; /* A slightly darker green for hover state */
+    background-color: #e78495;
+    /* A slightly darker green for hover state */
 }
 
 /* Styling for secondary actions or information */
@@ -67,7 +77,9 @@ select {
         padding: 15px;
     }
 
-    input[type="text"], button, select {
+    input[type="text"],
+    button,
+    select {
         padding: 8px;
     }
 }
@@ -75,14 +87,16 @@ select {
 /* Base styles for the sidebar */
 .sidebar {
     height: 100%;
-    width: 0; /* Initially set to 0 to hide the sidebar */
+    width: 0;
+    /* Initially set to 0 to hide the sidebar */
     position: fixed;
     z-index: 1000;
     top: 0;
     left: 0;
     background-color: #111;
     overflow-x: hidden;
-    transition: 0.5s; /* Smooth transition */
+    transition: 0.5s;
+    /* Smooth transition */
     padding-top: 60px;
 }
 
@@ -92,20 +106,24 @@ select {
     top: 10px;
     left: 10px;
     padding: 8px 16px;
-    background-color: #fff;
+    background-color: #cc2d35;
     border: none;
     border-radius: 5px;
     cursor: pointer;
     font-size: 14px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 /* New CSS to position the button inside the active sidebar at the top right */
 .sidebar.active .toggle-button {
-    position: absolute; /* Position relative to the sidebar */
-    top: 10px;          /* Top margin from the sidebar */
-    right: 10px;        /* Right margin from the sidebar */
-    left: auto;      /* Override any left positioning */
+    position: absolute;
+    /* Position relative to the sidebar */
+    top: 10px;
+    /* Top margin from the sidebar */
+    right: 10px;
+    /* Right margin from the sidebar */
+    left: auto;
+    /* Override any left positioning */
 }
 
 .sidebar.active {
@@ -120,11 +138,13 @@ select {
 }
 
 .sidebar-title {
-    align-items: center;/* Pushes everything else to the right */
+    align-items: center;
+    /* Pushes everything else to the right */
+    color: #fff;
 }
 
 .username-input {
-    padding: 20px 20px;
+    padding: 10px 20px 10px 20px;
 }
 
 .input-group {
@@ -134,31 +154,45 @@ select {
 }
 
 .loading-input {
-    flex-grow: 1; /* This will allow the input to fill the space available */
-    margin-right: 10px; /* This will ensure there is some space between the input and the button */
+    flex-grow: 1;
+    /* This will allow the input to fill the space available */
+    margin-right: 10px;
+    /* This will ensure there is some space between the input and the button */
 }
 
 .loading-button {
     flex-shrink: 0;
 }
 
-.or-text, .option-text {
-    text-align: center; /* Centers the text */
-    margin-top: 20px; /* Adds some space above the text */
-    font-weight: bold; /* Optionally makes the text bold */
+.or-text,
+.option-text {
+    text-align: center;
+    /* Centers the text */
+    margin-top: 10px;
+    /* Adds some space above the text */
+    font-weight: bold;
+    /* Optionally makes the text bold */
 }
 
-.date-box, .loading-select, .min-input {
-    width: 250px; /* Or a specific pixel width like 300px */
-    height: 50px; /* Or the height you want */
-    font-size: 16px; /* Adjust as necessary */
-    padding: 10px; /* This adds space inside the input boxes */
+.date-box,
+.loading-select,
+.min-input {
+    width: 200px;
+    /* Or a specific pixel width like 300px */
+    height: 40px;
+    /* Or the height you want */
+    font-size: 16px;
+    /* Adjust as necessary */
+    padding: 10px;
+    /* This adds space inside the input boxes */
     box-sizing: border-box;
     /* flex-grow: 1; */
     margin-left: 30px;
 }
 
-.date-select, .top-level-wrapper, .min-wrapper {
+.date-select,
+.top-level-wrapper,
+.min-wrapper {
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -166,7 +200,7 @@ select {
 }
 
 .date-select-wrapper {
-    padding: 20px
+    padding: 0px 20px 0px 20px;
 }
 
 .bottom-buttons {
@@ -176,9 +210,12 @@ select {
 }
 
 .bottom-button {
-    width: 80%;           /* Optional: controls the width of the buttons */
-    margin-top: 20px;      /* Adds space between the buttons */
-    margin-bottom: 20px;   /* Adds space between the buttons */
+    width: 80%;
+    /* Optional: controls the width of the buttons */
+    margin-top: 10px;
+    /* Adds space between the buttons */
+    margin-bottom: 10px;
+    /* Adds space between the buttons */
 }
 
 .loading-bar-container {
