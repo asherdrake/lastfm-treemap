@@ -1,3 +1,5 @@
+<link href='https://unpkg.com/css.gg@2.0.0/icons/css/info.css' rel='stylesheet'>
+
 <button class="toggle-button collapsed" (click)="toggleSidebar()">
     <span class="icon" [class.active]="sidebarActive">☰</span>
 </button>
@@ -7,7 +9,7 @@
     <!-- <div class="sidebar-collapsed" *ngIf="!sidebarActive">
 
     </div> -->
-    <div class="sidebar" [class.active]="sidebarActive">
+    <div class="sidebar" [ngClass]="{'sidebar-collapsed': !sidebarActive }" [class.active]="sidebarActive">
         <button class="toggle-button" (click)="toggleSidebar()">
             <span class="icon" [class.active]="sidebarActive">☰</span>
         </button>
@@ -23,10 +25,36 @@
             <p class="or-text">OR</p>
             <input type="file" class="file-upload loading-input" (change)="fileInput($event)">
         </div>
-        <p class="progress-text">
-            Loading track page {{totalPages - pageNumber}}/{{totalPages}} <br>
-            Scrobbles Fetched: {{scrobblesFetched}}
-        </p>
+        <div class="info-wrapper">
+            <p class="progress-text">
+                Loading track page {{totalPages - pageNumber}}/{{totalPages}}
+                <br>
+                Scrobbles Fetched: {{scrobblesFetched}}
+            </p>
+            <span class="tooltip-container">
+                <p class="progress-text">How to Use:</p>
+                <i class="fas fa-info-circle info-icon"></i>
+                <!-- You can use an icon library like Font Awesome here -->
+                <span class="tooltip">
+                    Enter your last.fm username, or upload a JSON file <br>
+                    that you have downloaded previously from this site. <br>
+                    Loading will commence. <br>
+                    <br>
+                    <strong>If the loading progress pauses for too long,</strong> <br>
+                    download your JSON file, refresh the page, and <br>
+                    upload it to resume from where loading left off. <br>
+                    <br>
+                    Once loaded, you can click on each album/artist <br>
+                    to see its songs/albums. You are also able to drag <br>
+                    and scroll. Press Ctrl+Shift+Z to zoom back out, <br>
+                    or use the "Zoom Out" button. <br>
+                    <br>
+                    <strong>Make sure to download the JSON file once loading <br>
+                        is finished to skip the wait next time!</strong>
+
+                </span>
+            </span>
+        </div>
         <p class="option-text">OPTIONS</p>
         <div class="date-select-wrapper">
             <div class="date-select">

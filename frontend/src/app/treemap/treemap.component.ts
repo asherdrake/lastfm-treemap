@@ -246,11 +246,11 @@ export class TreemapComponent implements OnInit {
       tooltip.style("opacity", 1);
       tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
         .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
-        .style("top", (event.pageY - 120) + "px"); // Position the tooltip below the cursor
+        .style("top", (event.pageY - 70) + "px"); // Position the tooltip below the cursor
     })
       .on("mousemove", (event) => {
         tooltip.style("left", (event.pageX + 10) + "px")
-          .style("top", (event.pageY - 120) + "px");
+          .style("top", (event.pageY - 70) + "px");
       })
       .on("mouseout", () => {
         tooltip.style("opacity", 0); // Hide the tooltip when not hovering
