@@ -16,7 +16,11 @@
 .loading-text {
     color: white;
     line-height: 1.5;
-    margin-bottom: 15px;
+    margin-bottom: 0px;
+}
+
+.min-text {
+    width: 200px;
 }
 
 .progress-text {
@@ -180,7 +184,6 @@ select {
 }
 
 .date-box,
-.loading-select,
 .min-input {
     width: 200px;
     /* Or a specific pixel width like 300px */
@@ -195,13 +198,39 @@ select {
     margin-left: 30px;
 }
 
-.date-select,
-.top-level-wrapper,
-.min-wrapper {
+.top-level-select {
+    width: 200px;
+    /* Or a specific pixel width like 300px */
+    height: 40px;
+    /* Or the height you want */
+    font-size: 16px;
+    /* Adjust as necessary */
+    padding: 10px;
+    /* This adds space inside the input boxes */
+    box-sizing: border-box;
+    /* flex-grow: 1; */
+    margin-left: 30px;
+}
+
+.date-select {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin: 15px 0px;
+}
+
+.top-level-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0px 0px;
+}
+
+.min-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 0px 0px;
 }
 
 .date-select-wrapper {
@@ -224,16 +253,16 @@ select {
 }
 
 .loading-bar-container {
-    width: 100%;
+    width: 90%;
     background-color: #ccc;
     border-radius: 5px;
     height: 20px;
-    margin-top: 20px;
+    margin: 0px 0px 0px 20px;
 }
 
 .loading-bar {
     height: 100%;
-    background-color: #4CAF50;
+    background-color: #cc2d35;
     border-radius: 5px;
     transition: width 0.5s ease-in-out;
 }

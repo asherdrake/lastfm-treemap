@@ -55,6 +55,9 @@
                 </span>
             </span>
         </div>
+        <div class="loading-bar-container">
+            <div class="loading-bar" [style.width]="loadingBarWidth()"></div>
+        </div>
         <p class="option-text">OPTIONS</p>
         <div class="date-select-wrapper">
             <div class="date-select">
@@ -67,12 +70,12 @@
             </div>
             <div class="top-level-wrapper">
                 <label class="top-level-text">Top Level:</label>
-                <select class="loading-select" [(ngModel)]="selectedView" (ngModelChange)="setSelectedView($event)">
+                <select class="top-level-select" [(ngModel)]="selectedView" (ngModelChange)="setSelectedView($event)">
                     <option *ngFor="let option of viewOptions" [value]="option">{{option}}</option>
                 </select>
             </div>
             <div class="min-wrapper">
-                <label class="loading-text">Minimum {{ selectedView }} Scrobbles:</label>
+                <label class="min-text">Minimum {{ selectedView }} Scrobbles:</label>
                 <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="minScrobbles" />
             </div>
             <div class="min-wrapper">
@@ -83,9 +86,6 @@
         <div class="bottom-buttons">
             <button class="bottom-button" (click)="applySettings()">Apply Options</button>
             <button class="bottom-button" (click)="downloadJSON()">Download JSON</button>
-        </div>
-        <div class="loading-bar-container">
-            <div class="loading-bar" [style.width]="loadingBarWidth()"></div>
         </div>
     </div>
 </div>
