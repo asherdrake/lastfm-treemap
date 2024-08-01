@@ -204,6 +204,9 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
 
   readonly artistImageUpdate = this.select(state => state.artistImages);
 
+  readonly errorState = this.select(state => state.state).pipe(
+    filter(state => state === 'USERNOTFOUND' || state === 'LOADFAILED500')
+  );
   private log(message: string) {
     this.messageService.add(`ScrobbleStorage: ${message}`);
   }

@@ -19,7 +19,7 @@ export class LoadingComponent implements OnInit {
   endDate: string = '';
   username: string = '';
   numNodes: number = 50;
-  minScrobbles: number = 0;
+  minScrobbles: number = 20;
   public viewOptions: string[] = ["Albums", "Artists"];
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
   sidebarActive: boolean = true;
@@ -32,6 +32,14 @@ export class LoadingComponent implements OnInit {
         this.totalPages = loadingStatus[2];
       })
     ).subscribe();
+
+    this.storage.errorState.subscribe(error => {
+      if (error === "LOADFAILED500") {
+        alert("Last.fm API error. Download your data, refresh the page and upload it to continue.");
+      } else {
+        alert("User not found. Refresh and try again.");
+      }
+    })
   }
 
   // Watcher for selectedView changes

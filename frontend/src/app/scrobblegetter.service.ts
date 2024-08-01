@@ -130,7 +130,10 @@ export class ScrobbleGetterService {
           loadingState.storage.finish('FINISHED');
         }
       },
-      error: (err) => console.error('Error while iterating track pages:', err)
+      error: (err) => {
+        console.error('Error while iterating track pages:', err)
+        loadingState.storage.finish('LOADFAILED500');
+      }
     })
   }
 

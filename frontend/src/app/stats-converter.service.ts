@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { TreeNode, ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track } from './items';
-import { skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take, distinctUntilChanged, shareReplay } from 'rxjs';
+import { timeout, skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take, distinctUntilChanged, shareReplay } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
@@ -173,11 +173,17 @@ export class StatsConverterService {
     ) as Observable<ChartStats>;
   };
 
+  private previousArtistImageStorageLength: number = 0;
+  private timeoutDuration: number = 7500; // 7.5 seconds timeout
+
   waitForCondition(conditionFn: () => boolean): Observable<boolean> {
     return timer(0, 1000).pipe(
       filter(() => conditionFn()),
+      tap(() => this.resetTimeoutIfNecessary()),
       switchMap(() => of(true)),
-      take(1)
+      take(1),
+      timeout(this.timeoutDuration),
+      catchError(() => of(true)) // fulfill the condition after timeout
     );
   }
 
@@ -185,7 +191,21 @@ export class StatsConverterService {
     console.log('Checking condition...');
     console.log("artistImageStorage: " + Object.keys(this.artistImageStorage).length);
     console.log("newChartStats: " + Object.keys(chartStats.artists).length);
-    return Object.keys(chartStats.artists).length === Object.keys(this.artistImageStorage).length && Object.keys(chartStats.artists).length !== 0;
+
+    const currentLength = Object.keys(this.artistImageStorage).length;
+    const chartStatsLength = Object.keys(chartStats.artists).length;
+
+    return currentLength === chartStatsLength && chartStatsLength !== 0;
+  }
+
+  resetTimeoutIfNecessary(): void {
+    const currentLength = Object.keys(this.artistImageStorage).length;
+
+    if (currentLength !== this.previousArtistImageStorageLength) {
+      console.log('Artist image storage length changed, resetting timeout');
+      this.previousArtistImageStorageLength = currentLength;
+      this.timeoutDuration = 30000; // Reset the timeout duration
+    }
   }
 
   updateChartStats(scrobbles: Scrobble[], chartStats: ChartStats): ChartStats {

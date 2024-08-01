@@ -61,14 +61,18 @@ export class TreemapComponent implements OnInit {
     ).subscribe((statsArray: ChartStats[]) => {
       console.log("ChartStats received in treemap component");
       const stats = statsArray[statsArray.length - 1]; //renders every 5th emission
+      //this.resetBeforeUpdate();
       this.transformToTreemapData(stats);
+
       this.updateTreemap();
     });
 
     this.statsConverterService.finishedChartStats.subscribe((stats: ChartStats) => {
       console.log("FINISHED ChartStats received in treemap component");
       finChartStats = stats;
+      //this.resetBeforeUpdate();
       this.transformToTreemapData(stats);
+
       this.updateTreemap();
 
       if (!finished.complete) {
@@ -140,13 +144,17 @@ export class TreemapComponent implements OnInit {
     const self = this;
     console.log("UPDATE TREEMAP");
     this.group.selectAll(".album-background").remove();
-
+    // this.group
+    //   .attr("width", this.width)
+    //   .attr("height", this.height);
     // Recalculate the hierarchy with the updated data
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
 
     if ((this.filterState.view === "Artists" && this.currentDepth === 0) || (this.filterState.view === "Albums" && this.currentDepth === 1) || (this.filterState.view === "Tracks" && this.currentDepth === 2)) {
+      console.log("entered currentRoot conditional")
       this.currentRoot = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);
+      this.updateScales(this.currentRoot);
     }
     console.log('currentRoot:', this.currentRoot.data.name);
 
@@ -554,8 +562,14 @@ export class TreemapComponent implements OnInit {
     group.selectAll("g")
       .attr("transform", (d: any) => d === root ? `translate(0,-30)` : `translate(${this.x(d.x0)},${this.y(d.y0)})`)
       .select("rect")
-      .attr("width", (d: any) => d === root ? this.width : this.x(d.x1) - this.x(d.x0))
-      .attr("height", (d: any) => d === root ? 30 : this.y(d.y1) - this.y(d.y0));
+      .attr("width", (d: any) => {
+        //console.log(root ? "this.width" : "this.x(d.x1) - this.x(d.x0)");
+        return d === root ? this.width : this.x(d.x1) - this.x(d.x0);
+      })
+      .attr("height", (d: any) => {
+        //console.log(root ? "30" : "this.y(d.y1) - this.y(d.y0)");
+        return d === root ? 30 : this.y(d.y1) - this.y(d.y0)
+      });
   }
 
   handleKeyDown(event: KeyboardEvent): void {
@@ -579,9 +593,35 @@ export class TreemapComponent implements OnInit {
     }
   }
 
+  resetBeforeUpdate(): void {
+    console.log("resetBeforeUpdate");
+    if (this.filterState.view === "Artists") {
+      console.log("resetBeforeUpdate Artists")
+      if (this.currentDepth === 2) {
+        console.log("resetBeforeUpdate depth = 2")
+        this.currentRoot = this.currentRoot.parent!;
+        this.currentRoot = this.currentRoot.parent!;
+      } else if (this.currentDepth === 1) {
+        console.log("resetBeforeUpdate depth = 1")
+        this.currentRoot = this.currentRoot.parent!;
+      }
+      this.currentDepth = 0;
+    } else if (this.filterState.view === "Albums") {
+      console.log("resetBeforeUpdate Albums")
+      if (this.currentDepth === 2) {
+        console.log("resetBeforeUpdate depth = 2")
+        this.currentRoot = this.currentRoot.parent!;
+      }
+      this.currentDepth = 1;
+    }
+    //this.updateScales(this.currentRoot);
+  }
+
   updateScales(node: d3.HierarchyRectangularNode<TreeNode>) {
     // Set the x and y scales to match the dimensions of the new root node
     this.x.domain([node.x0, node.x1]);
+    console.log("x domain: " + node.x0 + ", " + node.x1);
     this.y.domain([node.y0, node.y1]);
+    console.log("y domain: " + node.y0 + ", " + node.y1);
   }
 }

@@ -40,9 +40,10 @@
                     that you have downloaded previously from this site. <br>
                     Loading will commence. <br>
                     <br>
-                    <strong>If the loading progress pauses for too long,</strong> <br>
-                    download your JSON file, refresh the page, and <br>
-                    upload it to resume from where loading left off. <br>
+                    <strong>If the loading progress pauses for too long or <br>
+                        dramatically slows down,</strong> download your JSON <br>
+                    file, refresh the page, and upload it to resume from <br>
+                    where loading left off. <br>
                     <br>
                     Once loaded, you can click on each album/artist <br>
                     to see its songs/albums. You are also able to drag <br>
@@ -80,6 +81,13 @@
             </div>
             <div class="min-wrapper">
                 <label class="loading-text"># of {{ selectedView }} Displayed:</label>
+                <span class="tooltip-container">
+                    <i class="fas fa-info-circle info-icon"></i>
+                    <span class="tooltip">
+                        Set to 0 to display all {{ selectedView }}. <strong>Doing so may cause significant
+                            lag</strong>, <br> depending on how much data you have.
+                    </span>
+                </span>
                 <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="numNodes" />
             </div>
         </div>
