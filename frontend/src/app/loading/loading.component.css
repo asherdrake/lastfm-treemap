@@ -278,7 +278,7 @@ select {
 
 .tooltip {
     position: absolute;
-    bottom: 125%;
+    bottom: 100%;
     left: 50%;
     transform: translateX(-50%);
     background-color: #cc2d35;
