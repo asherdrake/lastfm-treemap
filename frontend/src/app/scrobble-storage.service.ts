@@ -1,9 +1,8 @@
 import { Injectable } from '@angular/core';
 import { ComponentStore } from '@ngrx/component-store';
-import { Observable, merge, distinctUntilChanged, filter, map, pairwise, switchMap, takeWhile, tap, take, share, shareReplay } from 'rxjs';
-import { AlbumImages, Scrobble, User, ArtistCombo, AlbumCombo, Artist, Album } from './items';
+import { merge, distinctUntilChanged, filter, map, pairwise, switchMap, tap, shareReplay } from 'rxjs';
+import { AlbumImages, Scrobble, User, ArtistCombo, AlbumCombo } from './items';
 import { MessageService } from './message.service';
-import { isEqual } from 'lodash';
 
 export interface ScrobbleState {
   scrobbles: Scrobble[];
@@ -96,11 +95,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
   })
 
   readonly addTrackPage = this.updater((currData: ScrobbleState, newScrobbles: Scrobble[]) => {
-    //this.log('addPage');
-    console.log("addTrackPage: ");
-    let names = ""
-    newScrobbles.forEach(scrobble => names += scrobble.artistName + ", ")
-    console.log(names)
+    console.log("addTrackPage: " + (currData.currTrackPage - 1));
 
     return {
       ...currData,
@@ -168,7 +163,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
       filter(state => state.state === 'GETTINGUSER'),
       //filter(state => state.state === 'CALCULATINGPAGES'),
       tap((state) => {
-        console.log("IMPORTED: ")
+        //console.log("IMPORTED: ")
       }),
       map(state => state.scrobbles)
     );
@@ -178,13 +173,13 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
     this.trackPageChunk.pipe(
       distinctUntilChanged(),
       tap((scrobbles1) => {
-        console.log("trackPageChunk: ")
+        //console.log("trackPageChunk: ")
       }),
       map(scrobbles => [scrobbles, true] as [Scrobble[], boolean]))
   );
 
   readonly artistImageStorage = this.state$.pipe(
-    tap(state => console.log("artistImageStorage emit: " + state.artistImages)),
+    //tap(state => console.log("artistImageStorage emit: " + state.artistImages)),
     map(state => state.artistImages)
   )
 
@@ -207,7 +202,4 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
   readonly errorState = this.select(state => state.state).pipe(
     filter(state => state === 'USERNOTFOUND' || state === 'LOADFAILED500')
   );
-  private log(message: string) {
-    this.messageService.add(`ScrobbleStorage: ${message}`);
-  }
 }

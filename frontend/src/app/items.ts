@@ -41,6 +41,7 @@ export interface TreeNode {
     children?: TreeNode[];
     image?: string;
     color?: string;
+    artist?: string;
     //isCombo: boolean;
 }
 

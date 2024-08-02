@@ -1,12 +1,12 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import * as d3 from 'd3';
-import { Scrobble, ChartStats, TreeNode, ScrobblesJSON } from 'src/app/items';
+import { ChartStats, TreeNode } from 'src/app/items';
 import { StatsConverterService } from 'src/app/stats-converter.service';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
 import { FilterState, FiltersService } from 'src/app/filters.service';
 import { BaseType } from 'd3';
-import { takeUntil, bufferCount, take } from 'rxjs/operators';
+import { takeUntil, bufferCount } from 'rxjs/operators';
 import { Subject } from 'rxjs';
 import textFit from 'textfit';
 
@@ -61,7 +61,6 @@ export class TreemapComponent implements OnInit {
     ).subscribe((statsArray: ChartStats[]) => {
       console.log("ChartStats received in treemap component");
       const stats = statsArray[statsArray.length - 1]; //renders every 5th emission
-      //this.resetBeforeUpdate();
       this.transformToTreemapData(stats);
 
       this.updateTreemap();
@@ -70,7 +69,6 @@ export class TreemapComponent implements OnInit {
     this.statsConverterService.finishedChartStats.subscribe((stats: ChartStats) => {
       console.log("FINISHED ChartStats received in treemap component");
       finChartStats = stats;
-      //this.resetBeforeUpdate();
       this.transformToTreemapData(stats);
 
       this.updateTreemap();
@@ -97,7 +95,7 @@ export class TreemapComponent implements OnInit {
   }
 
   initializeTreemap(): void {
-    console.log("Initializing treemap"/* with data:", this.treemapData*/);
+    console.log("Initializing treemap");
 
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
@@ -134,7 +132,6 @@ export class TreemapComponent implements OnInit {
     this.group = this.svg.append("g")
 
     this.svg.call(this.zoom)
-    //.on("dblclick.zoom", null);
 
     this.currentRoot = this.root;
     this.updateTreemap();
@@ -144,15 +141,15 @@ export class TreemapComponent implements OnInit {
     const self = this;
     console.log("UPDATE TREEMAP");
     this.group.selectAll(".album-background").remove();
-    // this.group
-    //   .attr("width", this.width)
-    //   .attr("height", this.height);
+
     // Recalculate the hierarchy with the updated data
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
 
-    if ((this.filterState.view === "Artists" && this.currentDepth === 0) || (this.filterState.view === "Albums" && this.currentDepth === 1) || (this.filterState.view === "Tracks" && this.currentDepth === 2)) {
-      console.log("entered currentRoot conditional")
+    if ((this.filterState.view === "Artists" && this.currentDepth === 0)
+      || (this.filterState.view === "Albums" && this.currentDepth === 1)
+      || (this.filterState.view === "Tracks" && this.currentDepth === 2)) {
+      //console.log("entered currentRoot conditional")
       this.currentRoot = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);
       this.updateScales(this.currentRoot);
     }
@@ -199,7 +196,6 @@ export class TreemapComponent implements OnInit {
   }
 
   appendRectangles(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
-    //const rect = node.append("rect")
     node.select("rect")
       .attr('width', d => { return d.x1 - d.x0 })
       .attr('height', d => { return d.y1 - d.y0 })
@@ -223,7 +219,6 @@ export class TreemapComponent implements OnInit {
     const self = this;
     const marginRatio = 0.1;
 
-    //node.append("image")
     node.select("image")
       .attr('width', d => {
         const [width, height] = self.imageCalculations(d);
@@ -252,7 +247,7 @@ export class TreemapComponent implements OnInit {
 
     node.on("mouseover", (event, d) => {
       tooltip.style("opacity", 1);
-      tooltip.html(`Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
+      tooltip.html(d.data.artist ? `Name: ${d.data.name}<br>Scrobbles: ${d.value}<br>Artist: ${d.data.artist}` : `Name: ${d.data.name}<br>Scrobbles: ${d.value}`)
         .style("left", (event.pageX + 10) + "px") // Position the tooltip to the right of the cursor
         .style("top", (event.pageY - 70) + "px"); // Position the tooltip below the cursor
     })
@@ -275,7 +270,7 @@ export class TreemapComponent implements OnInit {
 
   appendTrackText(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
     const self = this;
-    const nodeEnter = //node.append('foreignObject')
+    const nodeEnter =
       node.select("foreignObject")
         .attr("class", "node-foreign")
         .attr("width", d => this.x(d.x1) - this.x(d.x0))
@@ -328,9 +323,6 @@ export class TreemapComponent implements OnInit {
       name: "ChartStats",
       children: Object.keys(stats.artists).map(artistKey => {
         const artist = stats.artists[artistKey];
-        if (artist.name == "Lyn") {
-          console.log("Lyn scrobbles: " + artist.scrobbles.length);
-        }
         return {
           name: artist.name,
           children: Object.keys(artist.albums).map(albumKey => {
@@ -373,6 +365,7 @@ export class TreemapComponent implements OnInit {
         // Prepare the album TreeNode, including its tracks as children
         const albumNode: TreeNode = {
           name: album.name,
+          artist: artist.name,
           children: Object.keys(album.tracks).map(trackKey => {
             const track = album.tracks[trackKey];
             return {
@@ -427,20 +420,6 @@ export class TreemapComponent implements OnInit {
     this.currentDepth = 2;
 
     return treemapData;
-  }
-
-  transition(target: [number, number, number]): void {
-    const i = d3.interpolateZoom(this.currentTransform, target);
-
-    let duration = i.duration;
-    if (duration < 250) { // If the calculated duration is too short, extend it
-      duration = 250; // Adjust this value as needed
-    }
-
-    this.group.transition()
-      .duration(1000)
-      .attr("transform", "translate(100,100) scale(2)")
-      .on("end", () => console.log("Transition complete"));
   }
 
   appendText(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
@@ -500,11 +479,6 @@ export class TreemapComponent implements OnInit {
       })
   }
 
-  transform(x: number, y: number, r: number): string {
-    // This should return a string in the format of "translate(x, y) scale(z)"
-    return `translate(${this.width / 2 - x}, ${this.height / 2 - y}) scale(${this.height / r})`;
-  }
-
   formatScrobbleText(currText: d3.Selection<SVGTextElement, unknown, null, undefined>, textLength: DOMRect): void {
     currText.attr("x", (d: any) => {
       const [width, height] = this.imageCalculations(d);
@@ -546,15 +520,12 @@ export class TreemapComponent implements OnInit {
   imageCalculations(d: d3.HierarchyRectangularNode<TreeNode>): [number, number] {
     const width = this.x(d.x1) - this.x(d.x0);
     const height = this.y(d.y1) - this.y(d.y0);
-    // const aspectRatio = width / height;
-    // const sideLength = width < height ? width : height;
     return [width, height];
   }
 
   calculateFontSize(d: d3.HierarchyRectangularNode<TreeNode>): number {
     let width = this.x(d.x1) - this.x(d.x0);
     let height = this.y(d.y1) - this.y(d.y0);
-    //return Math.min((width * 0.1), (height * 0.1))
     return Math.min(width * 0.1);
   }
 
@@ -563,17 +534,15 @@ export class TreemapComponent implements OnInit {
       .attr("transform", (d: any) => d === root ? `translate(0,-30)` : `translate(${this.x(d.x0)},${this.y(d.y0)})`)
       .select("rect")
       .attr("width", (d: any) => {
-        //console.log(root ? "this.width" : "this.x(d.x1) - this.x(d.x0)");
         return d === root ? this.width : this.x(d.x1) - this.x(d.x0);
       })
       .attr("height", (d: any) => {
-        //console.log(root ? "30" : "this.y(d.y1) - this.y(d.y0)");
         return d === root ? 30 : this.y(d.y1) - this.y(d.y0)
       });
   }
 
   handleKeyDown(event: KeyboardEvent): void {
-    // Check if Ctrl + Z was pressed
+    // Check if Ctrl + Shift + Z was pressed
     if (event.ctrlKey && event.shiftKey && event.key === 'Z') {
       this.zoomOut();
     }
@@ -593,35 +562,11 @@ export class TreemapComponent implements OnInit {
     }
   }
 
-  resetBeforeUpdate(): void {
-    console.log("resetBeforeUpdate");
-    if (this.filterState.view === "Artists") {
-      console.log("resetBeforeUpdate Artists")
-      if (this.currentDepth === 2) {
-        console.log("resetBeforeUpdate depth = 2")
-        this.currentRoot = this.currentRoot.parent!;
-        this.currentRoot = this.currentRoot.parent!;
-      } else if (this.currentDepth === 1) {
-        console.log("resetBeforeUpdate depth = 1")
-        this.currentRoot = this.currentRoot.parent!;
-      }
-      this.currentDepth = 0;
-    } else if (this.filterState.view === "Albums") {
-      console.log("resetBeforeUpdate Albums")
-      if (this.currentDepth === 2) {
-        console.log("resetBeforeUpdate depth = 2")
-        this.currentRoot = this.currentRoot.parent!;
-      }
-      this.currentDepth = 1;
-    }
-    //this.updateScales(this.currentRoot);
-  }
-
   updateScales(node: d3.HierarchyRectangularNode<TreeNode>) {
     // Set the x and y scales to match the dimensions of the new root node
     this.x.domain([node.x0, node.x1]);
-    console.log("x domain: " + node.x0 + ", " + node.x1);
+    //console.log("x domain: " + node.x0 + ", " + node.x1);
     this.y.domain([node.y0, node.y1]);
-    console.log("y domain: " + node.y0 + ", " + node.y1);
+    // console.log("y domain: " + node.y0 + ", " + node.y1);
   }
 }

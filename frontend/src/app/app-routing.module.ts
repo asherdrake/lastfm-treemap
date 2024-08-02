@@ -10,13 +10,12 @@ const routes: Routes = [
     path: 'home',
     component: AppComponent,
     children: [
-      { path: 'treemap', component: TreemapComponent},
-      { path: 'loading', component: LoadingComponent},
-      { path: 'dataset', component: DatasetComponent},
+      { path: 'treemap', component: TreemapComponent },
+      { path: 'loading', component: LoadingComponent },
+      { path: 'dataset', component: DatasetComponent },
     ]
   }
-  
-  //{ path: '', redirectTo: '/parent/', pathMatch: 'full' },
+
 ];
 
 @NgModule({

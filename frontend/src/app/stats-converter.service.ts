@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { TreeNode, ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track } from './items';
-import { timeout, skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, concatMap, Subject, catchError, tap, filter, Observable, map, combineLatest, takeUntil, timer, take, distinctUntilChanged, shareReplay } from 'rxjs';
+import { ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track } from './items';
+import { timeout, skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, Subject, catchError, tap, filter, Observable, map, combineLatest, timer, take, shareReplay } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
@@ -60,10 +60,10 @@ export class StatsConverterService {
       next: (artistImages) => {
         if (artistImages) {
           this.artistImageStorage = artistImages as ArtistImages;
-          console.log('artistImageStorage updated:', this.artistImageStorage);
+          //console.log('artistImageStorage updated:', this.artistImageStorage);
         } else {
           console.warn('Received undefined artistImageStorage');
-          console.log('curr artistImageStorage:', this.artistImageStorage);
+          //console.log('curr artistImageStorage:', this.artistImageStorage);
         }
       },
       error: (err) => {
@@ -75,10 +75,10 @@ export class StatsConverterService {
       next: (albumImages) => {
         if (albumImages) {
           this.albumImageStorage = albumImages as AlbumImages
-          console.log("albumImageStorage updated:", this.albumImageStorage);
+          //console.log("albumImageStorage updated:", this.albumImageStorage);
         } else {
           console.warn('Received undefined albumImageStorage');
-          console.log("curr albumImageStorage:", this.albumImageStorage);
+          //console.log("curr albumImageStorage:", this.albumImageStorage);
         }
       }
     })
@@ -87,10 +87,10 @@ export class StatsConverterService {
       next: (combos) => {
         if (combos) {
           this.artistCombinations = combos;
-          console.log("artistCombinations updated:", this.artistCombinations);
+          //console.log("artistCombinations updated:", this.artistCombinations);
         } else {
           console.warn('Received undefined artistCombinations');
-          console.log("curr artistCombinations:", this.artistCombinations);
+          //console.log("curr artistCombinations:", this.artistCombinations);
         }
       }
     })
@@ -99,10 +99,10 @@ export class StatsConverterService {
       next: (combos) => {
         if (combos) {
           this.albumCombinations = combos;
-          console.log("albumCombinations updated:", this.albumCombinations);
+          //console.log("albumCombinations updated:", this.albumCombinations);
         } else {
           console.warn('Received undefined albumCombinations');
-          console.log("curr albumCombinations:", this.albumCombinations);
+          //console.log("curr albumCombinations:", this.albumCombinations);
         }
       }
     })
@@ -216,7 +216,7 @@ export class StatsConverterService {
 
   filterByDate(chartStats: ChartStats, filterState: FilterState): ChartStats {
     const filteredChartStats: ChartStats = { artists: {} };
-    console.log("filter dates: " + filterState.startDate + "    " + filterState.endDate)
+    //  console.log("filter dates: " + filterState.startDate + "    " + filterState.endDate)
     for (const artistKey in chartStats.artists) {
       const artist = chartStats.artists[artistKey];
       const filteredArtist: Artist = {
@@ -336,12 +336,12 @@ export class StatsConverterService {
 
   getTopItemsByScrobbles(chartStats: ChartStats, filterState: FilterState): ChartStats {
     const numNodes = filterState.numNodes;
-    console.log("numNodes1: " + numNodes);
+    //console.log("numNodes1: " + numNodes);
     if (numNodes == 0) {
-      console.log("numNodes0: " + numNodes);
+      //console.log("numNodes0: " + numNodes);
       return chartStats;
     }
-    console.log("numNodes2: " + numNodes);
+    //console.log("numNodes2: " + numNodes);
 
     if (filterState.view === 'Artists') {
       const artistsArray = Object.values(chartStats.artists);
@@ -548,13 +548,13 @@ export class StatsConverterService {
     // Collect an array of observables for color updates
     const colorUpdates$: any = [];
 
-    console.log("addAlbumColors");
+    //console.log("addAlbumColors");
 
     // Iterate over artists and albums to update colors
     Object.values(newChartStats.artists).forEach(artist => {
       Object.values(artist.albums).forEach(album => {
         if (album.image_url && !this.albumImageStorage.artists[artist.name][album.name]) {
-          console.log("addAlbumColors if")
+          //console.log("addAlbumColors if")
           // Convert the Promise returned by getDominantColor to an Observable
           const colorUpdate$ = from(this.getDominantColor(album.image_url)).pipe(
             map(color => {
