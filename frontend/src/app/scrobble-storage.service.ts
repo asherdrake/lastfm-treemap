@@ -173,7 +173,7 @@ export class ScrobbleStorageService extends ComponentStore<ScrobbleState> {
     this.trackPageChunk.pipe(
       distinctUntilChanged(),
       tap((scrobbles1) => {
-        //console.log("trackPageChunk: ")
+        console.log("trackPageChunk: ")
       }),
       map(scrobbles => [scrobbles, true] as [Scrobble[], boolean]))
   );

@@ -40,15 +40,24 @@
                     that you have downloaded previously from this site. <br>
                     Loading will commence. <br>
                     <br>
-                    <strong>If the loading progress pauses for too long or <br>
-                        dramatically slows down,</strong> download your JSON <br>
-                    file, refresh the page, and upload it to resume from <br>
-                    where loading left off. <br>
+                    The top loading bar represents the progress of the<br>
+                    scrobbles, and the bottom loading bar represents<br>
+                    the progress of the artist images.<br>
                     <br>
-                    Once loaded, you can click on each album/artist <br>
+                    <strong>If the scrobble loading progress pauses for<br>
+                        too long or dramatically slows down,</strong> download<br>
+                    your JSON file, refresh the page, and upload it to resume<br>
+                    from where loading left off. <br>
+                    <br>
+                    Once scrobbles are loaded, you can click on each album/artist <br>
                     to see its songs/albums. You are also able to drag <br>
-                    and scroll. Press Ctrl+Shift+Z to zoom back out, <br>
+                    and scroll. Press Ctrl+Shift+Z to return to the parent level, <br>
                     or use the "Zoom Out" button. <br>
+                    <br>
+                    You can freely explore your treemap once the scrobble loading <br>
+                    is finished, even if the images are still loading. Clicking <br>
+                    "Apply Options" will add any new images that have been retrieved <br>
+                    since the last render. <br>
                     <br>
                     <strong>Make sure to download the JSON file once loading <br>
                         is finished to skip the wait next time!</strong>
@@ -58,6 +67,9 @@
         </div>
         <div class="loading-bar-container">
             <div class="loading-bar" [style.width]="loadingBarWidth()"></div>
+        </div>
+        <div class="artist-bar-container">
+            <div class="artist-bar" [style.width]="artistBarWidth()"></div>
         </div>
         <p class="option-text">OPTIONS</p>
         <div class="date-select-wrapper">
@@ -81,9 +93,9 @@
             </div>
             <div class="min-wrapper">
                 <label class="loading-text"># of {{ selectedView }} Displayed:</label>
-                <span class="tooltip-container">
+                <span class="bottom-tooltip-container">
                     <i class="fas fa-info-circle info-icon"></i>
-                    <span class="tooltip">
+                    <span class="bottom-tooltip">
                         Set to 0 to display all {{ selectedView }}. <strong>Doing so may cause significant
                             lag</strong>, <br> depending on how much data you have.
                     </span>

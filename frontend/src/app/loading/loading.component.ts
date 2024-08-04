@@ -1,6 +1,6 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ScrobbleStorageService } from '../scrobble-storage.service';
-import { map, take } from 'rxjs';
+import { map, take, filter } from 'rxjs';
 import { ScrobbleGetterService } from '../scrobblegetter.service';
 import { FiltersService } from '../filters.service';
 import { Scrobble, ScrobblesJSON, AlbumImages, ArtistCombo, AlbumCombo, TreemapViewType } from "src/app/items";
@@ -23,6 +23,8 @@ export class LoadingComponent implements OnInit {
   public viewOptions: string[] = ["Albums", "Artists"];
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
   sidebarActive: boolean = true;
+  artistImageStorageSize: number = 0;
+  loadingStatus: string = 'Getting user data...';
   @Output() sidebarStateChanged = new EventEmitter<boolean>();
   constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private statsConverterService: StatsConverterService, private filters: FiltersService) {
     this.storage.loadingStatus.pipe(
@@ -33,6 +35,7 @@ export class LoadingComponent implements OnInit {
       })
     ).subscribe();
 
+
     this.storage.errorState.subscribe(error => {
       if (error === "LOADFAILED500") {
         alert("Last.fm API error. Download your data, refresh the page and upload it to continue.");
@@ -40,6 +43,13 @@ export class LoadingComponent implements OnInit {
         alert("User not found. Refresh and try again.");
       }
     })
+
+    this.storage.state$.pipe(
+      filter(state => state.state === "FINISHED"),
+      map(() => {
+        this.loadingStatus = "FINISHED";
+      })
+    ).subscribe();
   }
 
   // Watcher for selectedView changes
@@ -54,6 +64,15 @@ export class LoadingComponent implements OnInit {
     }
 
     const progress = ((this.totalPages - this.pageNumber) / this.totalPages) * 100;
+    return `${progress}%`;
+  }
+
+  artistBarWidth(): string {
+    if (!(this.loadingStatus === "FINISHED")) {
+      return '0%';
+    }
+    const storageContentSize = Object.keys(this.statsConverterService.artistImageStorage).length;
+    const progress = (storageContentSize / this.statsConverterService.artistTotal) * 100;
     return `${progress}%`;
   }
 

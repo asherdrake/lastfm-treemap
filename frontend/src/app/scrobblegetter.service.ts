@@ -146,7 +146,7 @@ export class ScrobbleGetterService {
       date: new Date(t.date.uts * 1000)
     })).reverse();
 
-    console.log("NEW SCROBBLES: " + scrobbles.length)
+    //console.log("NEW SCROBBLES: " + scrobbles.length)
     loadingState.trackPage!--;
     loadingState.storage.addTrackPage(scrobbles);
   }

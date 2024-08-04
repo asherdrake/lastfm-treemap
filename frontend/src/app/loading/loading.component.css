@@ -177,7 +177,7 @@ select {
 .option-text {
     text-align: center;
     /* Centers the text */
-    margin-top: 10px;
+    margin-top: 15px;
     /* Adds some space above the text */
     font-weight: bold;
     /* Optionally makes the text bold */
@@ -257,14 +257,30 @@ select {
     background-color: #ccc;
     border-radius: 5px;
     height: 20px;
-    margin: 0px 0px 0px 20px;
+    margin: 0px 0px 10px 20px;
+}
+
+.artist-bar-container {
+    width: 90%;
+    background-color: #ccc;
+    border-radius: 5px;
+    height: 10px;
+    margin: 10px 0px 0px 20px;
+}
+
+.loading-bar,
+.artist-bar {
+    background-color: #cc2d35;
+    border-radius: 5px;
+    transition: width 0.5s ease-in-out;
 }
 
 .loading-bar {
     height: 100%;
-    background-color: #cc2d35;
-    border-radius: 5px;
-    transition: width 0.5s ease-in-out;
+}
+
+.artist-bar {
+    height: 100%;
 }
 
 /* Tooltip container */
@@ -278,7 +294,7 @@ select {
 
 .tooltip {
     position: absolute;
-    bottom: 100%;
+    /* bottom: 100%; */
     left: 50%;
     transform: translateX(-50%);
     background-color: #cc2d35;
@@ -299,7 +315,45 @@ select {
     opacity: 1;
     visibility: visible;
     z-index: 10;
-    left: auto;
+    left: 150%;
+    bottom: -500%;
+    right: auto;
+    transform: none;
+}
+
+.bottom-tooltip {
+    position: absolute;
+    /* bottom: 100%; */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #cc2d35;
+    color: #fff;
+    padding: 10px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s;
+    visibility: hidden;
+    overflow: visible;
+    /* height: 50px;
+    width: 200px; */
+}
+
+.bottom-tooltip-container {
+    display: flex;
+    position: relative;
+    /* display: inline-block; */
+    cursor: pointer;
+    flex-direction: row;
+}
+
+.bottom-tooltip-container:hover .bottom-tooltip {
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+    left: 970%;
+    bottom: -70%;
     right: auto;
     transform: none;
 }

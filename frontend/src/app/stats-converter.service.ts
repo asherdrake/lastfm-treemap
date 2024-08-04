@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track } from './items';
-import { timeout, skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, Subject, catchError, tap, filter, Observable, map, combineLatest, timer, take, shareReplay } from 'rxjs';
+import { race, skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, Subject, catchError, tap, filter, Observable, map, combineLatest, timer, take, shareReplay } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
@@ -45,6 +45,7 @@ export class StatsConverterService {
     numNodes: 0,
     view: "Artists"
   };
+  artistTotal: number = 0;
 
   constructor(
     private router: Router,
@@ -109,10 +110,14 @@ export class StatsConverterService {
 
     this.completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
 
+    let emitCount = 0;
     // const chunk 
     const chartStats = this.storage.chunk.pipe(
       skip(1),
-      tap(() => console.log("chartStats (statsconvertersservice)")),
+      tap(() => {
+        console.log("chartStats (statsconvertersservice) emitCount:  " + emitCount);
+        emitCount++;
+      }),
       scan((acc, scrobbles) => {
         const updatedChartStats = this.updateChartStats(scrobbles[0], acc);
         const chartStatsWithImages = this.addArtistImagesRetry(updatedChartStats, this.filterState);
@@ -152,13 +157,11 @@ export class StatsConverterService {
     ]).pipe(
       filter(([_, __, state]) => state.state === 'FINISHED'),
       tap(() => console.log("finishedChartStats (statsconvertersservice)")),
-      tap(([_, filterState]) => this.filterState = filterState),
-      switchMap(([chartStats, _]) =>
-        this.waitForCondition(() => this.checkCondition(chartStats)).pipe(
-          switchMap(() => of(chartStats))
-        )
-      ),
-      map(chartStats => this.addArtistImagesRetry(chartStats, this.filterState)),
+      tap(([chartStats, filterState]) => {
+        this.filterState = filterState;
+        this.artistTotal = Object.keys(chartStats.artists).length;
+      }),
+      map(([chartStats, _, __]) => this.addArtistImagesRetry(chartStats, this.filterState)),
       map(stats => this.filterByDate(stats, this.filterState)),
       map(stats => this.filterChartStats(stats, this.filterState)),
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
@@ -172,41 +175,6 @@ export class StatsConverterService {
       }),
     ) as Observable<ChartStats>;
   };
-
-  private previousArtistImageStorageLength: number = 0;
-  private timeoutDuration: number = 7500; // 7.5 seconds timeout
-
-  waitForCondition(conditionFn: () => boolean): Observable<boolean> {
-    return timer(0, 1000).pipe(
-      filter(() => conditionFn()),
-      tap(() => this.resetTimeoutIfNecessary()),
-      switchMap(() => of(true)),
-      take(1),
-      timeout(this.timeoutDuration),
-      catchError(() => of(true)) // fulfill the condition after timeout
-    );
-  }
-
-  checkCondition(chartStats: ChartStats): boolean {
-    console.log('Checking condition...');
-    console.log("artistImageStorage: " + Object.keys(this.artistImageStorage).length);
-    console.log("newChartStats: " + Object.keys(chartStats.artists).length);
-
-    const currentLength = Object.keys(this.artistImageStorage).length;
-    const chartStatsLength = Object.keys(chartStats.artists).length;
-
-    return currentLength === chartStatsLength && chartStatsLength !== 0;
-  }
-
-  resetTimeoutIfNecessary(): void {
-    const currentLength = Object.keys(this.artistImageStorage).length;
-
-    if (currentLength !== this.previousArtistImageStorageLength) {
-      console.log('Artist image storage length changed, resetting timeout');
-      this.previousArtistImageStorageLength = currentLength;
-      this.timeoutDuration = 30000; // Reset the timeout duration
-    }
-  }
 
   updateChartStats(scrobbles: Scrobble[], chartStats: ChartStats): ChartStats {
     console.log("updateChartStats: " + Object.keys(chartStats.artists).length);

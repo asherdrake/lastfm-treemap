@@ -1,9 +1,11 @@
 const express = require('express');
-//const fetch = require('node-fetch');
+const path = require('path');
 const { getImageURL } = require('./imageFetcher.js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+app.use(express.static(path.join(__dirname, '../../frontend/dist/lastfm-data-visualizer')));
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -21,6 +23,10 @@ app.get('/api/artist-image/:artistName', async (req, res) => {
             console.error(error);
             res.status(500).send('Server error');
         });
+});
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, '../../frontend/dist/lastfm-data-visualizer/index.html'));
 });
 
 app.listen(PORT, () => {
