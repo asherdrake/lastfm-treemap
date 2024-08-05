@@ -340,7 +340,8 @@ select {
     width: 200px; */
 }
 
-.bottom-tooltip-container {
+.bottom-tooltip-container,
+.min-tooltip-container {
     display: flex;
     position: relative;
     /* display: inline-block; */
@@ -353,6 +354,35 @@ select {
     visibility: visible;
     z-index: 10;
     left: 970%;
+    bottom: -70%;
+    right: auto;
+    transform: none;
+}
+
+.min-tooltip {
+    position: absolute;
+    /* bottom: 100%; */
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #cc2d35;
+    color: #fff;
+    padding: 10px;
+    border-radius: 3px;
+    white-space: nowrap;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.2s;
+    visibility: hidden;
+    overflow: visible;
+    /* height: 50px;
+    width: 200px; */
+}
+
+.min-tooltip-container:hover .min-tooltip {
+    opacity: 1;
+    visibility: visible;
+    z-index: 10;
+    left: 925%;
     bottom: -70%;
     right: auto;
     transform: none;

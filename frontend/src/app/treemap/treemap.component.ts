@@ -69,6 +69,7 @@ export class TreemapComponent implements OnInit {
     this.statsConverterService.finishedChartStats.subscribe((stats: ChartStats) => {
       console.log("FINISHED ChartStats received in treemap component");
       finChartStats = stats;
+      this.filterState = this.statsConverterService.filterState;
       this.transformToTreemapData(stats);
 
       this.updateTreemap();
@@ -77,10 +78,6 @@ export class TreemapComponent implements OnInit {
         finished.next();
         finished.complete();
       }
-    });
-
-    this.filters.state$.subscribe((state) => {
-      this.filterState = state;
     });
   };
 
@@ -309,11 +306,12 @@ export class TreemapComponent implements OnInit {
   transformToTreemapData(stats: ChartStats): void {
     //console.log("transformtoTreemapData: " + Object.keys(stats.artists));
     if (this.filterState.view === "Albums") {
-      console.log("Albums Top View")
+      console.log("Albums Top View");
       this.treemapData = this.transformToTreemapDataAlbums(stats);
     } else if (this.filterState.view === "Tracks") {
       this.treemapData = this.transformToTreemapDataTracks(stats);
     } else {
+      console.log("Artists Top View");
       this.treemapData = this.transformToTreemapDataArtists(stats);
     }
   }

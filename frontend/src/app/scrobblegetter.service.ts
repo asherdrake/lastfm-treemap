@@ -158,7 +158,7 @@ export class ScrobbleGetterService {
       .append('page', String(loadingState.trackPage))
       .append('from', loadingState.from)
       .append('format', 'json')
-      .append('limit', 200)
+      .append('limit', 1000)
       .append('api_key', this.API_KEY);
 
     console.log("getScrobbles page: " + String(loadingState.trackPage))

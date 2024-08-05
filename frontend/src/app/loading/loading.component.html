@@ -89,6 +89,12 @@
             </div>
             <div class="min-wrapper">
                 <label class="min-text">Minimum {{ selectedView }} Scrobbles:</label>
+                <span class="min-tooltip-container">
+                    <i class="fas fa-info-circle info-icon"></i>
+                    <span class="min-tooltip">
+                        Displays only {{ selectedView }} with at least X many scrobbles.
+                    </span>
+                </span>
                 <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="minScrobbles" />
             </div>
             <div class="min-wrapper">
@@ -96,8 +102,10 @@
                 <span class="bottom-tooltip-container">
                     <i class="fas fa-info-circle info-icon"></i>
                     <span class="bottom-tooltip">
-                        Set to 0 to display all {{ selectedView }}. <strong>Doing so may cause significant
-                            lag</strong>, <br> depending on how much data you have.
+                        Displays the X most scrobbled {{ selectedView }}. <br>
+                        Set to 0 to display all {{ selectedView }}. <br>
+                        <strong>Doing so may cause significant lag</strong>, <br>
+                        depending on how much data you have.
                     </span>
                 </span>
                 <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="numNodes" />

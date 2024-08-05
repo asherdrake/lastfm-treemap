@@ -1,12 +1,13 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
 import { ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track } from './items';
-import { race, skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, Subject, catchError, tap, filter, Observable, map, combineLatest, timer, take, shareReplay } from 'rxjs';
+import { takeWhile, skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, Subject, catchError, tap, filter, Observable, map, combineLatest, timer, take, shareReplay } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
 import ColorThief from 'color-thief-ts';
 import { CombineService } from './combine.service';
+//import { takeWhile } from 'lodash';
 
 interface ArtistImages {
   [key: string]: [string, string]
@@ -37,7 +38,7 @@ export class StatsConverterService {
   imageProcessingComplete = new Subject<void>();
   artistCombinations: ArtistCombo[] = [];
   albumCombinations: AlbumCombo[] = [];
-  completed: Observable<ScrobbleState>;
+  //completed: Observable<ScrobbleState>;
   filterState: FilterState = {
     startDate: 0,
     endDate: Date.now(),
@@ -46,6 +47,7 @@ export class StatsConverterService {
     view: "Artists"
   };
   artistTotal: number = 0;
+  loadingStatus: string = '';
 
   constructor(
     private router: Router,
@@ -108,7 +110,8 @@ export class StatsConverterService {
       }
     })
 
-    this.completed = this.storage.state$.pipe(filter(state => state.state === "FINISHED"));
+    this.storage.state$.pipe(filter(state => state.state === "FINISHED"))
+      .subscribe({ next: () => this.loadingStatus = 'FINISHED' });
 
     let emitCount = 0;
     // const chunk 
@@ -135,6 +138,11 @@ export class StatsConverterService {
       chartStats,
       this.filters.state$
     ]).pipe(
+      takeWhile(() => {
+        console.log("loadingStatus: " + this.loadingStatus);
+        console.log("loadingStatus != 'FINISHED': " + this.loadingStatus != 'FINISHED');
+        return this.loadingStatus != 'FINISHED'
+      }),
       tap(() => console.log("filteredChartStats (statsconvertersservice)")),
       tap(([_, filterState]) => this.filterState = filterState),
       map(([stats, _]) => this.filterByDate(stats, this.filterState)),
@@ -160,6 +168,9 @@ export class StatsConverterService {
       tap(([chartStats, filterState]) => {
         this.filterState = filterState;
         this.artistTotal = Object.keys(chartStats.artists).length;
+        console.log("minScrobbles:" + this.filterState.minScrobbles);
+        console.log("numNodes:" + this.filterState.numNodes);
+        console.log("view:" + this.filterState.view);
       }),
       map(([chartStats, _, __]) => this.addArtistImagesRetry(chartStats, this.filterState)),
       map(stats => this.filterByDate(stats, this.filterState)),
