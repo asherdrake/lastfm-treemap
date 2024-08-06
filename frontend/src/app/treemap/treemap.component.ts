@@ -56,11 +56,12 @@ export class TreemapComponent implements OnInit {
     const finished = new Subject<void>();
 
     this.statsConverterService.filteredChartStats.pipe(
-      bufferCount(10, 10), //collects emission in buffers of 10, every 10 emissions
+      bufferCount(7, 7), //collects emission in buffers of 7, every 7 emissions
       takeUntil(finished)
     ).subscribe((statsArray: ChartStats[]) => {
       console.log("ChartStats received in treemap component");
-      const stats = statsArray[statsArray.length - 1]; //renders every 5th emission
+      const stats = statsArray[statsArray.length - 1]; //renders every 7th emission
+      this.filterState = this.statsConverterService.filterState;
       this.transformToTreemapData(stats);
 
       this.updateTreemap();

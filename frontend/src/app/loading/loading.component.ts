@@ -19,7 +19,7 @@ export class LoadingComponent implements OnInit {
   endDate: string = '';
   username: string = '';
   numNodes: number = 50;
-  minScrobbles: number = 20;
+  minScrobbles: number = 10;
   public viewOptions: string[] = ["Albums", "Artists"];
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
   sidebarActive: boolean = true;

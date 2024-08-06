@@ -140,7 +140,7 @@ export class StatsConverterService {
     ]).pipe(
       takeWhile(() => {
         console.log("loadingStatus: " + this.loadingStatus);
-        console.log("loadingStatus != 'FINISHED': " + this.loadingStatus != 'FINISHED');
+        console.log("loadingStatus != 'FINISHED': " + (this.loadingStatus != 'FINISHED'));
         return this.loadingStatus != 'FINISHED'
       }),
       tap(() => console.log("filteredChartStats (statsconvertersservice)")),
