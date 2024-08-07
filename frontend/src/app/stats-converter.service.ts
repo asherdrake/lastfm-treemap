@@ -55,7 +55,7 @@ export class StatsConverterService {
     private scrobbleGetterService: ScrobbleGetterService,
     private filters: FiltersService,
     private combineService: CombineService) {
-    this.imageProcessing = this.storage.trackPageChunk.pipe(
+    this.imageProcessing = this.storage.chunk.pipe(
       map(scrobbles => this.storeArtistImage(scrobbles)),
     ).subscribe();
 
@@ -122,7 +122,7 @@ export class StatsConverterService {
         emitCount++;
       }),
       scan((acc, scrobbles) => {
-        const updatedChartStats = this.updateChartStats(scrobbles[0], acc);
+        const updatedChartStats = this.updateChartStats(scrobbles, acc);
         const chartStatsWithImages = this.addArtistImagesRetry(updatedChartStats, this.filterState);
         return chartStatsWithImages;
       }, { artists: {} } as ChartStats),
@@ -148,14 +148,6 @@ export class StatsConverterService {
       map(([stats, _]) => this.filterByDate(stats, this.filterState)),
       map(stats => this.filterChartStats(stats, this.filterState)),
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
-      map(stats => this.combineService.combineArtists(stats, this.artistCombinations)),
-      map(stats => {
-        if (this.filterState.view === 'Albums') {
-          return this.combineService.combineAlbums(stats, this.albumCombinations);
-        } else {
-          return stats;
-        }
-      }),
     );
 
     this.finishedChartStats = combineLatest([
