@@ -1,5 +1,3 @@
-/* loading.component.css */
-
 /* Base styling for the component container */
 .sidebar-wrapper {
     background-color: #fff;
@@ -9,7 +7,8 @@
     max-width: 600px;
     /* margin: 20px auto; */
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    color: white
+    color: white;
+    overflow: hidden;
 }
 
 /* Style adjustments for text to enhance readability */
@@ -99,7 +98,7 @@ select {
     left: 0;
     background-color: #111;
     /* overflow-x: hidden; */
-    /* overflow-y: auto; */
+    overflow-y: auto;
     transition: 0.5s;
     /* Smooth transition */
     padding-top: 60px;
@@ -137,6 +136,7 @@ select {
 
 .sidebar.active {
     width: 400px;
+    overflow-y: auto;
 }
 
 /* Base styles for the sidebar header */
@@ -241,6 +241,7 @@ select {
     display: flex;
     align-items: center;
     flex-direction: column;
+    padding-bottom: 70px;
 }
 
 .bottom-button {
@@ -284,86 +285,22 @@ select {
 }
 
 /* Tooltip container */
-.tooltip-container {
-    display: flex;
-    position: relative;
-    /* display: inline-block; */
-    cursor: pointer;
-    flex-direction: row;
-}
-
-.tooltip {
-    position: absolute;
-    /* bottom: 100%; */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #cc2d35;
-    color: #fff;
-    padding: 10px;
-    border-radius: 3px;
-    white-space: nowrap;
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.2s;
-    visibility: hidden;
-    overflow: visible;
-    /* height: 50px;
-    width: 200px; */
-}
-
-.tooltip-container:hover .tooltip {
-    opacity: 1;
-    visibility: visible;
-    z-index: 10;
-    left: 150%;
-    bottom: -500%;
-    right: auto;
-    transform: none;
-}
-
-.bottom-tooltip {
-    position: absolute;
-    /* bottom: 100%; */
-    left: 50%;
-    transform: translateX(-50%);
-    background-color: #cc2d35;
-    color: #fff;
-    padding: 10px;
-    border-radius: 3px;
-    white-space: nowrap;
-    z-index: 1000;
-    opacity: 0;
-    transition: opacity 0.2s;
-    visibility: hidden;
-    overflow: visible;
-    /* height: 50px;
-    width: 200px; */
-}
-
+.tooltip-container,
 .bottom-tooltip-container,
 .min-tooltip-container {
-    display: flex;
     position: relative;
-    /* display: inline-block; */
+    display: inline-block;
     cursor: pointer;
-    flex-direction: row;
 }
 
-.bottom-tooltip-container:hover .bottom-tooltip {
-    opacity: 1;
-    visibility: visible;
-    z-index: 10;
-    left: 970%;
-    bottom: -70%;
-    right: auto;
-    transform: none;
+.tooltip-container {
+    display: flex;
 }
 
+.tooltip,
+.bottom-tooltip,
 .min-tooltip {
-    position: absolute;
-    /* bottom: 100%; */
-    left: 50%;
-    transform: translateX(-50%);
+    position: fixed;
     background-color: #cc2d35;
     color: #fff;
     padding: 10px;
@@ -371,21 +308,43 @@ select {
     white-space: nowrap;
     z-index: 1000;
     opacity: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, visibility 0.2s;
     visibility: hidden;
-    overflow: visible;
-    /* height: 50px;
-    width: 200px; */
 }
 
+.tooltip-container:hover .tooltip,
+.bottom-tooltip-container:hover .bottom-tooltip,
 .min-tooltip-container:hover .min-tooltip {
     opacity: 1;
     visibility: visible;
-    z-index: 10;
-    left: 925%;
-    bottom: -70%;
-    right: auto;
-    transform: none;
+}
+
+/* Positioning specific tooltips */
+.tooltip {
+    top: 20px;
+    left: 420px;
+    /* Adjust as needed */
+}
+
+.bottom-tooltip {
+    top: 745px;
+    left: 420px;
+    /* Adjust as needed */
+}
+
+.min-tooltip {
+    top: 710px;
+    left: 420px;
+    /* Adjust as needed */
+}
+
+/* Tooltip adjustments for right edge */
+.tooltip.right-edge,
+.bottom-tooltip.right-edge,
+.min-tooltip.right-edge {
+    left: auto;
+    right: 0;
+    transform: translateX(0);
 }
 
 /* Info icon styling */
