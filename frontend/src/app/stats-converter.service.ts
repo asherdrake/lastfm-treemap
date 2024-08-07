@@ -168,14 +168,6 @@ export class StatsConverterService {
       map(stats => this.filterByDate(stats, this.filterState)),
       map(stats => this.filterChartStats(stats, this.filterState)),
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
-      map(stats => this.combineService.combineArtists(stats, this.artistCombinations)),
-      map(stats => {
-        if (this.filterState.view === 'Albums') {
-          return this.combineService.combineAlbums(stats, this.albumCombinations);
-        } else {
-          return stats;
-        }
-      }),
     ) as Observable<ChartStats>;
   };
 
