@@ -321,19 +321,19 @@ select {
 
 /* Positioning specific tooltips */
 .tooltip {
-    top: 20px;
+    top: 30px;
     left: 420px;
     /* Adjust as needed */
 }
 
 .bottom-tooltip {
-    top: 745px;
+    top: 720px;
     left: 420px;
     /* Adjust as needed */
 }
 
 .min-tooltip {
-    top: 710px;
+    top: 690px;
     left: 420px;
     /* Adjust as needed */
 }
