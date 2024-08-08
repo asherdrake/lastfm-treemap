@@ -55,7 +55,7 @@ export class StatsConverterService {
     private scrobbleGetterService: ScrobbleGetterService,
     private filters: FiltersService,
     private combineService: CombineService) {
-    this.imageProcessing = this.storage.chunk.pipe(
+    this.imageProcessing = this.storage.trackPageChunk.pipe(
       map(scrobbles => this.storeArtistImage(scrobbles)),
     ).subscribe();
 

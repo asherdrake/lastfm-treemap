@@ -198,6 +198,9 @@ export class TreemapComponent implements OnInit {
       .attr('width', d => { return d.x1 - d.x0 })
       .attr('height', d => { return d.y1 - d.y0 })
       .attr("fill", d => {
+        if (d.data.image === '') {
+          return d.data.children![0].color!
+        }
         if (d.data.color) {
           return d.data.color
         }
@@ -236,7 +239,7 @@ export class TreemapComponent implements OnInit {
       })
       .attr("preserveAspectRatio", 'xMidYMid meet')
       .attr("href", d => {
-        return d.data.image!
+        return d.data.image === '' ? d.data.children![0].image! : d.data.image!
       })
   }
 
