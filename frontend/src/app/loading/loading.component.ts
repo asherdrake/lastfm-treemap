@@ -24,7 +24,8 @@ export class LoadingComponent implements OnInit {
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
   sidebarActive: boolean = true;
   artistImageStorageSize: number = 0;
-  loadingStatus: string = 'Getting user data...';
+  loadingStatus: string = 'GETTINGUSER';
+  isFetchingInProgress: boolean = false;
   @Output() sidebarStateChanged = new EventEmitter<boolean>();
   constructor(private storage: ScrobbleStorageService, private scrobbleGetterService: ScrobbleGetterService, private statsConverterService: StatsConverterService, private filters: FiltersService) {
     this.storage.loadingStatus.pipe(
@@ -116,10 +117,28 @@ export class LoadingComponent implements OnInit {
     this.filters.updateSettings({ startDate, endDate, minScrobbles, numNodes, view });
   }
 
+  
   startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]): void {
-    this.applySettings();
-    this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages, albumImages, artistCombinations, albumCombinations);
+    if (this.isFetchingInProgress) {
+      return; // Lock is active, so ignore the call
+    }
+  
+    this.isFetchingInProgress = true; // Set lock
+  
+    try {
+      this.applySettings();
+      this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages, albumImages, artistCombinations, albumCombinations);
+  
+      // Assuming you handle errors inside initializeFetching or via a service,
+      // you can also catch errors here if needed
+    } catch (error) {
+      console.error('Error occurred in startFetching:', error);
+      this.isFetchingInProgress = false; // Reset lock on error
+    } finally {
+      //this.isFetchingInProgress = false; // Reset lock after processing
+    }
   }
+  
 
   fileInput(event: any): void {
     console.log("File input");

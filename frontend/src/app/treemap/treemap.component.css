@@ -38,11 +38,11 @@
     font-weight: 700;
 }
 
-#zoom-out-btn {
+#zoom-btn,
+#zoom-out-btn,
+#zoom-reset-btn {
     position: fixed;
-    right: 10px;
     /* Adjust as needed */
-    bottom: 10px;
     /* Adjust as needed */
     z-index: 10;
     /* Higher than the treemap z-index to ensure it stays on top */
@@ -55,6 +55,16 @@
     font-size: 14px;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     /* Optional for better visibility */
+}
+
+#zoom-out-btn {
+    right: 10px;
+    bottom: 10px;
+}
+
+#zoom-reset-btn {
+    right: 10px;
+    bottom: 60px;
 }
 
 #current-depth {
