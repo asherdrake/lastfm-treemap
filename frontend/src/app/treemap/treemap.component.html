@@ -5,8 +5,8 @@
     Current Depth: {{currentDepth}} <br>
 </div> -->
 <div id="treemap-container">
-  <button id="zoom-out-btn" (click)="zoomOut()">Zoom Out</button>
-  <div id="current-depth">Current Depth: {{ currentDepth }}</div>
+  <button id="zoom-out-btn" (click)="zoomOut()">Return to Parent</button>
+  <button id="zoom-reset-btn" (click)="resetZoom()">Reset Zoom</button>
   <div id="tooltip"
     style="position: absolute; opacity: 0; pointer-events: none; background-color: white; border: 1px solid black; border-radius: 5px; padding: 10px;">
   </div>

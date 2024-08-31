@@ -74,7 +74,10 @@ export class ScrobbleGetterService {
         this.calcTrackPages({ storage, username: user.name, trackPageSize: 200, from })
 
       },
-      error: (e) => storage.finish(e.status === 404 ? 'USERNOTFOUND' : 'LOADFAILED')
+      error: (e) => {
+        storage.finish(e.status === 404 ? 'USERNOTFOUND' : 'LOADFAILED');
+        throw e;
+      }
     });
   }
 

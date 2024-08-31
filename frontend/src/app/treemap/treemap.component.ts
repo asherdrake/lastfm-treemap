@@ -30,11 +30,6 @@ export class TreemapComponent implements OnInit {
   currentRoot: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   zoom: d3.ZoomBehavior<SVGSVGElement, unknown> = {} as d3.ZoomBehavior<SVGSVGElement, unknown>;
   currentDepth: number = 0;
-  currentTransform: [number, number, number] = [this.width / 2, this.height / 2, this.height];
-  target: [number, number, number] = [this.width / 2, this.height / 2, this.height / 4];
-  initialScale = 0.2; // This means 50% zoom level (zoomed out)
-  initialX = this.width * 0.1; // Centering on the X axis
-  initialY = this.height * 0.1; // Centering on the Y axis
   filterState: FilterState = {} as FilterState;
 
   constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
@@ -42,7 +37,6 @@ export class TreemapComponent implements OnInit {
       .scaleExtent([0, Infinity])
       .on("zoom", (event) => {
         this.group.attr("transform", event.transform);
-        this.currentTransform = [event.transform.x, event.transform.y, event.transform.k];
       })
 
     this.positionSelection = this.positionSelection.bind(this);
@@ -91,6 +85,14 @@ export class TreemapComponent implements OnInit {
   ngOnDestroy(): void {
     document.removeEventListener('keydown', this.handleKeyDown.bind(this));
   }
+  
+  resetZoom(): void {
+    // Reset the zoom transform
+    this.svg.transition()
+      .duration(0)
+      .call(this.zoom.transform, d3.zoomIdentity);
+  }
+  
 
   initializeTreemap(): void {
     console.log("Initializing treemap");
