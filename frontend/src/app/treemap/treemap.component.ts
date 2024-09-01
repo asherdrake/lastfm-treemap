@@ -200,7 +200,7 @@ export class TreemapComponent implements OnInit {
       .attr('width', d => { return d.x1 - d.x0 })
       .attr('height', d => { return d.y1 - d.y0 })
       .attr("fill", d => {
-        if (d.data.image === '') {
+        if (!d.data.image) {
           return d.data.children![0].color!
         }
         if (d.data.color) {
