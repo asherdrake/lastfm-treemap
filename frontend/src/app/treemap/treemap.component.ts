@@ -85,14 +85,14 @@ export class TreemapComponent implements OnInit {
   ngOnDestroy(): void {
     document.removeEventListener('keydown', this.handleKeyDown.bind(this));
   }
-  
+
   resetZoom(): void {
     // Reset the zoom transform
     this.svg.transition()
       .duration(0)
       .call(this.zoom.transform, d3.zoomIdentity);
   }
-  
+
 
   initializeTreemap(): void {
     console.log("Initializing treemap");
@@ -241,7 +241,11 @@ export class TreemapComponent implements OnInit {
       })
       .attr("preserveAspectRatio", 'xMidYMid meet')
       .attr("href", d => {
-        return d.data.image === '' ? d.data.children![0].image! : d.data.image!
+        // if (!d.data.image) {
+        //   console.log(d.data.name);
+        //   console.log(d.data.children![0].image);
+        // }
+        return !d.data.image ? d.data.children![0].image! : d.data.image!
       })
   }
 
