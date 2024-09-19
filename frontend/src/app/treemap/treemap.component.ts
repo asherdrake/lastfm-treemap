@@ -168,7 +168,9 @@ export class TreemapComponent implements OnInit {
 
     if (this.currentDepth === 0 || this.currentDepth === 1) {
       nodeEnter.append("image");
+      nodeEnter.append('foreignObject');
       this.appendImages(nodeUpdate);
+      this.appendTopLeftText(nodeUpdate);
       nodeUpdate.attr("cursor", "pointer")
         .on("click", (event, d) => this.zoomIn(d));
     } else if (this.currentDepth === 2) {
@@ -312,6 +314,148 @@ export class TreemapComponent implements OnInit {
       }
     });
   }
+
+  // appendTopLeftText(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+  //   const self = this;
+  //   const nodeEnter =
+  //     node.select("foreignObject")
+  //       .attr("class", "node-foreign")
+  //       .attr("width", d => this.x(d.x1) - this.x(d.x0))
+  //       .attr("height", d => this.y(d.y1) - this.y(d.y0))
+  //       .attr("x", d => d.x0)
+  //       .attr("y", d => d.y0);
+
+  //   console.log("appendTrackText" + nodeEnter);
+
+  //   const nodeWrapperDiv = nodeEnter.append("xhtml:div")
+  //     .attr("class", "node-wrapper")
+  //     .style("width", d => `${(this.x(d.x1) - this.x(d.x0))}px`)
+  //     .style("height", d => `${this.y(d.y1) - this.y(d.y0)}px`)
+  //     .style("display", "flex")
+  //     .style("flex-direction", "column")
+  //     .style("justify-content", "flex-start")
+  //     .style("align-items", "flex-start")
+  //     .style("padding", "2px") // Optional padding for better spacing
+  //     .attr("x", d => d.x0)
+  //     .attr("y", d => d.y0);
+
+  //   const textDiv = nodeWrapperDiv.append("xhtml:div")
+  //     .attr("class", "node-text")
+  //     .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml")
+  //     .style("width", "70%")
+  //     .style("height", "10%")
+  //     .style("padding", "6px")
+  //     // .style("font-size", d => `${this.calculateFontSize(d) * 2}px`)
+  //     .style("overflow", "hidden")
+  //     .style("white-space", "nowrap")
+  //     .style("text-overflow", "ellipsis")
+  //     .style("display", "flex")
+  //     .style("align-items", "flex-start")  // Align text to the top
+  //     .style("justify-content", "flex-start")  // Align text to the left
+  //     .html(d => `<xhtml:span style="display: inline-block; max-width: 100%; max-height: 100%;">${d.data.name}</xhtml:span>`);
+
+  //   nodeWrapperDiv.each(function (d) {
+  //     const divElement = (this as HTMLElement).querySelector('div');
+  //     if (divElement) {
+  //       textFit(divElement, {
+  //         alignVertWithFlexbox: true,
+  //         alignHoriz: false,
+  //         multiLine: true,
+  //         maxFontSize: 1000
+  //       });
+  //     }
+  //   });
+
+  //   nodeWrapperDiv.select(".textFitted")
+  //     .attr("fill", "rgba(0, 0, 0, 1)")
+  //     .attr("stroke", "#fff")
+  //     .attr("z-index", 100);
+
+  //   node.exit().remove();
+  // }
+
+  appendTopLeftText(node: d3.Selection<SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
+    const self = this;
+
+    // Update the foreignObject elements
+    const foreignObjects = node.select("foreignObject")
+      .attr("class", "node-foreign")
+      .attr("width", d => this.x(d.x1) - this.x(d.x0))
+      .attr("height", d => this.y(d.y1) - this.y(d.y0))
+      .attr("x", 0)
+      .attr("y", 0);
+
+    console.log("appendTopLeftText", foreignObjects);
+
+    // For each foreignObject, select or create the node-wrapper div
+    foreignObjects.each(function (d) {
+      const foreignObject = d3.select(this);
+
+      // Select the existing node-wrapper div or append a new one if it doesn't exist
+      let nodeWrapperDiv = foreignObject.select("div.node-wrapper");
+      if (nodeWrapperDiv.empty()) {
+        nodeWrapperDiv = foreignObject.append("xhtml:div")
+          .attr("class", "node-wrapper");
+      }
+
+      const width = foreignObject.attr("width")
+      const height = foreignObject.attr("height")
+      const padding = Math.min(Number(width), Number(height)) * 0.05;
+
+      // Update attributes and styles for node-wrapper div
+      nodeWrapperDiv
+        .style("width", `${width}px`)
+        .style("height", `${height}px`)
+        .style("display", "flex")
+        .style("flex-direction", "column")
+        .style("justify-content", "flex-start")
+        .style("align-items", "flex-start")
+        //.style("padding", "2px")
+        .attr("x", 0)
+        .attr("y", 0);
+
+      // Select the existing node-text div or append a new one if it doesn't exist
+      let textDiv = nodeWrapperDiv.select("div.node-text");
+      if (textDiv.empty()) {
+        textDiv = nodeWrapperDiv.append("xhtml:div")
+          .attr("class", "node-text")
+          .attr("xmlns:xhtml", "http://www.w3.org/1999/xhtml");
+      }
+
+      // Update attributes and styles for node-text div
+      textDiv
+        //.style("box-sizing", "border-box")
+        .style("width", "70%")
+        .style("height", "10%")
+        .style("padding", `${padding}px`)
+        .style("overflow", "hidden")
+        .style("white-space", "nowrap")
+        .style("text-overflow", "ellipsis")
+        .style("display", "flex")
+        .style("align-items", "flex-start")
+        .style("justify-content", "flex-start")
+        .html((d: any) => `<xhtml:span style="display: inline-block; max-width: 100%; max-height: 100%;">${d.data.name}</xhtml:span>`);
+
+      // Apply text fitting to the textDiv
+      const divElement = (textDiv.node() as HTMLElement);
+      if (divElement) {
+        textFit(divElement, {
+          alignVertWithFlexbox: true,
+          alignHoriz: false,
+          multiLine: true,
+          maxFontSize: 1000,
+          minFontSize: 0
+        });
+      }
+
+      // Update styles for the text-fitted content
+      nodeWrapperDiv.select(".textFitted")
+        .style("fill", "rgba(0, 0, 0, 1)")
+        .style("stroke", "#fff")
+        .style("z-index", "100");
+    });
+  }
+
 
   transformToTreemapData(stats: ChartStats): void {
     //console.log("transformtoTreemapData: " + Object.keys(stats.artists));
