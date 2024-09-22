@@ -1,11 +1,10 @@
 import { Injectable } from '@angular/core';
 import { User, Scrobble, AlbumImages, ArtistCombo, AlbumCombo, TopAlbum, Image } from './items';
-import { BehaviorSubject, catchError, Observable, of, throwError } from 'rxjs';
+import { BehaviorSubject, catchError, Observable, of } from 'rxjs';
 import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
 import { MessageService } from './message.service';
 import { ScrobbleStorageService } from './scrobble-storage.service';
-import { load } from 'cheerio';
 //import * as DOMParser from 'dom-parser';
 
 interface RecentTracks {

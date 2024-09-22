@@ -2,9 +2,7 @@ import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import * as d3 from 'd3';
 import { ChartStats, TopAlbum, TreemapViewType, TreeNode } from 'src/app/items';
 import { StatsConverterService } from 'src/app/stats-converter.service';
-import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
-import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
-import { FilterState, FiltersService } from 'src/app/filters.service';
+import { FilterState } from 'src/app/filters.service';
 import { BaseType } from 'd3';
 import { takeUntil, bufferCount } from 'rxjs/operators';
 import { Subject } from 'rxjs';
@@ -33,7 +31,7 @@ export class TreemapComponent implements OnInit {
   filterState: FilterState = {} as FilterState;
   view: TreemapViewType = 'Albums'
 
-  constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
+  constructor(private statsConverterService: StatsConverterService) {
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0, Infinity])
       .on("zoom", (event) => {
@@ -78,7 +76,7 @@ export class TreemapComponent implements OnInit {
       }
     });
 
-    this.scrobbleGetterService.topAlbumSubject.subscribe((topAlbums: TopAlbum[]) => {
+    this.statsConverterService.finishedTopAlbums.subscribe((topAlbums: TopAlbum[]) => {
       console.log("topalbumobservable subscription")
       if (topAlbums.length != 0) {
         console.log("topalbumsubject inside" + this.treemapData)

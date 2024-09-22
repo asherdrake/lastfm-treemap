@@ -1,13 +1,12 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track } from './items';
-import { takeWhile, skip, mergeMap, scan, from, switchMap, interval, of, forkJoin, Subject, catchError, tap, filter, Observable, map, combineLatest, timer, take, shareReplay } from 'rxjs';
+import { ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track, TopAlbum } from './items';
+import { takeWhile, skip, mergeMap, scan, from, interval, of, forkJoin, Subject, catchError, tap, filter, Observable, map, combineLatest, take, shareReplay } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
-import { ScrobbleStorageService, ScrobbleState } from './scrobble-storage.service';
+import { ScrobbleStorageService } from './scrobble-storage.service';
 import { FiltersService, FilterState } from './filters.service';
 import ColorThief from 'color-thief-ts';
 import { CombineService } from './combine.service';
-//import { takeWhile } from 'lodash';
 
 interface ArtistImages {
   [key: string]: [string, string]
@@ -27,6 +26,7 @@ interface AlbumImages {
 export class StatsConverterService {
   filteredChartStats: Observable<ChartStats>;
   finishedChartStats: Observable<ChartStats>;
+  finishedTopAlbums: Observable<TopAlbum[]>;
   startDate: number = 0;
   endDate: number = 0;
   artistImageStorage: ArtistImages = {};
@@ -169,6 +169,14 @@ export class StatsConverterService {
       map(stats => this.filterChartStats(stats, this.filterState)),
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
     ) as Observable<ChartStats>;
+
+    this.finishedTopAlbums = this.scrobbleGetterService.topAlbumSubject.pipe(
+      mergeMap(topAlbums =>
+        this.addTopAlbumColors(topAlbums).pipe(
+          map(coloredTopAlbums => coloredTopAlbums)
+        )
+      ),
+    )
   };
 
   updateChartStats(scrobbles: Scrobble[], chartStats: ChartStats): ChartStats {
@@ -551,6 +559,41 @@ export class StatsConverterService {
     // Wait for all color updates to complete
     return forkJoin(colorUpdates$).pipe(
       map(() => newChartStats) // Return the updated ChartStats once all updates are done
+    );
+  }
+
+  addTopAlbumColors(topAlbums: TopAlbum[]): Observable<TopAlbum[]> {
+    // Collect an array of observables for color updates
+    const colorUpdates$: any = [];
+
+    //console.log("addAlbumColors");
+
+    // Iterate over artists and albums to update colors
+    topAlbums.forEach(topAlbum => {
+      const colorUpdate$ = from(this.getDominantColor(topAlbum.image[3]['#text'])).pipe(
+        map(color => {
+          // Update the album's color with the result
+          topAlbum.color = color.toString();
+
+          return topAlbum; // This line is not strictly necessary but helps with understanding the flow
+        }),
+        catchError(error => {
+          console.error("Error getting dominant color for top album: " + topAlbum.name, error);
+
+          return of(null); // Continue the observable chain even if there's an error
+        })
+      );
+
+      colorUpdates$.push(colorUpdate$);
+    });
+
+    if (colorUpdates$.length === 0) {
+      colorUpdates$.push(of(''));
+    }
+
+    // Wait for all color updates to complete
+    return forkJoin(colorUpdates$).pipe(
+      map(() => topAlbums) // Return the updated ChartStats once all updates are done
     );
   }
 

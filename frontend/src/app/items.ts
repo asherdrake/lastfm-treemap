@@ -113,7 +113,7 @@ export interface TopAlbum {
     playcount: number,
     artist: string,
     image: Image[],
-    color?: string
+    color?: string,
 }
 
 export interface Image {

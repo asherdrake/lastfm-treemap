@@ -5,7 +5,6 @@ import { ScrobbleGetterService } from '../scrobblegetter.service';
 import { FiltersService } from '../filters.service';
 import { Scrobble, ScrobblesJSON, AlbumImages, ArtistCombo, AlbumCombo, TreemapViewType } from "src/app/items";
 import { StatsConverterService } from '../stats-converter.service';
-import { toPlainObject } from 'lodash';
 
 @Component({
   selector: 'app-loading',
