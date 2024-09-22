@@ -21,6 +21,7 @@
             <div class="input-group">
                 <input type="text" id="username" class="loading-input" [(ngModel)]="username" />
                 <button class="loading-button" (click)="startFetching([], {}, { artists: {} }, [], [])">Submit</button>
+                <button class="loading-button" (click)="startTopAlbumsTreemap()">Top Albums</button>
             </div>
             <p class="or-text">OR</p>
             <input type="file" class="file-upload loading-input" (change)="fileInput($event)">

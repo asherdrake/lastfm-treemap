@@ -108,4 +108,17 @@ export interface AlbumCombo {
     children: Album[]
 }
 
+export interface TopAlbum {
+    name: string,
+    playcount: number,
+    artist: string,
+    image: Image[],
+    color?: string
+}
+
+export interface Image {
+    size: string;
+    '#text': string;
+}
+
 export type TreemapViewType = 'Artists' | 'Albums' | 'Tracks'

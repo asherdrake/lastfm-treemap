@@ -1,6 +1,6 @@
 import { Component, OnInit, ViewEncapsulation } from '@angular/core';
 import * as d3 from 'd3';
-import { ChartStats, TreeNode } from 'src/app/items';
+import { ChartStats, TopAlbum, TreemapViewType, TreeNode } from 'src/app/items';
 import { StatsConverterService } from 'src/app/stats-converter.service';
 import { ScrobbleGetterService } from 'src/app/scrobblegetter.service';
 import { ScrobbleStorageService } from 'src/app/scrobble-storage.service';
@@ -31,6 +31,7 @@ export class TreemapComponent implements OnInit {
   zoom: d3.ZoomBehavior<SVGSVGElement, unknown> = {} as d3.ZoomBehavior<SVGSVGElement, unknown>;
   currentDepth: number = 0;
   filterState: FilterState = {} as FilterState;
+  view: TreemapViewType = 'Albums'
 
   constructor(private filters: FiltersService, private statsConverterService: StatsConverterService, private scrobbleGetterService: ScrobbleGetterService, private storage: ScrobbleStorageService) {
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -56,6 +57,7 @@ export class TreemapComponent implements OnInit {
       console.log("ChartStats received in treemap component");
       const stats = statsArray[statsArray.length - 1]; //renders every 7th emission
       this.filterState = this.statsConverterService.filterState;
+      this.view = this.filterState.view;
       this.transformToTreemapData(stats);
 
       this.updateTreemap();
@@ -65,6 +67,7 @@ export class TreemapComponent implements OnInit {
       console.log("FINISHED ChartStats received in treemap component");
       finChartStats = stats;
       this.filterState = this.statsConverterService.filterState;
+      this.view = this.filterState.view;
       this.transformToTreemapData(stats);
 
       this.updateTreemap();
@@ -74,6 +77,18 @@ export class TreemapComponent implements OnInit {
         finished.complete();
       }
     });
+
+    this.scrobbleGetterService.topAlbumSubject.subscribe((topAlbums: TopAlbum[]) => {
+      console.log("topalbumobservable subscription")
+      if (topAlbums.length != 0) {
+        console.log("topalbumsubject inside" + this.treemapData)
+        this.treemapData = this.convertTopAlbums(topAlbums);
+        console.log(this.treemapData);
+        this.currentDepth = 1;
+        this.view = 'Albums';
+        this.updateTreemap();
+      }
+    })
   };
 
   ngOnInit(): void {
@@ -92,7 +107,6 @@ export class TreemapComponent implements OnInit {
       .duration(0)
       .call(this.zoom.transform, d3.zoomIdentity);
   }
-
 
   initializeTreemap(): void {
     console.log("Initializing treemap");
@@ -137,6 +151,28 @@ export class TreemapComponent implements OnInit {
     this.updateTreemap();
   }
 
+  convertTopAlbums(topAlbums: TopAlbum[]): TreeNode {
+    const treemapData: TreeNode = {
+      name: "ChartStats",
+      children: [] as TreeNode[]
+    };
+
+    topAlbums.forEach(album => {
+      const treeNode: TreeNode = {
+        name: album.name,
+        value: album.playcount,
+        color: album.color,
+        artist: album.artist,
+        image: album.image[3]['#text']
+      }
+
+      treemapData.children!.push(treeNode);
+    });
+    console.log("convertTopAlbums");
+    console.log(treemapData);
+    return treemapData;
+  }
+
   updateTreemap() {
     const self = this;
     console.log("UPDATE TREEMAP");
@@ -146,9 +182,9 @@ export class TreemapComponent implements OnInit {
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
 
-    if ((this.filterState.view === "Artists" && this.currentDepth === 0)
-      || (this.filterState.view === "Albums" && this.currentDepth === 1)
-      || (this.filterState.view === "Tracks" && this.currentDepth === 2)) {
+    if ((this.view === "Artists" && this.currentDepth === 0)
+      || (this.view === "Albums" && this.currentDepth === 1)
+      || (this.view === "Tracks" && this.currentDepth === 2)) {
       //console.log("entered currentRoot conditional")
       this.currentRoot = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);
       this.updateScales(this.currentRoot);
@@ -204,7 +240,7 @@ export class TreemapComponent implements OnInit {
       .attr('height', d => { return d.y1 - d.y0 })
       .attr("fill", d => {
         if (!d.data.image && this.currentDepth != 2) {
-          return d.data.children![0].color!
+          return d.data.children ? d.data.children[0].color! : ""
         }
         if (d.data.color) {
           return d.data.color
@@ -248,7 +284,7 @@ export class TreemapComponent implements OnInit {
         //   console.log(d.data.name);
         //   console.log(d.data.children![0].image);
         // }
-        return !d.data.image ? d.data.children![0].image! : d.data.image!
+        return !d.data.image ? (d.data.children ? d.data.children![0].image! : '') : d.data.image!
       })
   }
 

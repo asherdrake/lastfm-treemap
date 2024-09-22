@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
-import { User, Scrobble, AlbumImages, ArtistCombo, AlbumCombo } from './items';
-import { catchError, Observable, of, throwError } from 'rxjs';
+import { User, Scrobble, AlbumImages, ArtistCombo, AlbumCombo, TopAlbum, Image } from './items';
+import { BehaviorSubject, catchError, Observable, of, throwError } from 'rxjs';
 import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
 import { MessageService } from './message.service';
@@ -37,9 +37,8 @@ interface Track {
   }
 }
 
-interface Image {
-  size: string;
-  '#text': string;
+interface TopAlbums {
+  album: TopAlbum[]
 }
 
 interface LoadingState {
@@ -59,7 +58,7 @@ interface LoadingState {
 export class ScrobbleGetterService {
   private readonly API_KEY = '2a9fa20cf72cff44d62d98800ec93aaf';
   private readonly URL = 'https://ws.audioscrobbler.com/2.0/';
-
+  public topAlbumSubject = new BehaviorSubject<TopAlbum[]>([]);
   constructor(private http: HttpClient, private messageService: MessageService) { }
 
   initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]) {
@@ -167,6 +166,30 @@ export class ScrobbleGetterService {
     console.log("getScrobbles page: " + String(loadingState.trackPage))
     return this.http.get<{ recenttracks: RecentTracks }>(this.URL, { params }).pipe(
       map(response => response.recenttracks)
+    );
+  }
+
+  public startTopAlbums(username: string) {
+    this.getTopAlbums(username).subscribe(topAlbums => {
+      this.topAlbumSubject.next(topAlbums.album);
+    })
+  }
+
+  private getTopAlbums(username: string): Observable<TopAlbums> {
+    const params = new HttpParams()
+      .append('method', 'user.gettopalbums')
+      .append('user', username)
+      .append('period', 'overall')
+      .append('limit', 100)
+      .append('page', 1)
+      .append('format', 'json')
+      .append('api_key', this.API_KEY);
+
+    console.log('getTopAlbums')
+
+    return this.http.get<{ topalbums: TopAlbums }>(this.URL, { params }).pipe(
+      tap(response => console.log(response.topalbums)),
+      map(response => response.topalbums)
     );
   }
 

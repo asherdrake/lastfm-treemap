@@ -5,6 +5,7 @@ import { ScrobbleGetterService } from '../scrobblegetter.service';
 import { FiltersService } from '../filters.service';
 import { Scrobble, ScrobblesJSON, AlbumImages, ArtistCombo, AlbumCombo, TreemapViewType } from "src/app/items";
 import { StatsConverterService } from '../stats-converter.service';
+import { toPlainObject } from 'lodash';
 
 @Component({
   selector: 'app-loading',
@@ -117,18 +118,18 @@ export class LoadingComponent implements OnInit {
     this.filters.updateSettings({ startDate, endDate, minScrobbles, numNodes, view });
   }
 
-  
+
   startFetching(importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]): void {
     if (this.isFetchingInProgress) {
       return; // Lock is active, so ignore the call
     }
-  
+
     this.isFetchingInProgress = true; // Set lock
-  
+
     try {
       this.applySettings();
       this.scrobbleGetterService.initializeFetching(this.username, this.startDate, this.endDate, this.storage, importedScrobbles, artistImages, albumImages, artistCombinations, albumCombinations);
-  
+
       // Assuming you handle errors inside initializeFetching or via a service,
       // you can also catch errors here if needed
     } catch (error) {
@@ -138,7 +139,12 @@ export class LoadingComponent implements OnInit {
       //this.isFetchingInProgress = false; // Reset lock after processing
     }
   }
-  
+
+  startTopAlbumsTreemap() {
+    this.scrobbleGetterService.startTopAlbums(this.username);
+    console.log("startTopAlbumsTreemap" + this.username);
+  }
+
 
   fileInput(event: any): void {
     console.log("File input");
