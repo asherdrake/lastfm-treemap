@@ -1,27 +1,21 @@
-# LastfmDataVisualizer
+I have created lastfmtreemap.wru.co!
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 16.2.0.
+The site generates a "treemap" of your scrobbles, a type of graph that displays hierarchical data using nested rectangles. The size of each rectangle corresponds to the amount of scrobbles that Artist/Album/Track has. The more scrobbled something is, the larger its rectangle.
 
-## Development server
+The treemap is also interactive. Clicking on an artist will display only that artist's albums, as shown below. Hovering over any rectangle will show its name and amount of scrobbles. You may also drag and zoom around the treemap to view the smaller rectangles.
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+Here is an example of what it can do, using my scrobbles from this year:
 
-## Code scaffolding
+Displaying Albums
+![image](https://github.com/user-attachments/assets/ef2c850c-cfa8-408c-b736-fe78b44a6acc)
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+Displaying Artists
+![image](https://github.com/user-attachments/assets/4a645b39-45a9-4903-bc6f-eed948633d39)
 
-## Build
+Displaying Albums by Nujabes
+![image](https://github.com/user-attachments/assets/b8e9c175-9ced-4fd7-939e-c657f3829a71)
 
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
+And furthermore, clicking on an album will display its tracks:
+Dispalying Tracks in "Modal Soul"
+![image](https://github.com/user-attachments/assets/d534a223-c9ed-486d-9ad8-5d53809ff233)
 
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
