@@ -168,18 +168,18 @@ export class ScrobbleGetterService {
     );
   }
 
-  public startTopAlbums(username: string) {
-    this.getTopAlbums(username).subscribe(topAlbums => {
+  public startTopAlbums(username: string, amount: number) {
+    this.getTopAlbums(username, amount).subscribe(topAlbums => {
       this.topAlbumSubject.next(topAlbums.album);
     })
   }
 
-  private getTopAlbums(username: string): Observable<TopAlbums> {
+  private getTopAlbums(username: string, amount: number): Observable<TopAlbums> {
     const params = new HttpParams()
       .append('method', 'user.gettopalbums')
       .append('user', username)
       .append('period', 'overall')
-      .append('limit', 100)
+      .append('limit', amount)
       .append('page', 1)
       .append('format', 'json')
       .append('api_key', this.API_KEY);

@@ -1,0 +1,30 @@
+<div class="home-container">
+    <div class="header">
+        <h1>Welcome to Last.fm Treemap!</h1>
+        <p>Last.fm Treemap generates a treemap chart based on your scrobbles, where the size of each rectangle is based on how much you listened to that artist/album.</p>
+        
+    </div>
+
+    <h1 class="title">Choose Your Experience</h1>
+
+    <div class="options">
+        <div class="option-card">
+            <h2>Lightweight Version</h2>
+                <p class="pro" >+ Fetches top albums and artist immediately.</p>
+                <p class="pro">+ Easily export your chart as an image.</p>
+                <p class="con">- Lacks interactive features.</p>
+            <button (click)="navigateTo('lightweight')" class="btn lightweight-btn">Choose Lightweight</button>
+        </div>
+
+        <div class="option-card">
+            <h2>Interactive Version</h2>
+                <p class="pro">+ View all your scrobbles.</p>
+                <p class="pro">+ Click on an Artist to see its Albums, and click on an Album to see its Tracks.</p>
+                <p class="pro">+ More specific filters and options.</p>
+                <p class="con">- Long loading times.</p>
+                <p class="con">- Prone to API errors.</p>
+            <button (click)="navigateTo('interactive')" class="btn interactive-btn">Choose Interactive</button>
+        </div>
+    </div>
+</div>
+  

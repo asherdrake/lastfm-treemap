@@ -1,10 +1,10 @@
 import { Component, EventEmitter, OnInit, Output } from '@angular/core';
-import { ScrobbleStorageService } from '../scrobble-storage.service';
+import { ScrobbleStorageService } from '../../scrobble-storage.service';
 import { map, take, filter } from 'rxjs';
-import { ScrobbleGetterService } from '../scrobblegetter.service';
-import { FiltersService } from '../filters.service';
+import { ScrobbleGetterService } from '../../scrobblegetter.service';
+import { FiltersService } from '../../filters.service';
 import { Scrobble, ScrobblesJSON, AlbumImages, ArtistCombo, AlbumCombo, TreemapViewType } from "src/app/items";
-import { StatsConverterService } from '../stats-converter.service';
+import { StatsConverterService } from '../../stats-converter.service';
 
 @Component({
   selector: 'app-loading',
@@ -138,12 +138,6 @@ export class LoadingComponent implements OnInit {
       //this.isFetchingInProgress = false; // Reset lock after processing
     }
   }
-
-  startTopAlbumsTreemap() {
-    this.scrobbleGetterService.startTopAlbums(this.username);
-    console.log("startTopAlbumsTreemap" + this.username);
-  }
-
 
   fileInput(event: any): void {
     console.log("File input");

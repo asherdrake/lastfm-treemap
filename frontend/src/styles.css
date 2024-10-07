@@ -1,12 +1,47 @@
 /* You can add global styles to this file, and also import other style files */
 @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@200;300;400;600;700;800&display=swap');
 
-html,
-body {
+html, body {
     height: 100%;
-}
-
-body {
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  app-root {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    height: 100%;
+  }
+  
+  .container {
+    text-align: center;
+    max-width: 1200px;
+    width: 100%;
+    padding: 20px;
+  }
+  
+  .options {
+    display: flex;
+    justify-content: space-around;
+    gap: 20px;
+    width: 100%;
+  }
+  
+  .option-card {
+    background-color: #3a3a3a;
+    padding: 20px;
+    border-radius: 8px;
+    border: 2px solid #525252;
+    width: 45%;
+    transition: all 0.3s ease;
+  }
+  
+  body {
+    background-color: #2d2d2d;
     margin: 0;
     font-family: Roboto, "Helvetica Neue", sans-serif;
-}
+  }
+  
