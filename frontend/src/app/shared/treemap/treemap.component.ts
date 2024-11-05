@@ -1,4 +1,4 @@
-import { Component, OnInit, ViewEncapsulation } from '@angular/core';
+import { Input, OnChanges, Component, OnInit, ViewEncapsulation, SimpleChanges } from '@angular/core';
 import * as d3 from 'd3';
 import { ChartStats, TopAlbum, TreemapViewType, TreeNode } from 'src/app/items';
 import { StatsConverterService } from 'src/app/stats-converter.service';
@@ -15,10 +15,14 @@ import textFit from 'textfit';
   encapsulation: ViewEncapsulation.None
 })
 export class TreemapComponent implements OnInit {
-  treemapData: TreeNode = {} as TreeNode;
+  @Input() treemapData: TreeNode = { name: "root", children: [] };
+  @Input() isInteractiveMode: boolean = false;
+  @Input() view: TreemapViewType = 'Albums';
+
   width: number = 2500;
   height: number = 2500;
-  hierarchy: d3.HierarchyNode<TreeNode> = {} as d3.HierarchyNode<TreeNode>;
+
+  hierarchy?: d3.HierarchyNode<TreeNode>;
   root: d3.HierarchyRectangularNode<TreeNode> = {} as d3.HierarchyRectangularNode<TreeNode>;
   tooltip: d3.Selection<BaseType, unknown, HTMLElement, any> = {} as d3.Selection<BaseType, unknown, HTMLElement, any>;
   x: d3.ScaleLinear<number, number, never> = {} as d3.ScaleLinear<number, number, never>;
@@ -29,7 +33,6 @@ export class TreemapComponent implements OnInit {
   zoom: d3.ZoomBehavior<SVGSVGElement, unknown> = {} as d3.ZoomBehavior<SVGSVGElement, unknown>;
   currentDepth: number = 0;
   filterState: FilterState = {} as FilterState;
-  view: TreemapViewType = 'Albums'
 
   constructor(private statsConverterService: StatsConverterService) {
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
@@ -44,50 +47,26 @@ export class TreemapComponent implements OnInit {
     this.updateTreemap = this.updateTreemap.bind(this);
     this.updateScales = this.updateScales.bind(this);
     this.calculateFontSize = this.calculateFontSize.bind(this);
-
-    let finChartStats: ChartStats;
-    const finished = new Subject<void>();
-
-    this.statsConverterService.filteredChartStats.pipe(
-      bufferCount(7, 7), //collects emission in buffers of 7, every 7 emissions
-      takeUntil(finished)
-    ).subscribe((statsArray: ChartStats[]) => {
-      console.log("ChartStats received in treemap component");
-      const stats = statsArray[statsArray.length - 1]; //renders every 7th emission
-      this.filterState = this.statsConverterService.filterState;
-      this.view = this.filterState.view;
-      this.transformToTreemapData(stats);
-
-      this.updateTreemap();
-    });
-
-    this.statsConverterService.finishedChartStats.subscribe((stats: ChartStats) => {
-      console.log("FINISHED ChartStats received in treemap component");
-      finChartStats = stats;
-      this.filterState = this.statsConverterService.filterState;
-      this.view = this.filterState.view;
-      this.transformToTreemapData(stats);
-
-      this.updateTreemap();
-
-      if (!finished.complete) {
-        finished.next();
-        finished.complete();
-      }
-    });
-
-    this.statsConverterService.finishedTopAlbums.subscribe((topAlbums: TopAlbum[]) => {
-      console.log("topalbumobservable subscription")
-      if (topAlbums.length != 0) {
-        console.log("topalbumsubject inside" + this.treemapData)
-        this.treemapData = this.convertTopAlbums(topAlbums);
-        console.log(this.treemapData);
-        this.currentDepth = 1;
-        this.view = 'Albums';
-        this.updateTreemap();
-      }
-    })
   };
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (!this.hierarchy) {
+      // `ngOnInit` hasn't run yet, so skip this until `ngOnInit` initializes everything
+      console.log("ngOnChanges returned")
+      return;
+    }
+    if (changes['treemapData']) {
+      console.log("ngOnChanges")
+      if (this.view == 'Artists') {
+        this.currentDepth = 0;
+      } else if (this.view == 'Albums') {
+        this.currentDepth = 1;
+      } else {
+        this.currentDepth = 2;
+      }
+      this.updateTreemap();
+    }
+  }
 
   ngOnInit(): void {
     console.log("ngOnInit");
@@ -108,7 +87,7 @@ export class TreemapComponent implements OnInit {
 
   initializeTreemap(): void {
     console.log("Initializing treemap");
-
+    console.log(this.treemapData);
     this.hierarchy = d3.hierarchy(this.treemapData)
       .sum((d: any) => d.value);
     this.root = d3.treemap<TreeNode>().tile(d3.treemapBinary)(this.hierarchy);

@@ -25,8 +25,9 @@ interface AlbumImages {
 })
 export class StatsConverterService {
   filteredChartStats: Observable<ChartStats>;
-  finishedChartStats: Observable<ChartStats>;
-  finishedTopAlbums: Observable<TopAlbum[]>;
+  private _finishedChartStats: Observable<ChartStats>;
+  private _finishedTopAlbums: Observable<TopAlbum[]>;
+  private isActive = false;
   startDate: number = 0;
   endDate: number = 0;
   artistImageStorage: ArtistImages = {};
@@ -150,7 +151,7 @@ export class StatsConverterService {
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
     );
 
-    this.finishedChartStats = combineLatest([
+    this._finishedChartStats = combineLatest([
       chartStats,
       this.filters.state$,
       this.storage.state$
@@ -170,7 +171,7 @@ export class StatsConverterService {
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
     ) as Observable<ChartStats>;
 
-    this.finishedTopAlbums = this.scrobbleGetterService.topAlbumSubject.pipe(
+    this._finishedTopAlbums = this.scrobbleGetterService.topAlbumSubject.pipe(
       mergeMap(topAlbums =>
         this.addTopAlbumColors(topAlbums).pipe(
           map(coloredTopAlbums => coloredTopAlbums)
@@ -178,6 +179,22 @@ export class StatsConverterService {
       ),
     )
   };
+
+  start() {
+    this.isActive = true;
+  }
+
+  stop() {
+    this.isActive = false;
+  }
+
+  get finishedChartStats(): Observable<ChartStats | null> {
+    return this.isActive ? this._finishedChartStats : of(null);
+  }
+
+  get finishedTopAlbums(): Observable<TopAlbum[] | null> {
+    return this.isActive ? this._finishedTopAlbums : of(null);
+  }
 
   updateChartStats(scrobbles: Scrobble[], chartStats: ChartStats): ChartStats {
     console.log("updateChartStats: " + Object.keys(chartStats.artists).length);

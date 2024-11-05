@@ -4,6 +4,7 @@ import { LightweightComponent } from './lightweight.component';
 import { LoadingLightweightComponent } from '../loading-lightweight/loading-lightweight.component';
 import { TreemapLightweightComponent } from '../treemap-lightweight/treemap-lightweight.component';
 import { FormsModule } from '@angular/forms';
+import { LightweightRoutingModule } from './lightweight-routing.module';
 
 
 
@@ -16,6 +17,7 @@ import { FormsModule } from '@angular/forms';
   imports: [
     CommonModule,
     FormsModule,
+    LightweightRoutingModule
   ],
   exports: [
     LightweightComponent

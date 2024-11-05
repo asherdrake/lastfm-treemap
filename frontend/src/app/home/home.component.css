@@ -95,8 +95,8 @@ body {
   border-radius: 8px;
   color: white;
   display: flex;
-  align-items: left;
-  justify-content: left;
+  align-items: center;
+  justify-content: space-between;
   transition: all 0.3s ease;
   width: 60%;
   margin-left: 40px;

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { SharedModule } from '../shared/shared.module';
 import { InteractiveComponent } from './interactive.component';
 import { FormsModule } from '@angular/forms';
+import { InteractiveRoutingModule } from './interactive-routing.module';
 
 @NgModule({
   declarations: [
@@ -11,7 +12,8 @@ import { FormsModule } from '@angular/forms';
   imports: [
     CommonModule,
     SharedModule,
-    FormsModule
+    FormsModule,
+    InteractiveRoutingModule
   ],
   exports: [
     InteractiveComponent

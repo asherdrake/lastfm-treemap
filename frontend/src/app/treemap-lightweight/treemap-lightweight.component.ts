@@ -43,17 +43,17 @@ export class TreemapLightweightComponent implements OnInit {
     this.updateScales = this.updateScales.bind(this);
     this.calculateFontSize = this.calculateFontSize.bind(this);
 
-    this.statsConverterService.finishedTopAlbums.subscribe((topAlbums: TopAlbum[]) => {
-      console.log("topalbumobservable subscription")
-      if (topAlbums.length != 0) {
-        console.log("topalbumsubject inside" + this.treemapData)
-        this.treemapData = this.convertTopAlbums(topAlbums);
-        console.log(this.treemapData);
-        this.currentDepth = 1;
-        this.view = 'Albums';
-        this.updateTreemap();
-      }
-    })
+    // this.statsConverterService.finishedTopAlbums.subscribe((topAlbums: TopAlbum[]) => {
+    //   console.log("topalbumobservable subscription")
+    //   if (topAlbums.length != 0) {
+    //     console.log("topalbumsubject inside" + this.treemapData)
+    //     this.treemapData = this.convertTopAlbums(topAlbums);
+    //     console.log(this.treemapData);
+    //     this.currentDepth = 1;
+    //     this.view = 'Albums';
+    //     this.updateTreemap();
+    //   }
+    // })
   };
 
   ngOnInit(): void {
