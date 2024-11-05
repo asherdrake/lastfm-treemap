@@ -1,8 +1,6 @@
-import { ViewContainerRef, ViewChild, Component, OnInit, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { TreemapViewType, TreeNode, ChartStats } from '../items';
-import { Subscription, tap } from 'rxjs';
-import { FiltersService } from '../filters.service';
-import { DatasetComponent } from '../dataset/dataset.component';
+import { Subscription } from 'rxjs';
 import { StatsConverterService } from '../stats-converter.service';
 import { FilterState } from 'src/app/filters.service';
 
@@ -12,40 +10,24 @@ import { FilterState } from 'src/app/filters.service';
   styleUrls: ['./interactive.component.css'],
 })
 export class InteractiveComponent implements OnInit {
-  //@ViewChild(DatasetComponent) datasetComponent!: DatasetComponent;
   view: TreemapViewType = "Albums"
   sidebarActive: boolean = false;
   filterState: FilterState = {} as FilterState;
   treeNodeData: TreeNode = { name: "root", children: [] };
   subscription?: Subscription;
 
-  constructor(
-    private filter: FiltersService,
-    private cdr: ChangeDetectorRef,
-    private statsConverterService: StatsConverterService) {
-
-  }
+  constructor(private statsConverterService: StatsConverterService) {}
 
   ngOnInit(): void {
     this.statsConverterService.start();
     this.subscription = this.statsConverterService.finishedChartStats.subscribe((stats: ChartStats | null) => {
       if (stats) {
         console.log("FINISHED ChartStats received in interactive component");
-        //this.filterState = this.statsConverterService.filterState;
-        //this.view = this.filterState.view;
-        console.log(this.filterState.view);
+        this.view = this.statsConverterService.filterState.view
+        console.log(this.view);
         this.transformToTreemapData(stats);
       }
     });
-
-    this.subscription.add(
-      this.filter.state$.pipe(
-        tap((filter) => {
-          console.log("filter emitted")
-          this.view = filter.view
-        })
-      ).subscribe()
-    );
   }
 
   ngOnDestroy(): void {
@@ -57,10 +39,6 @@ export class InteractiveComponent implements OnInit {
 
   handleSidebarState(state: boolean): void {
     this.sidebarActive = state;
-    // if (this.datasetComponent) {
-    //   this.datasetComponent.sidebarActive = state;
-    //   this.cdr.detectChanges();
-    // }
   }
 
   transformToTreemapData(stats: ChartStats): void {

@@ -1,11 +1,8 @@
-import { Input, OnChanges, Component, OnInit, ViewEncapsulation, SimpleChanges } from '@angular/core';
+import { Input, Component, OnInit, ViewEncapsulation, SimpleChanges } from '@angular/core';
 import * as d3 from 'd3';
-import { ChartStats, TopAlbum, TreemapViewType, TreeNode } from 'src/app/items';
-import { StatsConverterService } from 'src/app/stats-converter.service';
+import { TreemapViewType, TreeNode } from 'src/app/items';
 import { FilterState } from 'src/app/filters.service';
 import { BaseType } from 'd3';
-import { takeUntil, bufferCount } from 'rxjs/operators';
-import { Subject } from 'rxjs';
 import textFit from 'textfit';
 
 @Component({
@@ -34,7 +31,7 @@ export class TreemapComponent implements OnInit {
   currentDepth: number = 0;
   filterState: FilterState = {} as FilterState;
 
-  constructor(private statsConverterService: StatsConverterService) {
+  constructor() {
     this.zoom = d3.zoom<SVGSVGElement, unknown>()
       .scaleExtent([0, Infinity])
       .on("zoom", (event) => {
@@ -128,28 +125,6 @@ export class TreemapComponent implements OnInit {
     this.updateTreemap();
   }
 
-  convertTopAlbums(topAlbums: TopAlbum[]): TreeNode {
-    const treemapData: TreeNode = {
-      name: "ChartStats",
-      children: [] as TreeNode[]
-    };
-
-    topAlbums.forEach(album => {
-      const treeNode: TreeNode = {
-        name: album.name,
-        value: album.playcount,
-        color: album.color,
-        artist: album.artist,
-        image: album.image[3]['#text']
-      }
-
-      treemapData.children!.push(treeNode);
-    });
-    console.log("convertTopAlbums");
-    console.log(treemapData);
-    return treemapData;
-  }
-
   updateTreemap() {
     const self = this;
     console.log("UPDATE TREEMAP");
@@ -185,8 +160,10 @@ export class TreemapComponent implements OnInit {
       this.appendImages(nodeUpdate);
       this.appendTopLeftText(nodeUpdate);
       this.appendScrobbleCount(nodeUpdate);
-      nodeUpdate.attr("cursor", "pointer")
-        .on("click", (event, d) => this.zoomIn(d));
+      if (this.isInteractiveMode) {
+        nodeUpdate.attr("cursor", "pointer")
+          .on("click", (event, d) => this.zoomIn(d));
+      }
     } else if (this.currentDepth === 2) {
       nodeEnter.append('foreignObject');
       this.appendTrackText(nodeUpdate);
@@ -491,124 +468,6 @@ export class TreemapComponent implements OnInit {
         .style("stroke", "#fff")
         .style("z-index", "100");
     });
-  }
-
-
-  transformToTreemapData(stats: ChartStats): void {
-    //console.log("transformtoTreemapData: " + Object.keys(stats.artists));
-    if (this.filterState.view === "Albums") {
-      console.log("Albums Top View");
-      this.treemapData = this.transformToTreemapDataAlbums(stats);
-    } else if (this.filterState.view === "Tracks") {
-      this.treemapData = this.transformToTreemapDataTracks(stats);
-    } else {
-      console.log("Artists Top View");
-      this.treemapData = this.transformToTreemapDataArtists(stats);
-    }
-  }
-
-  transformToTreemapDataArtists(stats: ChartStats): TreeNode {
-    const treemapData = {
-      name: "ChartStats",
-      children: Object.keys(stats.artists).map(artistKey => {
-        const artist = stats.artists[artistKey];
-        return {
-          name: artist.name,
-          children: Object.keys(artist.albums).map(albumKey => {
-            const album = artist.albums[albumKey];
-            //console.log("Album: " + album.name + ", Color: " + album.color)
-            return {
-              name: album.name,
-              children: Object.keys(album.tracks).map(trackKey => {
-                const track = album.tracks[trackKey];
-                return {
-                  name: track.name,
-                  value: track.scrobbles.length // or another metric for value
-                };
-              }),
-              image: album.image_url,
-              color: album.color
-            };
-          }),
-          image: artist.image_url,
-          color: artist.color
-        };
-      })
-    };
-    this.currentDepth = 0;
-    return treemapData
-  }
-
-  transformToTreemapDataAlbums(stats: ChartStats): TreeNode {
-    const treemapData = {
-      name: "ChartStats",
-      children: [] as TreeNode[]
-    };
-
-    // Iterate over each artist
-    Object.keys(stats.artists).forEach(artistKey => {
-      const artist = stats.artists[artistKey];
-      // Then iterate over each album of the artist
-      Object.keys(artist.albums).forEach(albumKey => {
-        const album = artist.albums[albumKey];
-        // Prepare the album TreeNode, including its tracks as children
-        const albumNode: TreeNode = {
-          name: album.name,
-          artist: artist.name,
-          children: Object.keys(album.tracks).map(trackKey => {
-            const track = album.tracks[trackKey];
-            return {
-              name: track.name,
-              value: track.scrobbles.length, // Use the length of scrobbles array as value
-              // Additional properties like 'image' and 'color' could be included here if needed
-            };
-          }),
-          image: album.image_url, // Album image
-          color: album.color // Album color
-        };
-        // Add the albumNode to the children of the ChartStats TreeNode
-        treemapData.children.push(albumNode);
-      });
-    });
-
-    this.currentDepth = 1;
-
-    return treemapData;
-  }
-
-  transformToTreemapDataTracks(stats: ChartStats): TreeNode {
-    const treemapData = {
-      name: "ChartStats",
-      children: [] as TreeNode[]
-    };
-
-    // Iterate over each artist
-    Object.keys(stats.artists).forEach(artistKey => {
-      const artist = stats.artists[artistKey];
-      // Then iterate over each album of the artist
-      Object.keys(artist.albums).forEach(albumKey => {
-        const album = artist.albums[albumKey];
-
-        // Then iterate over each tracks of the album
-        Object.keys(album.tracks).forEach(trackKey => {
-          const track = album.tracks[trackKey];
-
-          const trackNode: TreeNode = {
-            name: track.name,
-            children: [],
-            value: track.scrobbles.length,
-            image: album.image_url,
-            color: album.color
-          }
-
-          treemapData.children.push(trackNode);
-        })
-      });
-    });
-
-    this.currentDepth = 2;
-
-    return treemapData;
   }
 
   appendText(node: d3.Selection<d3.BaseType | SVGGElement, d3.HierarchyRectangularNode<TreeNode>, SVGGElement, unknown>): void {
