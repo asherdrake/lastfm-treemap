@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Router } from '@angular/router';
-import { ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track, TopAlbum } from './items';
+import { ChartStats, Scrobble, Artist, Album, ArtistCombo, AlbumCombo, Track, TopAlbum, TopArtist } from './items';
 import { takeWhile, skip, mergeMap, scan, from, interval, of, forkJoin, Subject, catchError, tap, filter, Observable, map, combineLatest, take, shareReplay } from 'rxjs';
 import { ScrobbleGetterService } from './scrobblegetter.service';
 import { ScrobbleStorageService } from './scrobble-storage.service';
@@ -27,6 +27,8 @@ export class StatsConverterService {
   filteredChartStats: Observable<ChartStats>;
   private _finishedChartStats: Observable<ChartStats>;
   private _finishedTopAlbums: Observable<TopAlbum[]>;
+  private _finishedTopArtists: Observable<TopArtist[]>;
+  private _finishedLightweightStats: Observable<[TopAlbum[], TopArtist[]]>;
   private isActive = false;
   startDate: number = 0;
   endDate: number = 0;
@@ -186,6 +188,23 @@ export class StatsConverterService {
         )
       ),
     )
+
+    this._finishedTopArtists = combineLatest([
+      this.scrobbleGetterService.topArtistSubject,
+      this.filters.state$
+    ]).pipe(
+      tap(([_, filterState]) => {
+        this.filterState = filterState;
+      }),
+      // mergeMap(([topArtists, _]) =>
+      //   this.storeTopArtistImages(topArtists).pipe(
+      //     map(completedTopArtists => completedTopArtists)
+      //   )
+      // ),
+      map(([topArtists, _]) => this.storeTopArtistImages(topArtists))
+    )
+
+    this._finishedLightweightStats = combineLatest([this._finishedTopAlbums, this._finishedTopArtists]);
   };
 
   start() {
@@ -200,8 +219,12 @@ export class StatsConverterService {
     return this.isActive ? this._finishedChartStats : of(null);
   }
 
-  get finishedTopAlbums(): Observable<TopAlbum[] | null> {
-    return this.isActive ? this._finishedTopAlbums : of(null);
+  // get finishedTopAlbums(): Observable<TopAlbum[] | null> {
+  //   return this.isActive ? this._finishedTopAlbums : of(null);
+  // }
+
+  get finishedLightweightStats(): Observable<[TopAlbum[], TopArtist[]] | null> {
+    return this.isActive ? this._finishedLightweightStats : of(null);
   }
 
   updateChartStats(scrobbles: Scrobble[], chartStats: ChartStats): ChartStats {
@@ -478,6 +501,27 @@ export class StatsConverterService {
         })
       }
     }
+  }
+
+  storeTopArtistImages(topArtists: TopArtist[]): TopArtist[] {
+    for (const artist of topArtists) {
+      this.scrobbleGetterService.getArtistImage(artist.name).subscribe({
+        next: (artistImageURL) => {
+          artist.image = artistImageURL;
+          this.getDominantColor(artistImageURL)
+            .then(color => {
+              artist.color = color.toString();
+            })
+            .catch(error => {
+              console.error("Error getting dominant color:", error);
+            })
+        },
+        error: (err) => {
+          console.error('Error while fetching artist image:', err);
+        }
+      })
+    }
+    return topArtists;
   }
 
   getDominantColor(imageSrc: string): Promise<number[]> {

@@ -116,9 +116,18 @@ export interface TopAlbum {
     color?: string,
 }
 
+export interface TopArtist {
+    name: string,
+    playcount: number,
+    image: string,
+    color?: string,
+}
+
 export interface Image {
     size: string;
     '#text': string;
 }
 
 export type TreemapViewType = 'Artists' | 'Albums' | 'Tracks'
+
+export type PeriodType = 'overall' | '7day' | '1month' | '3month' | '6month' | '12month'

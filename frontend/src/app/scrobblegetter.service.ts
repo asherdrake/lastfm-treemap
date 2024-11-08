@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { User, Scrobble, AlbumImages, ArtistCombo, AlbumCombo, TopAlbum, Image } from './items';
+import { User, Scrobble, AlbumImages, ArtistCombo, AlbumCombo, TopAlbum, TopArtist, Image, PeriodType } from './items';
 import { BehaviorSubject, catchError, Observable, of } from 'rxjs';
 import { HttpParams, HttpClient } from '@angular/common/http'
 import { map, tap, takeWhile, take, switchMap } from 'rxjs/operators'
@@ -40,6 +40,10 @@ interface TopAlbums {
   album: TopAlbum[]
 }
 
+interface TopArtists {
+  artist: TopArtist[]
+}
+
 interface LoadingState {
   storage: ScrobbleStorageService;
   username: string;
@@ -58,6 +62,7 @@ export class ScrobbleGetterService {
   private readonly API_KEY = '2a9fa20cf72cff44d62d98800ec93aaf';
   private readonly URL = 'https://ws.audioscrobbler.com/2.0/';
   public topAlbumSubject = new BehaviorSubject<TopAlbum[]>([]);
+  public topArtistSubject = new BehaviorSubject<TopArtist[]>([]);
   constructor(private http: HttpClient, private messageService: MessageService) { }
 
   initializeFetching(username: string, startDate: string, endDate: string, storage: ScrobbleStorageService, importedScrobbles: Scrobble[], artistImages: { [key: string]: [string, string] }, albumImages: AlbumImages, artistCombinations: ArtistCombo[], albumCombinations: AlbumCombo[]) {
@@ -168,17 +173,23 @@ export class ScrobbleGetterService {
     );
   }
 
-  public startTopAlbums(username: string, amount: number) {
-    this.getTopAlbums(username, amount).subscribe(topAlbums => {
+  public startTopAlbums(username: string, amount: number, period: PeriodType) {
+    this.getTopAlbums(username, amount, period).subscribe(topAlbums => {
       this.topAlbumSubject.next(topAlbums.album);
     })
   }
 
-  private getTopAlbums(username: string, amount: number): Observable<TopAlbums> {
+  public startTopArtists(username: string, amount: number, period: PeriodType) {
+    this.getTopArtists(username, amount, period).subscribe(topArtists => {
+      this.topArtistSubject.next(topArtists.artist);
+    })
+  }
+
+  private getTopAlbums(username: string, amount: number, period: PeriodType): Observable<TopAlbums> {
     const params = new HttpParams()
       .append('method', 'user.gettopalbums')
       .append('user', username)
-      .append('period', 'overall')
+      .append('period', period)
       .append('limit', amount)
       .append('page', 1)
       .append('format', 'json')
@@ -189,6 +200,24 @@ export class ScrobbleGetterService {
     return this.http.get<{ topalbums: TopAlbums }>(this.URL, { params }).pipe(
       tap(response => console.log(response.topalbums)),
       map(response => response.topalbums)
+    );
+  }
+
+  private getTopArtists(username: string, amount: number, period: PeriodType): Observable<TopArtists> {
+    const params = new HttpParams()
+      .append('method', 'user.gettopartists')
+      .append('user', username)
+      .append('period', period)
+      .append('limit', amount)
+      .append('page', 1)
+      .append('format', 'json')
+      .append('api_key', this.API_KEY);
+
+    console.log('getTopArtists')
+
+    return this.http.get<{ topartists: TopArtists }>(this.URL, { params }).pipe(
+      tap(response => console.log(response.topartists)),
+      map(response => response.topartists)
     );
   }
 

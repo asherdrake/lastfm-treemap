@@ -131,7 +131,7 @@
             <label class="loading-text">Enter Username:</label>
             <div class="input-group">
                 <input type="text" id="username" class="loading-input" [(ngModel)]="username" />
-                <button class="loading-button" (click)="startTopAlbumsTreemap()">Submit</button>
+                <button class="loading-button" (click)="startLightweightFetching()">Submit</button>
             </div>
         </div>
         <p class="option-text">OPTIONS</p>
@@ -146,6 +146,12 @@
                 <label class="min-text"># of {{ selectedView }} to fetch:</label>
                 <input type="text" id="minScrobbles" class="min-input" [(ngModel)]="numNodes" />
             </div>
+        </div>
+        <div class="top-level-wrapper">
+            <label class="top-level-text">Period:</label>
+            <select class="top-level-select" [(ngModel)]="period" (ngModelChange)="setPeriod($event)">
+                <option *ngFor="let time of periodOptions" [value]="time">{{time}}</option>
+            </select>
         </div>
         <div class="checkbox-wrapper">
             <label class="checkbox-label">

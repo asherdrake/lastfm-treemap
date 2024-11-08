@@ -3,7 +3,7 @@ import { ScrobbleStorageService } from '../../scrobble-storage.service';
 import { map, take, filter } from 'rxjs';
 import { ScrobbleGetterService } from '../../scrobblegetter.service';
 import { FiltersService } from '../../filters.service';
-import { Scrobble, ScrobblesJSON, AlbumImages, ArtistCombo, AlbumCombo, TreemapViewType } from "src/app/items";
+import { Scrobble, ScrobblesJSON, AlbumImages, ArtistCombo, AlbumCombo, TreemapViewType, PeriodType } from "src/app/items";
 import { StatsConverterService } from '../../stats-converter.service';
 
 @Component({
@@ -24,7 +24,9 @@ export class LoadingComponent implements OnInit {
   showNames: boolean = false;
   showScrobbleCount: boolean = false;
   public viewOptions: string[] = ["Albums", "Artists"];
+  public periodOptions: string[] = ["Overall", "7 Day", "1 Month", "3 Month", "6 Month", "12 Month"];
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
+  public period: String = this.periodOptions[0];
   sidebarActive: boolean = true;
   artistImageStorageSize: number = 0;
   loadingStatus: string = 'GETTINGUSER';
@@ -62,6 +64,10 @@ export class LoadingComponent implements OnInit {
     //this.resetMinScrobbles();
   }
 
+  setPeriod(period: String) {
+    this.period = period;
+  }
+
   loadingBarWidth(): string {
     if (this.totalPages === 0) {
       return '0%';
@@ -87,8 +93,18 @@ export class LoadingComponent implements OnInit {
 
   startTopAlbumsTreemap() {
     this.applySettings();
-    this.scrobbleGetterService.startTopAlbums(this.username, this.numNodes);
+    this.scrobbleGetterService.startTopAlbums(this.username, this.numNodes, this.period.toLowerCase().replace(/\s/g, "") as PeriodType);
     console.log("startTopAlbumsTreemap" + this.username);
+  }
+
+  startLightweightFetching() {
+    this.applySettings();
+    if (this.selectedView === 'Albums') {
+      this.scrobbleGetterService.startTopAlbums(this.username, this.numNodes, this.period.toLowerCase().replace(/\s/g, "") as PeriodType);
+    } else {
+      this.scrobbleGetterService.startTopArtists(this.username, this.numNodes, this.period.toLowerCase().replace(/\s/g, "") as PeriodType);
+    }
+    console.log("startLightweightFetching" + this.username);
   }
 
   downloadJSON(): void {
