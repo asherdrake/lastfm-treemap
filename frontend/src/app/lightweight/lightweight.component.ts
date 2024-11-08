@@ -15,9 +15,11 @@ export class LightweightComponent implements OnInit {
   sidebarActive: boolean = false;
   filterState: FilterState = {} as FilterState;
   treeNodeData: TreeNode = { name: "root", children: [] };
+  showNames: boolean = false;
+  showScrobbleCount: boolean = false;
   subscription?: Subscription;
 
-  constructor(private statsConverterService: StatsConverterService) {}
+  constructor(private statsConverterService: StatsConverterService) { }
 
   ngOnInit(): void {
     this.statsConverterService.start();
@@ -28,6 +30,10 @@ export class LightweightComponent implements OnInit {
         //console.log("topalbumsubject inside" + this.treemapData)
         this.treeNodeData = this.convertTopAlbums(topAlbums);
         this.view = 'Albums';
+        this.showNames = this.statsConverterService.filterState.showNames;
+        this.showScrobbleCount = this.statsConverterService.filterState.showScrobbleCount;
+        console.log("showNames " + this.showNames);
+        console.log("showScrobbleCount " + this.showScrobbleCount);
       }
     })
   }

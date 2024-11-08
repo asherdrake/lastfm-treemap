@@ -15,6 +15,8 @@ export class TreemapComponent implements OnInit {
   @Input() treemapData: TreeNode = { name: "root", children: [] };
   @Input() isInteractiveMode: boolean = false;
   @Input() view: TreemapViewType = 'Albums';
+  @Input() showNames: boolean = false;
+  @Input() showScrobbleCount: boolean = false;
 
   width: number = 2500;
   height: number = 2500;
@@ -128,6 +130,8 @@ export class TreemapComponent implements OnInit {
   updateTreemap() {
     const self = this;
     console.log("UPDATE TREEMAP");
+    console.log("showNames" + this.showNames);
+    console.log("showScrobbleCount" + this.showScrobbleCount);
     this.group.selectAll(".album-background").remove();
 
     // Recalculate the hierarchy with the updated data
@@ -366,7 +370,7 @@ export class TreemapComponent implements OnInit {
         .style("display", "flex")
         .style("align-items", "flex-start")
         .style("justify-content", "flex-start")
-        .html((d: any) => `<xhtml:span style="display: inline-block; max-width: 100%; max-height: 100%;">${d.data.name}</xhtml:span>`);
+        .html((d: any) => self.showNames ? `<xhtml:span style="display: inline-block; max-width: 100%; max-height: 100%;">${d.data.name}</xhtml:span>` : `<xhtml:span style="display: inline-block; max-width: 100%; max-height: 100%;"></xhtml:span>`);
 
       // Apply text fitting to the textDiv
       const divElement = (textDiv.node() as HTMLElement);
@@ -448,7 +452,7 @@ export class TreemapComponent implements OnInit {
         .style("display", "flex")
         .style("align-items", "flex-end")
         .style("justify-content", "flex-end")
-        .html((d: any) => `<xhtml:span style="display: inline-block; max-width: 100%; max-height: 100%;">${d.value}</xhtml:span>`);
+        .html((d: any) => self.showScrobbleCount ? `<xhtml:span style="display: inline-block; max-width: 100%; max-height: 100%;">${d.value}</xhtml:span>` : `<xhtml:span style="display: inline-block; max-width: 100%; max-height: 100%;"></xhtml:span>`);
 
       // Apply text fitting to the textDiv
       const divElement = (textDiv.node() as HTMLElement);

@@ -1,3 +1,4 @@
-<app-loading (sidebarStateChanged)="handleSidebarState($event)"></app-loading>
-<app-treemap [treemapData]="treeNodeData" [isInteractiveMode]="true" [view]="view"></app-treemap>
+<app-loading [isInteractiveMode]="true" (sidebarStateChanged)="handleSidebarState($event)"></app-loading>
+<app-treemap [treemapData]="treeNodeData" [isInteractiveMode]="true" [view]="view" [showNames]="showNames"
+    [showScrobbleCount]="showScrobbleCount"></app-treemap>
 <!-- <app-dataset [sidebarActive]="sidebarActive"></app-dataset> -->

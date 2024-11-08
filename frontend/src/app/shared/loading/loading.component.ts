@@ -1,4 +1,4 @@
-import { Component, EventEmitter, OnInit, Output } from '@angular/core';
+import { Input, Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { ScrobbleStorageService } from '../../scrobble-storage.service';
 import { map, take, filter } from 'rxjs';
 import { ScrobbleGetterService } from '../../scrobblegetter.service';
@@ -12,6 +12,7 @@ import { StatsConverterService } from '../../stats-converter.service';
   styleUrls: ['./loading.component.css']
 })
 export class LoadingComponent implements OnInit {
+  @Input() isInteractiveMode: boolean = false;
   scrobblesFetched: number = 0;
   pageNumber: number = 0;
   totalPages: number = 0;
@@ -20,6 +21,8 @@ export class LoadingComponent implements OnInit {
   username: string = '';
   numNodes: number = 50;
   minScrobbles: number = 10;
+  showNames: boolean = false;
+  showScrobbleCount: boolean = false;
   public viewOptions: string[] = ["Albums", "Artists"];
   public selectedView: TreemapViewType = this.viewOptions[0] as TreemapViewType;
   sidebarActive: boolean = true;
@@ -82,6 +85,12 @@ export class LoadingComponent implements OnInit {
     this.sidebarStateChanged.emit(this.sidebarActive);
   }
 
+  startTopAlbumsTreemap() {
+    this.applySettings();
+    this.scrobbleGetterService.startTopAlbums(this.username, this.numNodes);
+    console.log("startTopAlbumsTreemap" + this.username);
+  }
+
   downloadJSON(): void {
     this.storage.state$.pipe(
       map(state => ({
@@ -114,7 +123,11 @@ export class LoadingComponent implements OnInit {
     const minScrobbles = this.minScrobbles
     const numNodes = this.numNodes;
     const view = this.selectedView;
-    this.filters.updateSettings({ startDate, endDate, minScrobbles, numNodes, view });
+    const showNames = this.showNames;
+    const showScrobbleCount = this.showScrobbleCount;
+    console.log("showNames " + showNames);
+    console.log("showScrobbleCount " + showScrobbleCount);
+    this.filters.updateSettings({ startDate, endDate, minScrobbles, numNodes, view, showNames, showScrobbleCount });
   }
 
 

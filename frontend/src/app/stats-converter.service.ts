@@ -45,6 +45,8 @@ export class StatsConverterService {
     endDate: Date.now(),
     minScrobbles: 0,
     numNodes: 0,
+    showNames: false,
+    showScrobbleCount: false,
     view: "Artists"
   };
   artistTotal: number = 0;
@@ -171,8 +173,14 @@ export class StatsConverterService {
       map(stats => this.getTopItemsByScrobbles(stats, this.filterState)),
     ) as Observable<ChartStats>;
 
-    this._finishedTopAlbums = this.scrobbleGetterService.topAlbumSubject.pipe(
-      mergeMap(topAlbums =>
+    this._finishedTopAlbums = combineLatest([
+      this.scrobbleGetterService.topAlbumSubject,
+      this.filters.state$
+    ]).pipe(
+      tap(([_, filterState]) => {
+        this.filterState = filterState;
+      }),
+      mergeMap(([topAlbums, _]) =>
         this.addTopAlbumColors(topAlbums).pipe(
           map(coloredTopAlbums => coloredTopAlbums)
         )

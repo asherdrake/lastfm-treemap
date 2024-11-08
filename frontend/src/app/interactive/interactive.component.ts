@@ -14,16 +14,20 @@ export class InteractiveComponent implements OnInit {
   sidebarActive: boolean = false;
   filterState: FilterState = {} as FilterState;
   treeNodeData: TreeNode = { name: "root", children: [] };
+  showNames: boolean = false;
+  showScrobbleCount: boolean = false;
   subscription?: Subscription;
 
-  constructor(private statsConverterService: StatsConverterService) {}
+  constructor(private statsConverterService: StatsConverterService) { }
 
   ngOnInit(): void {
     this.statsConverterService.start();
     this.subscription = this.statsConverterService.finishedChartStats.subscribe((stats: ChartStats | null) => {
       if (stats) {
         console.log("FINISHED ChartStats received in interactive component");
-        this.view = this.statsConverterService.filterState.view
+        this.view = this.statsConverterService.filterState.view;
+        this.showNames = this.statsConverterService.filterState.showNames;
+        this.showScrobbleCount = this.statsConverterService.filterState.showScrobbleCount;
         console.log(this.view);
         this.transformToTreemapData(stats);
       }

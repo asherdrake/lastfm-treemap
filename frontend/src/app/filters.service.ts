@@ -11,6 +11,9 @@ export interface FilterState {
 
   numNodes: number,
 
+  showNames: boolean,
+  showScrobbleCount: boolean,
+
   view: TreemapViewType
 }
 
@@ -25,11 +28,13 @@ export class FiltersService extends ComponentStore<FilterState> {
       endDate: Date.now(),
       minScrobbles: 0,
       numNodes: 0,
+      showNames: false,
+      showScrobbleCount: false,
       view: "Artists"
     });
   }
 
-  readonly updateSettings = this.updater((currData: FilterState, settings: { startDate: number, endDate: number, minScrobbles: number, numNodes: number, view: TreemapViewType }) => {
+  readonly updateSettings = this.updater((currData: FilterState, settings: { startDate: number, endDate: number, minScrobbles: number, numNodes: number, showNames: boolean, showScrobbleCount: boolean, view: TreemapViewType }) => {
     console.log("UPDATE SETTINGS: " + settings.startDate + " | " + settings.endDate)
     return {
       ...currData,
